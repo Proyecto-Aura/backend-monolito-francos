@@ -4,13 +4,17 @@ Sistema web de gestión empresarial para FRANCO'S Snacks Naturales. Monolito mod
 
 ## Stack
 
-- **Runtime:** Node.js v26 + TypeScript
-- **Framework:** NestJS 11
-- **ORM:** Prisma 7 (cliente generado en `generated/prisma/`)
-- **Base de datos:** PostgreSQL
-- **Autenticación:** JWT + bcrypt
-- **Docs:** Swagger (`/api/docs`)
-- **Package manager:** pnpm
+| Herramienta | Versión | Rol |
+|-------------|---------|-----|
+| Node.js | v26 | Runtime |
+| TypeScript | 5.x | Lenguaje |
+| NestJS | 11 | Framework |
+| Prisma | 7 | ORM (`prisma-client-js` + `@prisma/adapter-pg`) |
+| PostgreSQL | 16 | Base de datos |
+| JWT + bcrypt | — | Autenticación |
+| Swagger | — | Documentación API (`/api/docs`) |
+| Docker | — | Base de datos local |
+| pnpm | 11 | Package manager |
 
 ## Módulos de dominio
 
@@ -25,9 +29,9 @@ Sistema web de gestión empresarial para FRANCO'S Snacks Naturales. Monolito mod
 
 ## Variables de entorno
 
-Copia `.env` y ajusta los valores:
+Crea un archivo `.env` en la raíz con:
 
-```bash
+```env
 PORT=3000
 DATABASE_URL="postgresql://user:password@localhost:5432/francos_erp?schema=public"
 JWT_SECRET=your_super_secret_key_change_in_production
@@ -35,12 +39,41 @@ JWT_EXPIRES_IN=1d
 FRONTEND_URL=http://localhost:4200
 ```
 
-## Comandos
+## Inicio rápido
 
-### Instalación
+### 1. Instalar dependencias
 
 ```bash
 pnpm install
+```
+
+### 2. Levantar la base de datos
+
+```bash
+docker compose up -d
+```
+
+### 3. Generar cliente Prisma y correr migraciones
+
+```bash
+pnpm exec prisma generate
+pnpm exec prisma migrate dev --name init
+```
+
+### 4. Iniciar en modo desarrollo
+
+```bash
+pnpm start:dev
+```
+
+## Comandos
+
+### Base de datos (Docker)
+
+```bash
+docker compose up -d      # Levantar PostgreSQL en background
+docker compose down       # Apagar (conserva los datos)
+docker compose down -v    # Apagar y borrar volumen de datos
 ```
 
 ### Prisma
@@ -49,56 +82,56 @@ pnpm install
 # Generar cliente (correr siempre después de cambiar schema.prisma)
 pnpm exec prisma generate
 
-# Crear y aplicar una migración
+# Crear y aplicar una migración en desarrollo
 pnpm exec prisma migrate dev --name <nombre>
 
-# Aplicar migraciones en producción (solo en prod, no crea migraciones nuevas)
+# Aplicar migraciones en producción
 pnpm exec prisma migrate deploy
 
-# Abrir Prisma Studio (explorador visual de BD)
+# Ver estado de migraciones
+pnpm exec prisma migrate status
+
+# Abrir explorador visual de BD
 pnpm exec prisma studio
 ```
 
 ### Desarrollo
 
 ```bash
-# Modo watch (recomendado en desarrollo)
-pnpm start:dev
-
-# Compilar
-pnpm build
-
-# Producción
-pnpm start:prod
+pnpm start:dev    # Modo watch
+pnpm build        # Compilar
+pnpm start:prod   # Producción
 ```
 
 ### Tests
 
 ```bash
-pnpm test          # unit tests
-pnpm test:e2e      # end-to-end
-pnpm test:cov      # cobertura
+pnpm test         # Unit tests
+pnpm test:e2e     # End-to-end
+pnpm test:cov     # Cobertura
 ```
 
 ## Arquitectura
 
-Cada módulo sigue la misma estructura de capas:
+Cada módulo de dominio sigue la misma estructura de capas (Clean Architecture):
 
 ```
 modules/<dominio>/
   domain/
-    entities/          ← Entidades de dominio (clases planas)
-    repositories/      ← Contratos abstractos (interfaces de DI)
+    entities/          ← Entidades de dominio (clases planas, sin frameworks)
+    repositories/      ← Contratos abstractos (tokens de DI)
   application/
     dto/               ← Validación de entrada (class-validator)
-    use-cases/         ← Lógica de negocio
+    use-cases/         ← Lógica de negocio pura
   infrastructure/
-    repositories/      ← Implementaciones Prisma
+    repositories/      ← Implementaciones con Prisma
     mappers/           ← Prisma model ↔ Domain entity
   presentation/
     controllers/       ← HTTP controllers
-    <modulo>.module.ts ← Módulo NestJS (wiring de DI)
+    <modulo>.module.ts ← Wiring de dependencias (NestJS DI)
 ```
+
+La base de datos es compartida a través de un `PrismaModule` global (`@Global()`), lo que evita importarlo en cada módulo.
 
 ## URLs
 
