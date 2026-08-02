@@ -4,6 +4,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { envs } from './config/envs';
+import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -17,8 +18,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // main route api
   app.setGlobalPrefix('api/v1');
 
+  // para los validators
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,6 +29,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle("FRANCO'S ERP API")
@@ -39,6 +44,8 @@ async function bootstrap() {
 
   await app.listen(envs.port);
   logger.log(`Application running on port ${envs.port}`);
-  logger.log(`Swagger docs available at http://localhost:${envs.port}/api/docs`);
+  logger.log(
+    `Swagger docs available at http://localhost:${envs.port}/api/docs`,
+  );
 }
-bootstrap();
+void bootstrap();
