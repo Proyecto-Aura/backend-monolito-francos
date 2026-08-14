@@ -53,11 +53,11 @@ pnpm install
 docker compose up -d
 ```
 
-### 3. Generar cliente Prisma y correr migraciones
+### 3. Correr migraciones y generar cliente
 
 ```bash
+pnpm exec prisma migrate deploy 
 pnpm exec prisma generate
-pnpm exec prisma migrate dev --name init
 ```
 
 ### 4. Iniciar en modo desarrollo
