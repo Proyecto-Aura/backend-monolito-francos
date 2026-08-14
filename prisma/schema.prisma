@@ -1,12 +1,341 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+/**
+ * #############################################
+ * ##          ENUMERADORES                   ##
+ * #############################################
+ */
+
+enum TipoDocumento {
+  dni
+  ce
+  pasaporte
+  ruc
+
+  @@map("tipo_documento_enum")
+}
+
+enum TipoCliente {
+  persona_natural @map("persona natural")
+  empresa
+
+  @@map("tipo_cliente_enum")
+}
+
+enum CategoriaCliente {
+  minorista
+  mayorista
+
+  @@map("categoria_cliente_enum")
+}
+
+enum ReferenciaTipo {
+  pedido
+  pago
+  reembolso
+  promocion
+
+  @@map("referencia_tipo_enum")
+}
+
+enum TipoEventoNotificacion {
+  pago_confirmado
+  pago_rechazado
+  pedido_en_camino
+  pedido_entregado
+  reembolso_aprobado
+  reembolso_rechazado
+  ticket_respondido
+  promocion
+  mantenimiento
+
+  @@map("tipo_evento_notificacion_enum")
+}
+
+enum UnidadMedidaPresentacion {
+  kg
+  gr
+
+  @@map("unidad_medida_presentacion_enum")
+}
+
+enum TipoPromocion {
+  porcentaje
+  monto_fijo
+  nxm
+  regalo
+  @@map("tipo_promocion")
+}
+
+/**
+ * #######################################################################
+ * ##   BLOQUE 1: TABLAS relacionadas a persona, seguridad y empresa    ##
+ * #########################################################3#############
+ */
+
+model Persona {
+  id               String        @id(map: "pk_persona") @default(uuid()) @db.Uuid
+  nombres          String        @db.VarChar(100)
+  apellido_paterno String        @db.VarChar(100)
+  apellido_materno String        @db.VarChar(100)
+  tipo_documento   TipoDocumento
+  numero_documento String        @unique(map: "uq_persona_numero_documento") @db.VarChar(20)
+  telefono         String?       @db.VarChar(9)
+  fecha_nacimiento DateTime?     @db.Date
+  direccion        String?       @db.Text
+  estado           Boolean       @default(true)
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  empleado         Empleado?
+  cliente          Cliente?
+  user             User?
+
+  @@map("persona")
+}
+
+model Empleado {
+  id            String    @id(map: "pk_empleado") @default(uuid()) @db.Uuid
+  persona_id    String    @unique(map: "uq_empleado_persona_id") @db.Uuid
+  cargo         String?   @db.VarChar(100)
+  area          String?   @db.VarChar(100)
+  fecha_ingreso DateTime? @db.Date
+  fecha_des_lab DateTime? @db.Date
+  estado        Boolean   @default(true)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  persona       Persona   @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_persona")
+
+  @@map("empleado")
+}
+
+model Cliente {
+  id                String           @id(map: "pk_cliente") @default(uuid()) @db.Uuid
+  persona_id        String           @unique(map: "uq_cliente_persona_id") @db.Uuid
+  tipo_cliente      TipoCliente?
+  razon_social      String?          @db.VarChar(200)
+  categoria_cliente CategoriaCliente
+  estado            Boolean          @default(true)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  persona           Persona          @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cliente_persona")
+
+  @@map("cliente")
+}
+
+model User {
+  id                 String             @id(map: "pk_user") @default(uuid()) @db.Uuid
+  persona_id         String             @unique(map: "uq_user_persona_id") @db.Uuid
+  email              String             @unique(map: "uq_user_email") @db.VarChar(150)
+  username           String             @unique(map: "uq_user_username") @db.VarChar(50)
+  contrasena         String             @map("contraseña") @db.VarChar(255)
+  estado             Boolean            @default(true)
+  token_recuperacion String?            @db.VarChar(255)
+  token_expiracion   DateTime?          @db.Timestamptz(6)
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  persona            Persona            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
+  usuario_roles      UsuarioRol[]
+  notificacion_users NotificacionUser[]
+
+  @@map("user")
+}
+
+model Rol {
+  id            Int          @id(map: "pk_rol") @default(autoincrement())
+  nombre        String       @unique(map: "uq_rol_nombre") @db.VarChar(50)
+  descripcion   String?      @db.VarChar(255)
+  estado        Boolean      @default(true)
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  accesos       Acceso[]
+  usuario_roles UsuarioRol[]
+
+  @@map("rol")
+}
+
+model Ruta {
+  id         Int      @id(map: "pk_ruta") @default(autoincrement())
+  nombre     String   @unique(map: "uq_ruta_nombre") @db.VarChar(100)
+  estado     Boolean  @default(true)
+  parent_id  Int?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  parent     Ruta?    @relation("RutaJerarquia", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ruta_parent")
+  children   Ruta[]   @relation("RutaJerarquia")
+  accesos    Acceso[]
+
+  @@map("ruta")
+}
+
+model Acceso {
+  id         Int      @id(map: "pk_acceso") @default(autoincrement())
+  rol_id     Int
+  ruta_id    Int
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  rol        Rol      @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acceso_rol")
+  ruta       Ruta     @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acceso_ruta")
+
+  @@unique([rol_id, ruta_id], map: "uq_acceso_rol_ruta")
+  @@map("acceso")
+}
+
+model UsuarioRol {
+  id         Int      @id(map: "pk_usuario_rol") @default(autoincrement())
+  user_id    String   @db.Uuid
+  rol_id     Int
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_rol_user")
+  rol        Rol      @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_rol_rol")
+
+  @@unique([user_id, rol_id], map: "uq_usuario_rol")
+  @@map("usuario_rol")
+}
+
+model Notificacion {
+  id                 Int                    @id(map: "pk_notificacion") @default(autoincrement())
+  tipo               TipoEventoNotificacion
+  titulo             String                 @db.VarChar(150)
+  mensaje            String                 @db.Text
+  referencia_id      String?                @db.VarChar(50) // Referencia polimórfica: puede almacenar UUID o ID numérico como texto
+  referencia_tipo    ReferenciaTipo?
+  created_at         DateTime               @default(now()) @db.Timestamptz(6)
+  notificacion_users NotificacionUser[]
+
+  @@map("notificacion")
+}
+
+model NotificacionUser {
+  notificacion_id Int
+  user_id         String       @db.Uuid
+  leido           Boolean      @default(false)
+  fecha_leido     DateTime?    @db.Timestamptz(6)
+  sns_message_id  String?      @db.VarChar(100)
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  notificacion    Notificacion @relation(fields: [notificacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notificacion_user_notif")
+  user            User         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notificacion_user_user")
+
+  @@id([notificacion_id, user_id], map: "pk_notificacion_user")
+  @@map("notificacion_user")
+}
+
+model Empresa {
+  id           Int      @id(map: "pk_empresa") @default(autoincrement())
+  razon_social String   @db.VarChar(200)
+  ruc          String   @unique(map: "uq_empresa_ruc") @db.Char(11)
+  direccion    String   @db.Text
+  telefono     String?  @db.VarChar(9)
+  email        String?  @unique(map: "uq_empresa_email") @db.VarChar(100)
+  logo_url     String?  @db.Text
+  estado       Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("empresa")
+}
+
+/**
+ * #########################################################
+ * ##   BLOQUE 2: TABLAS relacionadas a catalogo          ##
+ * #########################################################
+ */
+
+model Categoria {
+  id          Int      @id(map: "pk_categoria") @default(autoincrement())
+  nombre      String   @db.VarChar(100)
+  descripcion String?  @db.VarChar(255)
+  estado      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  productos Producto[]
+
+  @@map("categoria")
+}
+
+model Producto {
+  id           Int      @id(map: "pk_producto") @default(autoincrement())
+  categoria_id Int
+  nombre       String   @db.VarChar(100)
+  descripcion  String?  @db.Text
+  estado       Boolean  @default(true)
+  destacado    Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  categoria Categoria @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_categoria")
+
+  producto_presentaciones ProductoPresentacion[]
+
+  @@map("producto")
+}
+
+model Presentacion {
+  id            Int                      @id(map: "pk_presentacion") @default(autoincrement())
+  cantidad      Int
+  unidad_medida UnidadMedidaPresentacion
+  descripcion   String?                  @db.VarChar(255)
+  estado        Boolean                  @default(true)
+  created_at    DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_presentaciones ProductoPresentacion[]
+
+  @@map("presentacion")
+}
+
+model ProductoPresentacion {
+  id               Int      @id(map: "pk_producto_presentacion") @default(autoincrement())
+  sku              String   @unique(map: "uq_producto_presentacion_sku") @db.VarChar(100)
+  precio_unitario  Decimal  @db.Decimal(10, 2)
+  precio_mayorista Decimal? @db.Decimal(10, 2)
+  umbral_mayorista Int?
+  producto_id      Int
+  presentacion_id  Int
+  imagen_url       String?  @db.Text
+  slug             String?  @unique(map: "uq_producto_presentacion_slug") @db.VarChar(100)
+  estado           Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  promociones        Promocion[] @relation("PromocionProducto")
+  promociones_regalo   Promocion[] @relation("PromocionRegalo")
+
+  producto Producto @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_producto")
+
+  presentacion Presentacion @relation(fields: [presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_presentacion")
+
+  @@unique([producto_id, presentacion_id], map: "uq_producto_presentacion_producto_presentacion")
+  @@map("producto_presentacion")
+}
+
+model Promocion {
+  id                              Int       @id(map: "pk_promocion") @default(autoincrement())
+  producto_presentacion_id        Int
+  nombre                          String    @db.VarChar(150)
+  tipo                            TipoPromocion
+  valor                           Decimal   @db.Decimal(10, 2)
+  cantidad_paga                   Int?
+  cantidad_lleva                  Int?
+  cantidad_minima                 Int?
+  producto_presentacion_regalo_id Int?
+  fecha_inicio                    DateTime  @db.Date
+  fecha_fin                       DateTime  @db.Date
+  estado                          Boolean   @default(true)
+  created_at                      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_presentacion ProductoPresentacion @relation("PromocionProducto", fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_producto_presentacion")
+
+  producto_presentacion_regalo ProductoPresentacion? @relation("PromocionRegalo", fields: [producto_presentacion_regalo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_regalo")
+
+  @@map("promocion")
 }

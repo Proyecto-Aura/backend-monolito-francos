@@ -4,13 +4,13 @@ services:
     container_name: francos-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: francos_erp
+      POSTGRES_USER: admin_db_francos
+      POSTGRES_PASSWORD: contrasenaultr4megasecreta$
+      POSTGRES_DB: bd_francos
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - bd_francos:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  bd_francos:
