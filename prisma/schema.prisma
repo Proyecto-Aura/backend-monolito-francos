@@ -137,13 +137,32 @@ model User {
   estado             Boolean            @default(true)
   token_recuperacion String?            @db.VarChar(255)
   token_expiracion   DateTime?          @db.Timestamptz(6)
+  debe_cambiar_contrasena Boolean        @default(false)
+  email_verificado   Boolean            @default(false)
+  token_verificacion_email String?      @db.VarChar(255)
+  token_verificacion_email_expiracion DateTime? @db.Timestamptz(6)
   created_at         DateTime           @default(now()) @db.Timestamptz(6)
   updated_at         DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
   persona            Persona            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
   usuario_roles      UsuarioRol[]
   notificacion_users NotificacionUser[]
+  refresh_tokens     RefreshToken[]
 
   @@map("user")
+}
+
+// modelo para token expiracion 7d
+model RefreshToken {
+  id         String    @id(map: "pk_refresh_token") @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique(map: "uq_refresh_token_hash") @db.VarChar(255)
+  expires_at DateTime  @db.Timestamptz(6)
+  revoked_at DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_refresh_token_user")
+
+  @@index([user_id], map: "idx_refresh_token_user")
+  @@map("refresh_token")
 }
 
 model Rol {
