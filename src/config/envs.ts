@@ -7,6 +7,12 @@ interface EnvVars {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   FRONTEND_URL: string;
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_SECURE: boolean;
+  SMTP_USER: string;
+  SMTP_PASS: string;
+  SMTP_FROM: string;
 }
 
 const envSchema = joi
@@ -16,6 +22,12 @@ const envSchema = joi
     JWT_SECRET: joi.string().required(),
     JWT_EXPIRES_IN: joi.string().default('1d'),
     FRONTEND_URL: joi.string().required(),
+    SMTP_HOST: joi.string().required(),
+    SMTP_PORT: joi.number().default(587),
+    SMTP_SECURE: joi.boolean().default(false),
+    SMTP_USER: joi.string().required(),
+    SMTP_PASS: joi.string().required(),
+    SMTP_FROM: joi.string().required(),
   })
   .unknown(true);
 
@@ -31,4 +43,10 @@ export const envs = {
   jwtSecret: envVars.JWT_SECRET,
   jwtExpiresIn: envVars.JWT_EXPIRES_IN,
   frontendUrl: envVars.FRONTEND_URL,
+  smtpHost: envVars.SMTP_HOST,
+  smtpPort: envVars.SMTP_PORT,
+  smtpSecure: envVars.SMTP_SECURE,
+  smtpUser: envVars.SMTP_USER,
+  smtpPass: envVars.SMTP_PASS,
+  smtpFrom: envVars.SMTP_FROM,
 };
