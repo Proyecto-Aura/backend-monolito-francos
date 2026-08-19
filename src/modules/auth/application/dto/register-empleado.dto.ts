@@ -1,43 +1,95 @@
 import { Type } from 'class-transformer';
 import {
-  IsDateString, IsEnum, IsInt, IsNotEmpty,
-  IsOptional, IsPositive, IsString, MaxLength,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { TipoDocumento } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterEmpleadoDto {
   // --- datos de Persona ---
-  @IsString() @IsNotEmpty() @MaxLength(100)
+  @ApiProperty({ example: 'Carlos', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   nombres!: string;
-  @IsString() @IsNotEmpty() @MaxLength(100)
+
+  @ApiProperty({ example: 'Mendoza', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   apellido_paterno!: string;
-  @IsString() @IsNotEmpty() @MaxLength(100)
+
+  @ApiProperty({ example: 'Ruiz', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   apellido_materno!: string;
+
+  @ApiProperty({ enum: TipoDocumento, example: TipoDocumento.dni })
   @IsEnum(TipoDocumento)
   tipo_documento!: TipoDocumento;
-  @IsString() @IsNotEmpty() @MaxLength(20)
+
+  @ApiProperty({ example: '45678912', maxLength: 20 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
   numero_documento!: string;
-  @IsOptional() @IsString() @MaxLength(9)
+
+  @ApiPropertyOptional({ example: '987654321', maxLength: 9 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(9)
   telefono?: string;
-  @IsOptional() @IsDateString()
+
+  @ApiPropertyOptional({ example: '1990-03-20' })
+  @IsOptional()
+  @IsDateString()
   fecha_nacimiento?: string;
-  @IsOptional() @IsString()
+
+  @ApiPropertyOptional({ example: 'Jr. Las Palmeras 456' })
+  @IsOptional()
+  @IsString()
   direccion?: string;
 
   // --- datos de Empleado (obligatorios: todo empleado debe tener cargo y área) ---
-  @IsString() @IsNotEmpty() @MaxLength(100)
+  @ApiProperty({ example: 'Vendedor', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   cargo!: string;
-  @IsString() @IsNotEmpty() @MaxLength(100)
+
+  @ApiProperty({ example: 'Ventas', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   area!: string;
-  @IsOptional() @IsDateString()
+
+  @ApiPropertyOptional({
+    example: '2026-08-19',
+    description: 'Si no se envía, se usa la fecha actual',
+  })
+  @IsOptional()
+  @IsDateString()
   fecha_ingreso?: string;
 
   // --- credenciales: solo el email, username/password se generan solos ---
-  @IsString() @IsNotEmpty() @MaxLength(150)
+  @ApiProperty({ example: 'carlos.mendoza@francos.com', maxLength: 150 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
   email!: string;
 
   // --- el admin elige el rol explícitamente ---
+  @ApiProperty({ example: 2, description: 'id del rol a asignar (ver GET /roles)' })
   @Type(() => Number)
-  @IsInt() @IsPositive()
+  @IsInt()
+  @IsPositive()
   rol_id!: number;
 }

@@ -4,69 +4,84 @@ import {
   IsOptional, IsString, MaxLength, MinLength,
 } from 'class-validator';
 import { TipoDocumento, TipoCliente, CategoriaCliente } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterClienteDto {
   // --- datos de Persona ---
-  @IsString() 
-  @IsNotEmpty() 
+  @ApiProperty({ example: 'Ana', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   nombres!: string;
 
-  @IsString() 
-  @IsNotEmpty() 
+  @ApiProperty({ example: 'Torres', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   apellido_paterno!: string;
 
-  @IsString() 
-  @IsNotEmpty() 
+  @ApiProperty({ example: 'Vega', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   apellido_materno!: string;
 
+  @ApiProperty({ enum: TipoDocumento, example: TipoDocumento.dni })
   @IsEnum(TipoDocumento)
   tipo_documento!: TipoDocumento;
 
-  @IsString() 
-  @IsNotEmpty() 
+  @ApiProperty({ example: '88112233', maxLength: 20 })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
   numero_documento!: string;
 
-  @IsOptional() 
-  @IsString() 
+  @ApiPropertyOptional({ example: '987654321', maxLength: 9 })
+  @IsOptional()
+  @IsString()
   @MaxLength(9)
   telefono?: string;
 
-  @IsOptional() 
+  @ApiPropertyOptional({ example: '1998-05-12' })
+  @IsOptional()
   @IsDateString()
   fecha_nacimiento?: string;
 
-  @IsOptional() 
+  @ApiPropertyOptional({ example: 'Av. Los Girasoles 123' })
+  @IsOptional()
   @IsString()
   direccion?: string;
 
   // --- datos de Cliente ---
+  @ApiProperty({ enum: TipoCliente, example: TipoCliente.persona_natural })
   @IsEnum(TipoCliente)
   tipo_cliente!: TipoCliente;
 
-  @IsOptional() 
-  @IsString() 
+  @ApiPropertyOptional({ example: 'Distribuidora El Sol S.A.C.', maxLength: 200 })
+  @IsOptional()
+  @IsString()
   @MaxLength(200)
   razon_social?: string;
 
+  @ApiProperty({ enum: CategoriaCliente, example: CategoriaCliente.minorista })
   @IsEnum(CategoriaCliente)
   categoria_cliente!: CategoriaCliente;
 
   // --- credenciales (las elige el cliente) ---
-  @IsEmail() 
+  @ApiProperty({ example: 'ana.torres@gmail.com', maxLength: 150 })
+  @IsEmail()
   @MaxLength(150)
   email!: string;
 
-  @IsString() 
-  @IsNotEmpty() 
+  @ApiProperty({ example: 'anatorres', maxLength: 50 })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   username!: string;
 
-  @IsString() 
-  @MinLength(8) 
+  @ApiProperty({ example: 'ClaveSegura123', minLength: 8, maxLength: 255 })
+  @IsString()
+  @MinLength(8)
   @MaxLength(255)
   password!: string;
 }

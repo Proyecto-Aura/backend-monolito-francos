@@ -108,15 +108,23 @@ Hay dos detalles de este proyecto que **siempre** hay que respetar al escribir u
 
 **2. Usa `upsert`, no `create`, para que el seed sea repetible.** Si corres el seed dos veces y usas `create`, la segunda vez explota por violar un `@unique`. Con `upsert` (busca por un campo único; si existe no hace nada, si no existe lo crea) puedes correrlo las veces que quieras sin miedo.
 
-**3. Prisma necesita saber qué comando correr.** Esto se declara una sola vez en `package.json`, como una clave nueva a nivel raíz (hermana de `"scripts"`, `"dependencies"`, etc.):
+**3. Prisma necesita saber qué comando correr.** En Prisma 7 (el que usa este proyecto) esto se declara en **`prisma.config.ts`**, dentro de `migrations` — **no** en `package.json` como en versiones anteriores de Prisma (si ves ejemplos con `"prisma": {"seed": ...}` en `package.json` por ahí, son de Prisma 5/6 y aquí no funcionan):
 
-```json
-"prisma": {
-  "seed": "ts-node prisma/seed.ts"
-}
+```ts
+// prisma.config.ts
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "ts-node ./prisma/seed.ts",
+  },
+  datasource: {
+    url: process.env["DATABASE_URL"],
+  },
+});
 ```
 
-Sin esto, `pnpm exec prisma db seed` no sabe qué archivo ejecutar. Si en el futuro tienes varios seeds, este sigue siendo el único "punto de entrada" — tu `seed.ts` es responsable de llamar a los demás si hace falta.
+Sin esto, `pnpm exec prisma db seed` no sabe qué archivo ejecutar (te lo dice explícito: "No seed command configured"). Si en el futuro tienes varios seeds, este sigue siendo el único "punto de entrada" — tu `seed.ts` es responsable de llamar a los demás si hace falta.
 
 Plantilla base de cualquier seed nuevo:
 
