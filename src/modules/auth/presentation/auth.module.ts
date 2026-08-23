@@ -8,6 +8,8 @@ import { RegisterClienteUseCase } from '../application/use-cases/register-client
 import { RegisterClienteByStaffUseCase } from '../application/use-cases/register-cliente-by-staff.use-case';
 import { RegisterEmpleadoUseCase } from '../application/use-cases/register-empleado.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
+import { RefreshTokenUseCase } from '../application/use-cases/refresh-token.use-case';
+import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { RegistroRepository } from '../domain/repositories/registro.repository';
 import { PrismaRegistroRepository } from '../infrastructure/repositories/prisma-registro.repository';
 import { RefreshTokenRepository } from '../domain/repositories/refresh-token.repository';
@@ -33,6 +35,8 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     RegisterClienteByStaffUseCase,
     RegisterEmpleadoUseCase,
     LoginUseCase,
+    RefreshTokenUseCase,
+    LogoutUseCase,
     JwtStrategy,
     { provide: RegistroRepository, useClass: PrismaRegistroRepository },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
