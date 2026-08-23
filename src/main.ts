@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -17,6 +18,9 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true,
   });
+
+  // para leer cookies del request (req.cookies.xxx) — necesario para el refresh_token
+  app.use(cookieParser());
 
   // main route api
   app.setGlobalPrefix('api/v1');

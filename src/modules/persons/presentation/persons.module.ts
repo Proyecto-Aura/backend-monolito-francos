@@ -52,6 +52,12 @@ import { EmpleadosController } from './controllers/empleados.controller';
 import { RolesController } from './controllers/roles.controller';
 import { RutasController } from './controllers/rutas.controller';
 import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception.filter';
+import { ClienteRepository } from '../domain/repositories/cliente.repository';
+import { PrismaClienteRepository } from '../infrastructure/repositories/prisma-cliente.repository';
+import { UserRepository } from '../domain/repositories/user.repository';
+import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
+import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
+import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
 
 @Module({
   controllers: [
@@ -115,10 +121,21 @@ import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception
     UpdateEmpleadoUseCase,
     ChangeEmpleadoStatusUseCase,
     { provide: EmpleadoRepository, useClass: PrismaEmpleadoRepository },
+    { provide: ClienteRepository, useClass: PrismaClienteRepository },
+    { provide: UserRepository, useClass: PrismaUserRepository },
+    { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
     {
       provide: APP_FILTER,
       useClass: PersonsDomainExceptionFilter,
     },
+  ],
+  exports: [
+    PersonaRepository,
+    ClienteRepository,
+    EmpleadoRepository,
+    RolRepository,
+    UserRepository,
+    UsuarioRolRepository,
   ],
 })
 export class PersonsModule {}
