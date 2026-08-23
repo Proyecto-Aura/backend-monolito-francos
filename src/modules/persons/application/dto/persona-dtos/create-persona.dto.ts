@@ -9,6 +9,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { IsNumeroDocumentoValido } from '../../../../../common/validators/numero-documento.validator';
 
 export class CreatePersonaDto {
   @IsString()
@@ -32,6 +33,7 @@ export class CreatePersonaDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
+  @IsNumeroDocumentoValido()
   numero_documento!: string;
 
   @IsOptional()
