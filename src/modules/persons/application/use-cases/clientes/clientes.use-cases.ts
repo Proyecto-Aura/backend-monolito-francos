@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateClienteDto } from '../../dto/cliente-dtos/create-cliente.dto';
 import { ListClientesQueryDto } from '../../dto/cliente-dtos/list-clientes-query.dto';
 import { UpdateClienteDto } from '../../dto/cliente-dtos/update-cliente.dto';
 import { ClienteEntity } from '../../../domain/entities/cliente.entity';
@@ -12,7 +11,6 @@ import {
   ResourceNotFoundError,
 } from '../../../domain/errors/persons-domain.errors';
 import { ClienteRepository } from '../../../domain/repositories/cliente.repository';
-import { PersonaRepository } from '../../../domain/repositories/persona.repository';
 import { PaginatedResult } from '../../../domain/repositories/types/pagination.types';
 
 const assertCompany = (
@@ -24,31 +22,6 @@ const assertCompany = (
       'La razón social es obligatoria para un cliente empresa',
     );
 };
-@Injectable()
-export class CreateClienteUseCase {
-  constructor(
-    private readonly clienteRepository: ClienteRepository,
-    private readonly personaRepository: PersonaRepository,
-  ) {}
-  async execute(dto: CreateClienteDto): Promise<ClienteEntity> {
-    const persona = await this.personaRepository.findById(dto.persona_id);
-    if (!persona || !persona.estado)
-      throw new ResourceNotFoundError('La persona no existe o está inactiva');
-    if (await this.clienteRepository.existsByPersonaId(dto.persona_id))
-      throw new ResourceConflictError(
-        'La persona ya tiene un perfil de cliente',
-      );
-    const tipo = dto.tipo_cliente as TipoCliente;
-    assertCompany(tipo, dto.razon_social);
-    return this.clienteRepository.create({
-      persona_id: dto.persona_id,
-      tipo_cliente: tipo,
-      razon_social: dto.razon_social ?? null,
-      categoria_cliente: dto.categoria_cliente as CategoriaCliente,
-      estado: dto.estado ?? true,
-    });
-  }
-}
 @Injectable()
 export class GetClienteByIdUseCase {
   constructor(private readonly clienteRepository: ClienteRepository) {}

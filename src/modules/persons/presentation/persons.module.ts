@@ -52,6 +52,12 @@ import { EmpleadosController } from './controllers/empleados.controller';
 import { RolesController } from './controllers/roles.controller';
 import { RutasController } from './controllers/rutas.controller';
 import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception.filter';
+import {
+  ChangeClienteStatusUseCase,
+  GetClienteByIdUseCase,
+  ListClientesUseCase,
+  UpdateClienteUseCase,
+} from '../application/use-cases/clientes/clientes.use-cases';
 import { ClienteRepository } from '../domain/repositories/cliente.repository';
 import { PrismaClienteRepository } from '../infrastructure/repositories/prisma-cliente.repository';
 import { UserRepository } from '../domain/repositories/user.repository';
@@ -121,6 +127,10 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     UpdateEmpleadoUseCase,
     ChangeEmpleadoStatusUseCase,
     { provide: EmpleadoRepository, useClass: PrismaEmpleadoRepository },
+    GetClienteByIdUseCase,
+    ListClientesUseCase,
+    UpdateClienteUseCase,
+    ChangeClienteStatusUseCase,
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
