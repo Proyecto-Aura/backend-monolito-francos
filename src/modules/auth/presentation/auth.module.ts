@@ -17,6 +17,8 @@ import { PrismaRefreshTokenRepository } from '../infrastructure/repositories/pri
 import { EmailService } from '../domain/services/email.service';
 import { NodemailerEmailService } from '../infrastructure/services/nodemailer-email.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { AuthController } from './controllers/auth.controller';
 import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filter';
 
@@ -38,6 +40,8 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     RefreshTokenUseCase,
     LogoutUseCase,
     JwtStrategy,
+    JwtAuthGuard,
+    RolesGuard,
     { provide: RegistroRepository, useClass: PrismaRegistroRepository },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
     { provide: EmailService, useClass: NodemailerEmailService },
