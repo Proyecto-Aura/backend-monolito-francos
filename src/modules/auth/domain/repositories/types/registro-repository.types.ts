@@ -2,6 +2,7 @@ import {
   TipoDocumento,
   TipoCliente,
   CategoriaCliente,
+  AreaEmpleado,
 } from '../../../../persons/domain/enums/persons.enums';
 import {
   PersonaEntity,
@@ -50,7 +51,7 @@ export interface RegisterEmpleadoParams {
   persona: RegisterPersonaData;
   empleado: {
     cargo: string | null;
-    area: string | null;
+    area: AreaEmpleado | null;
     fecha_ingreso: Date | null;
     fecha_des_lab: Date | null;
   };

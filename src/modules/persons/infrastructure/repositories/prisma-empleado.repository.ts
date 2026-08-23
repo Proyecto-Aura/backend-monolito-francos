@@ -29,12 +29,7 @@ export class PrismaEmpleadoRepository implements EmpleadoRepository {
     const where: Prisma.EmpleadoWhereInput = {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
       ...(params.search
-        ? {
-            OR: [
-              { cargo: { contains: params.search, mode: 'insensitive' } },
-              { area: { contains: params.search, mode: 'insensitive' } },
-            ],
-          }
+        ? { cargo: { contains: params.search, mode: 'insensitive' } }
         : {}),
     };
     const [empleados, total] = await this.prisma.$transaction([

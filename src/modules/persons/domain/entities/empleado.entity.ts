@@ -1,9 +1,11 @@
+import { AreaEmpleado } from '../enums/persons.enums';
+
 export class EmpleadoEntity {
   constructor(
     public readonly id: string,
     public readonly persona_id: string,
     public cargo: string | null,
-    public area: string | null,
+    public area: AreaEmpleado | null,
     public fecha_ingreso: Date | null,
     public fecha_des_lab: Date | null,
     public estado: boolean,

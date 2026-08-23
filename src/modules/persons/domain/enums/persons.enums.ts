@@ -21,3 +21,10 @@ export enum ReferenciaTipo {
   REEMBOLSO = 'reembolso',
   PROMOCION = 'promocion',
 }
+
+export enum AreaEmpleado {
+  VENTAS = 'ventas',
+  ALMACEN = 'almacen',
+  PRODUCCION = 'produccion',
+  ADMINISTRACION = 'administracion',
+}
