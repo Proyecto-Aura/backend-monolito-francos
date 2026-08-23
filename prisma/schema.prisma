@@ -44,6 +44,15 @@ enum ReferenciaTipo {
   @@map("referencia_tipo_enum")
 }
 
+enum AreaEmpleado {
+  ventas
+  almacen
+  produccion
+  administracion
+
+  @@map("area_empleado_enum")
+}
+
 enum TipoEventoNotificacion {
   pago_confirmado
   pago_rechazado
@@ -103,7 +112,7 @@ model Empleado {
   id            String    @id(map: "pk_empleado") @default(uuid()) @db.Uuid
   persona_id    String    @unique(map: "uq_empleado_persona_id") @db.Uuid
   cargo         String?   @db.VarChar(100)
-  area          String?   @db.VarChar(100)
+  area          AreaEmpleado?
   fecha_ingreso DateTime? @db.Date
   fecha_des_lab DateTime? @db.Date
   estado        Boolean   @default(true)

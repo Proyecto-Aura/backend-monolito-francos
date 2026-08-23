@@ -9,7 +9,7 @@ import {
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
 import { RegisterEmpleadoDto } from '../dto/register-empleado.dto';
-import { TipoDocumento } from '../../../persons/domain/enums/persons.enums';
+import { TipoDocumento, AreaEmpleado } from '../../../persons/domain/enums/persons.enums';
 import { buildDefaultCredentials } from '../utils/default-credentials.util';
 import { RegistroEmpleadoResult } from '../../domain/repositories/types/registro-repository.types';
 
@@ -63,7 +63,7 @@ export class RegisterEmpleadoUseCase {
       },
       empleado: {
         cargo: dto.cargo,
-        area: dto.area,
+        area: dto.area as AreaEmpleado,
         fecha_ingreso: dto.fecha_ingreso ? new Date(dto.fecha_ingreso) : new Date(),
         fecha_des_lab: null,
       },

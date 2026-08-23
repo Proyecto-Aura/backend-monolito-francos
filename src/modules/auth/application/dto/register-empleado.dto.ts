@@ -9,7 +9,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { TipoDocumento } from '@prisma/client';
+import { TipoDocumento, AreaEmpleado } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterEmpleadoDto {
@@ -65,11 +65,9 @@ export class RegisterEmpleadoDto {
   @MaxLength(100)
   cargo!: string;
 
-  @ApiProperty({ example: 'Ventas', maxLength: 100 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  area!: string;
+  @ApiProperty({ enum: AreaEmpleado, example: AreaEmpleado.ventas })
+  @IsEnum(AreaEmpleado)
+  area!: AreaEmpleado;
 
   @ApiPropertyOptional({
     example: '2026-08-19',
