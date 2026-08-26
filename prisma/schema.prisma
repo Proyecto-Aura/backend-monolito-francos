@@ -126,7 +126,7 @@ model Empleado {
 model Cliente {
   id                String           @id(map: "pk_cliente") @default(uuid()) @db.Uuid
   persona_id        String           @unique(map: "uq_cliente_persona_id") @db.Uuid
-  tipo_cliente      TipoCliente?
+  tipo_cliente      TipoCliente
   razon_social      String?          @db.VarChar(200)
   categoria_cliente CategoriaCliente
   estado            Boolean          @default(true)
