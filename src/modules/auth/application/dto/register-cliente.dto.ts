@@ -5,6 +5,7 @@ import {
 } from 'class-validator';
 import { TipoDocumento, TipoCliente, CategoriaCliente } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumeroDocumentoValido } from '../../../../common/validators/numero-documento.validator';
 
 export class RegisterClienteDto {
   // --- datos de Persona ---
@@ -34,6 +35,7 @@ export class RegisterClienteDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
+  @IsNumeroDocumentoValido()
   numero_documento!: string;
 
   @ApiPropertyOptional({ example: '987654321', maxLength: 9 })

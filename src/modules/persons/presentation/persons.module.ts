@@ -49,9 +49,14 @@ import {
 import { EmpleadoRepository } from '../domain/repositories/empleado.repository';
 import { PrismaEmpleadoRepository } from '../infrastructure/repositories/prisma-empleado.repository';
 import { EmpleadosController } from './controllers/empleados.controller';
+import { ClientesController } from './controllers/clientes.controller';
 import { RolesController } from './controllers/roles.controller';
 import { RutasController } from './controllers/rutas.controller';
 import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception.filter';
+import { ChangeClienteStatusUseCase } from '../application/use-cases/clientes/change-cliente-status.use-case';
+import { GetClienteByIdUseCase } from '../application/use-cases/clientes/get-cliente-by-id.use-case';
+import { ListClientesUseCase } from '../application/use-cases/clientes/list-cliente.use-case';
+import { UpdateClienteUseCase } from '../application/use-cases/clientes/update-cliente.use-case';
 import { ClienteRepository } from '../domain/repositories/cliente.repository';
 import { PrismaClienteRepository } from '../infrastructure/repositories/prisma-cliente.repository';
 import { UserRepository } from '../domain/repositories/user.repository';
@@ -67,6 +72,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     PersonasController,
     EmpresasController,
     EmpleadosController,
+    ClientesController,
   ],
   providers: [
     CreateRolUseCase,
@@ -121,6 +127,10 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     UpdateEmpleadoUseCase,
     ChangeEmpleadoStatusUseCase,
     { provide: EmpleadoRepository, useClass: PrismaEmpleadoRepository },
+    GetClienteByIdUseCase,
+    ListClientesUseCase,
+    UpdateClienteUseCase,
+    ChangeClienteStatusUseCase,
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
