@@ -29,9 +29,12 @@ export class ClientesController {
     private readonly listClientes: ListClientesUseCase,
     private readonly updateCliente: UpdateClienteUseCase,
     private readonly changeStatus: ChangeClienteStatusUseCase,
-  ) {}
+  ) { }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar clientes' })
   async findAll(@Query() query: ListClientesQueryDto) {
     return ClientePresenter.paginatedToHttp(
@@ -40,6 +43,9 @@ export class ClientesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener un cliente por ID' })
   @ApiParam({ name: 'id', format: 'uuid' })
   async findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
