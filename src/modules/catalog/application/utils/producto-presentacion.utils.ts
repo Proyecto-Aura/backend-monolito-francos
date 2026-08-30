@@ -47,3 +47,52 @@ export function validateWholesalePrice(
     );
   }
 }
+
+interface PromocionData {
+  tipo: string;
+  valor: number;
+  cantidad_paga?: number | null;
+  cantidad_lleva?: number | null;
+  cantidad_minima?: number | null;
+  producto_presentacion_regalo_id?: number | null;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+}
+
+export function validatePromocion(promocion: PromocionData): void {
+  if (promocion.fecha_fin < promocion.fecha_inicio) {
+    throw new ResourceConflictError(
+      'La fecha fin de la promoción no puede ser anterior a la fecha de inicio',
+    );
+  }
+
+  if (promocion.tipo === 'porcentaje' && promocion.valor > 100) {
+    throw new ResourceConflictError(
+      'El porcentaje de la promoción no puede ser mayor a 100',
+    );
+  }
+
+  if (promocion.tipo === 'nxm') {
+    if (promocion.cantidad_paga == null || promocion.cantidad_lleva == null) {
+      throw new ResourceConflictError(
+        'Las promociones nxm requieren cantidad_paga y cantidad_lleva',
+      );
+    }
+
+    if (promocion.cantidad_lleva <= promocion.cantidad_paga) {
+      throw new ResourceConflictError(
+        'La cantidad_lleva debe ser mayor que la cantidad_paga',
+      );
+    }
+  }
+
+  if (
+    promocion.tipo === 'regalo' &&
+    (promocion.cantidad_minima == null ||
+      promocion.producto_presentacion_regalo_id == null)
+  ) {
+    throw new ResourceConflictError(
+      'Las promociones de regalo requieren cantidad_minima y producto_presentacion_regalo_id',
+    );
+  }
+}

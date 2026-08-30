@@ -8,9 +8,11 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -25,6 +27,9 @@ import { GetProductoPresentacionUseCase } from '../../application/use-cases/prod
 import { ListProductoPresentacionesUseCase } from '../../application/use-cases/producto_presentacion/list-producto_presentacion.use-case';
 import { UpdateProductoPresentacionUseCase } from '../../application/use-cases/producto_presentacion/update-producto_presentacion.use-case';
 import { ProductoPresentacionPresenter } from '../presenters/producto_presentacion.presenter';
+import { JwtAuthGuard } from '../../../auth/presentation/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../auth/presentation/guards/roles.guard';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Producto-presentaciones')
 @Controller('producto-presentaciones')
@@ -38,6 +43,9 @@ export class ProductoPresentacionesController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Agregar una presentación a un producto' })
   @ApiCreatedResponse({
     description: 'Producto presentación creada correctamente',
@@ -67,6 +75,9 @@ export class ProductoPresentacionesController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Actualizar una producto-presentación' })
   @ApiParam({ name: 'id', type: Number })
   async update(
@@ -79,6 +90,9 @@ export class ProductoPresentacionesController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Desactivar una producto-presentación' })
   @ApiParam({ name: 'id', type: Number })
   async deactivate(@Param('id', ParseIntPipe) id: number) {
@@ -88,6 +102,9 @@ export class ProductoPresentacionesController {
   }
 
   @Patch(':id/activate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ventas')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivar una producto-presentación' })
   @ApiParam({ name: 'id', type: Number })
   async activate(@Param('id', ParseIntPipe) id: number) {

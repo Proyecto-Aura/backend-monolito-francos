@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ListProductoQueryDto } from '../../dto/producto-dtos/list-producto-query.dto';
-import { ProductoEntity } from '../../../domain/entities/producto.entity';
 import { ProductoRepository } from '../../../domain/repositories/producto.repository';
 import { PaginatedResult } from '../../../domain/repositories/types/pagination.types';
+import { ProductoCatalogo } from '../../../domain/repositories/types/producto-repository.types';
 
 @Injectable()
 export class ListProductosUseCase {
   constructor(private readonly productoRepository: ProductoRepository) {}
 
-  execute(dto: ListProductoQueryDto): Promise<PaginatedResult<ProductoEntity>> {
+  execute(
+    dto: ListProductoQueryDto,
+  ): Promise<PaginatedResult<ProductoCatalogo>> {
     return this.productoRepository.findMany({
       page: dto.page,
       limit: dto.limit,

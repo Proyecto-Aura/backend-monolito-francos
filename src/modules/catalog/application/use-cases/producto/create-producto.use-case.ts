@@ -3,13 +3,16 @@ import { CreateProductoWithPresentacionesDto } from '../../dto/producto-dtos/cre
 import { ProductoRepository } from '../../../domain/repositories/producto.repository';
 import { CategoriaRepository } from '../../../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../../../domain/repositories/presentacion.repository';
-import { ProductoWithPresentaciones } from '../../../domain/repositories/types/producto-repository.types';
+import { ProductoPresentacionRepository } from '../../../domain/repositories/producto_presentacion.repository';
+import { ProductoCatalogo } from '../../../domain/repositories/types/producto-repository.types';
+import { TipoPromocion } from '../../../domain/enums';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/catalog-domain.errors';
 import {
   createProductoPresentacionSlug,
+  validatePromocion,
   validateWholesalePrice,
 } from '../../utils/producto-presentacion.utils';
 
@@ -19,11 +22,12 @@ export class CreateProductoUseCase {
     private readonly productoRepository: ProductoRepository,
     private readonly categoriaRepository: CategoriaRepository,
     private readonly presentacionRepository: PresentacionRepository,
+    private readonly productoPresentacionRepository: ProductoPresentacionRepository,
   ) {}
 
   async execute(
     dto: CreateProductoWithPresentacionesDto,
-  ): Promise<ProductoWithPresentaciones> {
+  ): Promise<ProductoCatalogo> {
     const nombre = dto.nombre.trim().replace(/\s+/g, ' ');
     const productoExiste = await this.productoRepository.existsByName(nombre);
 
@@ -90,6 +94,10 @@ export class CreateProductoUseCase {
           productoPresentacion.umbral_mayorista,
         );
 
+        for (const promocion of productoPresentacion.promociones ?? []) {
+          validatePromocion(promocion);
+        }
+
         return {
           precio_unitario: productoPresentacion.precio_unitario,
           precio_mayorista: productoPresentacion.precio_mayorista ?? null,
@@ -98,9 +106,52 @@ export class CreateProductoUseCase {
           imagen_url: productoPresentacion.imagen_url ?? null,
           slug: createProductoPresentacionSlug(nombre, presentacion),
           estado: productoPresentacion.estado ?? true,
+          promociones: (productoPresentacion.promociones ?? []).map(
+            (promocion) => ({
+              nombre: promocion.nombre.trim().replace(/\s+/g, ' '),
+              tipo: promocion.tipo as TipoPromocion,
+              valor: promocion.valor,
+              cantidad_paga: promocion.cantidad_paga ?? null,
+              cantidad_lleva: promocion.cantidad_lleva ?? null,
+              cantidad_minima: promocion.cantidad_minima ?? null,
+              producto_presentacion_regalo_id:
+                promocion.producto_presentacion_regalo_id ?? null,
+              fecha_inicio: promocion.fecha_inicio,
+              fecha_fin: promocion.fecha_fin,
+              estado: promocion.estado ?? true,
+            }),
+          ),
         };
       },
     );
+
+    const idsRegalo = [
+      ...new Set(
+        producto_presentaciones.flatMap((productoPresentacion) =>
+          productoPresentacion.promociones
+            .map((promocion) => promocion.producto_presentacion_regalo_id)
+            .filter((id): id is number => id !== null),
+        ),
+      ),
+    ];
+
+    const presentacionesRegalo = await Promise.all(
+      idsRegalo.map((id) => this.productoPresentacionRepository.findById(id)),
+    );
+
+    presentacionesRegalo.forEach((presentacionRegalo, index) => {
+      if (!presentacionRegalo) {
+        throw new ResourceNotFoundError(
+          `Producto presentación de regalo ${idsRegalo[index]} no encontrada`,
+        );
+      }
+
+      if (!presentacionRegalo.estado) {
+        throw new ResourceConflictError(
+          `La producto presentación de regalo ${idsRegalo[index]} no está activa`,
+        );
+      }
+    });
 
     /* -------Inserción final a la BD--------------------------- */
     return this.productoRepository.createWithPresentaciones({
@@ -109,7 +160,7 @@ export class CreateProductoUseCase {
       descripcion: dto.descripcion ?? null,
       estado: dto.estado ?? true,
       destacado: dto.destacado,
-      producto_presentaciones: producto_presentaciones,
+      producto_presentaciones,
     });
   }
 }

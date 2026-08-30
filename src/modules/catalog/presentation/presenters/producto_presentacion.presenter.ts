@@ -1,5 +1,7 @@
 import { ProductoPresentacionEntity } from '../../domain/entities';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
+import { ProductoPresentacionWithPromociones } from '../../domain/repositories/types/producto-repository.types';
+import { PromocionPresenter } from './promocion.presenter';
 
 export class ProductoPresentacionPresenter {
   static toHttp(producto_presentacion: ProductoPresentacionEntity) {
@@ -28,6 +30,17 @@ export class ProductoPresentacionPresenter {
         limit: result.limit,
         total_pages: Math.ceil(result.total / result.limit),
       },
+    };
+  }
+
+  static withPromocionesToHttp(
+    productoPresentacion: ProductoPresentacionWithPromociones,
+  ) {
+    return {
+      ...this.toHttp(productoPresentacion),
+      promociones: productoPresentacion.promociones.map((promocion) =>
+        PromocionPresenter.toHttp(promocion),
+      ),
     };
   }
 }

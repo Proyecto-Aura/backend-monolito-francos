@@ -6,13 +6,27 @@ import { PaginatedResult } from '../../domain/repositories/types/pagination.type
 import {
   CreateProductoParams,
   CreateProductoWithPresentacionesParams,
-  ProductoWithPresentaciones,
+  ProductoCatalogo,
   ListProductosParams,
   UpdateProductoParams,
+  UpdateProductoWithPresentacionesParams,
 } from '../../domain/repositories/types/producto-repository.types';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { ProductoMapper } from '../mappers/producto.mapper';
 import { ProductoPresentacionMapper } from '../mappers/producto_presentacion.mapper';
+import { PromocionMapper } from '../mappers/promocion.mapper';
+
+const productoCatalogoInclude = {
+  producto_presentaciones: {
+    include: {
+      promociones: true,
+    },
+  },
+} satisfies Prisma.ProductoInclude;
+
+type PrismaProductoCatalogo = Prisma.ProductoGetPayload<{
+  include: typeof productoCatalogoInclude;
+}>;
 
 @Injectable()
 export class PrismaProductoRepository implements ProductoRepository {
@@ -28,7 +42,7 @@ export class PrismaProductoRepository implements ProductoRepository {
   // Inicia transaccion: crear producto con presentaciones
   async createWithPresentaciones(
     params: CreateProductoWithPresentacionesParams,
-  ): Promise<ProductoWithPresentaciones> {
+  ): Promise<ProductoCatalogo> {
     return this.prisma.$transaction(async (tx) => {
       const producto = await tx.producto.create({
         data: {
@@ -40,37 +54,53 @@ export class PrismaProductoRepository implements ProductoRepository {
         },
       });
 
-      const producto_presentaciones = await Promise.all(
-        params.producto_presentaciones.map((p) =>
-          tx.productoPresentacion.create({
+      for (const productoPresentacion of params.producto_presentaciones) {
+        const { promociones, ...productoPresentacionData } =
+          productoPresentacion;
+        const productoPresentacionCreada = await tx.productoPresentacion.create(
+          {
             data: {
-              ...p,
+              ...productoPresentacionData,
               producto_id: producto.id,
-              sku: `FR-P${producto.id}-PR${p.presentacion_id}`,
+              sku: `FR-P${producto.id}-PR${productoPresentacion.presentacion_id}`,
             },
-          }),
-        ),
-      );
+          },
+        );
 
-      return {
-        ...ProductoMapper.toDomain(producto),
-        producto_presentaciones: producto_presentaciones.map((pro) =>
-          ProductoPresentacionMapper.toDomain(pro),
-        ),
-      };
+        for (const promocion of promociones) {
+          await tx.promocion.create({
+            data: {
+              ...promocion,
+              producto_presentacion_id: productoPresentacionCreada.id,
+            },
+          });
+        }
+      }
+
+      const productoCreado = await tx.producto.findUnique({
+        where: { id: producto.id },
+        include: productoCatalogoInclude,
+      });
+
+      if (!productoCreado) {
+        throw new Error('No se pudo recuperar el producto creado');
+      }
+
+      return this.toCatalogo(productoCreado);
     });
   }
 
-  async findById(id: number): Promise<ProductoEntity | null> {
+  async findById(id: number): Promise<ProductoCatalogo | null> {
     const producto = await this.prisma.producto.findUnique({
       where: { id },
+      include: productoCatalogoInclude,
     });
-    return producto ? ProductoMapper.toDomain(producto) : null;
+    return producto ? this.toCatalogo(producto) : null;
   }
 
   async findMany(
     params: ListProductosParams,
-  ): Promise<PaginatedResult<ProductoEntity>> {
+  ): Promise<PaginatedResult<ProductoCatalogo>> {
     const where: Prisma.ProductoWhereInput = {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
       ...(params.destacado === undefined
@@ -95,12 +125,13 @@ export class PrismaProductoRepository implements ProductoRepository {
         skip: (params.page - 1) * params.limit,
         take: params.limit,
         orderBy: { nombre: 'asc' },
+        include: productoCatalogoInclude,
       }),
       this.prisma.producto.count({ where }),
     ]);
 
     return {
-      data: productos.map((producto) => ProductoMapper.toDomain(producto)),
+      data: productos.map((producto) => this.toCatalogo(producto)),
       total,
       page: params.page,
       limit: params.limit,
@@ -131,11 +162,81 @@ export class PrismaProductoRepository implements ProductoRepository {
     return ProductoMapper.toDomain(producto);
   }
 
+  async updateWithPresentaciones(
+    id: number,
+    params: UpdateProductoWithPresentacionesParams,
+  ): Promise<ProductoCatalogo> {
+    return this.prisma.$transaction(async (tx) => {
+      const { producto_presentaciones = [], ...productoData } = params;
+
+      await tx.producto.update({
+        where: { id },
+        data: productoData,
+      });
+
+      for (const productoPresentacion of producto_presentaciones) {
+        const {
+          id: productoPresentacionId,
+          promociones,
+          ...presentacionData
+        } = productoPresentacion;
+
+        await tx.productoPresentacion.update({
+          where: { id: productoPresentacionId },
+          data: presentacionData,
+        });
+
+        for (const promocion of promociones ?? []) {
+          const { id: promocionId, ...promocionData } = promocion;
+
+          if (promocionId === undefined) {
+            await tx.promocion.create({
+              data: {
+                ...promocionData,
+                producto_presentacion_id: productoPresentacionId,
+              },
+            });
+          } else {
+            await tx.promocion.update({
+              where: { id: promocionId },
+              data: promocionData,
+            });
+          }
+        }
+      }
+
+      const productoActualizado = await tx.producto.findUnique({
+        where: { id },
+        include: productoCatalogoInclude,
+      });
+
+      if (!productoActualizado) {
+        throw new Error('No se pudo recuperar el producto actualizado');
+      }
+
+      return this.toCatalogo(productoActualizado);
+    });
+  }
+
   async setStatus(id: number, estado: boolean): Promise<ProductoEntity> {
     const producto = await this.prisma.producto.update({
       where: { id },
       data: { estado: estado },
     });
     return ProductoMapper.toDomain(producto);
+  }
+
+  private toCatalogo(producto: PrismaProductoCatalogo): ProductoCatalogo {
+    return {
+      ...ProductoMapper.toDomain(producto),
+      producto_presentaciones: producto.producto_presentaciones.map(
+        (productoPresentacion) => ({
+          ...ProductoPresentacionMapper.toDomain(productoPresentacion),
+          promociones: productoPresentacion.promociones.map((promocion) =>
+            PromocionMapper.toDomain(promocion),
+          ),
+        }),
+      ),
+    };
   }
 }

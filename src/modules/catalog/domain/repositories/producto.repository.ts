@@ -4,24 +4,29 @@ import {
   CreateProductoParams,
   CreateProductoWithPresentacionesParams,
   ListProductosParams,
-  ProductoWithPresentaciones,
+  ProductoCatalogo,
   UpdateProductoParams,
+  UpdateProductoWithPresentacionesParams,
 } from './types/producto-repository.types';
 
 export abstract class ProductoRepository {
   abstract create(params: CreateProductoParams): Promise<ProductoEntity>;
   abstract createWithPresentaciones(
     params: CreateProductoWithPresentacionesParams,
-  ): Promise<ProductoWithPresentaciones>;
-  abstract findById(id: number): Promise<ProductoEntity | null>;
+  ): Promise<ProductoCatalogo>;
+  abstract findById(id: number): Promise<ProductoCatalogo | null>;
   abstract findMany(
     params: ListProductosParams,
-  ): Promise<PaginatedResult<ProductoEntity>>;
+  ): Promise<PaginatedResult<ProductoCatalogo>>;
   abstract existsByName(nombre: string, excludeId?: number): Promise<boolean>;
   // se podria agregar buscar productos por categoria
   abstract update(
     id: number,
     params: UpdateProductoParams,
   ): Promise<ProductoEntity>;
+  abstract updateWithPresentaciones(
+    id: number,
+    params: UpdateProductoWithPresentacionesParams,
+  ): Promise<ProductoCatalogo>;
   abstract setStatus(id: number, estado: boolean): Promise<ProductoEntity>;
 }

@@ -48,13 +48,13 @@ export class CreateProductoPresentacionDto {
   @IsPositive()
   presentacion_id!: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'https://example.com/arroz-superior-1kg.jpg',
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @IsUrl()
-  imagen_url?: string;
+  imagen_url!: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
