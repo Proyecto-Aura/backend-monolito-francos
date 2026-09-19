@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CategoriaRepository } from '../../../domain/repositories/categoria.repository';
 import { CategoriaEntity } from '../../../domain/entities';
 import { CreateCategoriaDto } from '../../dto/categoria-dtos/create-categoria.dto';
-import { ResourceConflictError } from 'src/modules/catalog/domain/errors/catalog-domain.errors';
+import { ResourceConflictError } from '../../../domain/errors/catalog-domain.errors';
 
 @Injectable()
 export class CreateCategoriaUseCase {
