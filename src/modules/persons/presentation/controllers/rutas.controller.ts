@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -28,8 +29,11 @@ import { ListRutasUseCase } from '../../application/use-cases/rutas/list-rutas.u
 import { MoveRutaUseCase } from '../../application/use-cases/rutas/move-ruta.use-case';
 import { UpdateRutaUseCase } from '../../application/use-cases/rutas/update-ruta.use-case';
 import { RutaPresenter } from '../presenters/ruta.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Rutas')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller('rutas')
 export class RutasController {
   constructor(
