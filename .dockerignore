@@ -18,3 +18,5 @@ Dockerfile
 
 coverage
 *.log
+.claude
+.codex
