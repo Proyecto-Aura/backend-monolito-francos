@@ -1,5 +1,6 @@
 {
   "name": "proyecto-monolito-francos",
+  "packageManager": "pnpm@11.10.0",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -79,6 +80,9 @@
       "prisma",
       "unrs-resolver"
     ]
+  },
+  "engines": {
+    "node": ">=24 <25"
   },
   "jest": {
     "moduleFileExtensions": [
