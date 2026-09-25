@@ -6,15 +6,19 @@ Sistema web de gestión empresarial para FRANCO'S Snacks Naturales. Monolito mod
 
 | Herramienta | Versión | Rol |
 |-------------|---------|-----|
-| Node.js | v26 | Runtime |
+| Node.js | 24 LTS (`.nvmrc`) | Runtime |
 | TypeScript | 5.x | Lenguaje |
 | NestJS | 11 | Framework |
 | Prisma | 7 | ORM (`prisma-client-js` + `@prisma/adapter-pg`) |
-| PostgreSQL | 16 | Base de datos |
+| PostgreSQL | 17.10 | Base de datos |
 | JWT + bcrypt | — | Autenticación |
 | Swagger | — | Documentación API (`/api/docs`) |
-| Docker | — | Base de datos local |
-| pnpm | 11 | Package manager |
+| Docker | — | Base de datos local e imagen de despliegue |
+| pnpm | 11.10 (`packageManager`) | Package manager |
+
+## Contribuir
+
+Convenciones del equipo (ramas, commits, tests, Definition of Done y qué hace el CI): **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## Módulos de dominio
 
