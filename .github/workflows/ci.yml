@@ -31,20 +31,8 @@ jobs:
       - name: Descargar Codigo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Instalar node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
-
-      - name: Generar el cliente de prisma
-        run: pnpm exec prisma generate
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
 
       - name: Compilar
         run: pnpm build
@@ -58,20 +46,8 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Instalar Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
-
-      - name: Generar cliente Prisma
-        run: pnpm exec prisma generate
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
 
       - name: ESLint
         run: pnpm lint:check
@@ -88,20 +64,8 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Instalar Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
-
-      - name: Generar cliente Prisma
-        run: pnpm exec prisma generate
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
 
       - name: Tests unitarios
         run: pnpm test --ci
@@ -139,20 +103,8 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Instalar Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Instalar dependencias
-        run: pnpm install --frozen-lockfile
-
-      - name: Generar cliente Prisma
-        run: pnpm exec prisma generate
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
 
       - name: Aplicar migraciones
         run: pnpm exec prisma migrate deploy
