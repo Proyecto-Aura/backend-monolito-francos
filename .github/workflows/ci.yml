@@ -162,3 +162,56 @@ jobs:
 
       - name: Tests e2e
         run: pnpm test:e2e --ci
+
+  docker:
+    name: docker
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Construir imagen
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: francos-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (la imagen arranca y responde)
+        run: |
+          set -euo pipefail
+
+          docker run -d --name smoke -p 3000:3000 \
+            -e DATABASE_URL=postgresql://ci:ci@localhost:5432/francos_ci \
+            -e JWT_SECRET=ci-only-not-a-real-secret \
+            -e FRONTEND_URL=http://localhost:4200 \
+            -e SMTP_HOST=localhost \
+            -e SMTP_USER=ci \
+            -e SMTP_PASS=ci \
+            -e SMTP_FROM=ci@francos.test \
+            francos-backend:ci
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/docs > /dev/null; then
+              echo "La aplicación responde"
+              estado=$(docker inspect -f '{{.State.Health.Status}}' smoke)
+              echo "Estado del HEALTHCHECK: $estado"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "La aplicación no respondió en 60 s"
+          docker logs smoke
+          exit 1
+
+      - name: Limpiar
+        if: ${{ always() }}
+        run: docker rm -f smoke || true
