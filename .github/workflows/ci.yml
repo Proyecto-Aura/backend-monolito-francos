@@ -1,0 +1,212 @@
+##################
+#     CONFIG     #
+##################
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref_name }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+##################
+#      JOBS      #
+##################
+jobs:
+  # Build
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar Codigo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: Compilar
+        run: pnpm build
+
+  # Lint
+  lint:
+    name: lint
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true # temporal: deuda de formato heredada
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: ESLint
+        run: pnpm lint:check
+
+      - name: Prettier
+        if: ${{ !cancelled() }} # ejecuta este step aunque uno anterior haya fallado
+        run: pnpm format:check
+
+  # Test unitarios
+  test-unit:
+    name: test-unit
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: Tests unitarios
+        run: pnpm test --ci
+
+  # Test end-to-end
+  test-e2e:
+    name: test-e2e
+    needs: build
+    runs-on: ubuntu-latest
+    # levantamos una base de datos postgres para las pruebas de integración (docker)
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: francos_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d francos_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # variables de entorno para las pruebas de integración
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/francos_ci
+      JWT_SECRET: ci-only-not-a-real-secret
+      FRONTEND_URL: http://localhost:4200
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_USER: ci
+      SMTP_PASS: ci
+      SMTP_FROM: ci@francos.test
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: Aplicar migraciones
+        run: pnpm exec prisma migrate deploy
+
+      - name: Cargar datos semilla
+        run: pnpm exec prisma db seed
+
+      - name: Tests e2e
+        run: pnpm test:e2e --ci
+
+  # Docker (test imagen backend y prueba de humo)
+  docker:
+    name: docker
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Construir imagen
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: francos-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (la imagen arranca y responde)
+        run: |
+          set -euo pipefail
+
+          docker run -d --name smoke -p 3000:3000 \
+            -e DATABASE_URL=postgresql://ci:ci@localhost:5432/francos_ci \
+            -e JWT_SECRET=ci-only-not-a-real-secret \
+            -e FRONTEND_URL=http://localhost:4200 \
+            -e SMTP_HOST=localhost \
+            -e SMTP_USER=ci \
+            -e SMTP_PASS=ci \
+            -e SMTP_FROM=ci@francos.test \
+            francos-backend:ci
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/docs > /dev/null; then
+              echo "La aplicación responde"
+              estado=$(docker inspect -f '{{.State.Health.Status}}' smoke)
+              echo "Estado del HEALTHCHECK: $estado"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "La aplicación no respondió en 60 s"
+          docker logs smoke
+          exit 1
+
+      - name: Vulnerabilidades del sistema operativo de la imagen
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: francos-backend:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          ignore-unfixed: true
+
+      - name: Limpiar
+        if: ${{ always() }}
+        run: docker rm -f smoke || true
+
+  security:
+    name: security
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: Dependencias vulnerables (bloquea solo en críticas)
+        run: pnpm audit --prod --audit-level critical
+
+      - name: Informe completo de vulnerabilidades
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: pnpm audit --prod
+
+      - name: Secretos filtrados
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+            detect --source=/repo --no-banner --redact --verbose

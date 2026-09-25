@@ -1,0 +1,87 @@
+version: 2
+
+# Las actualizaciones de SEGURIDAD (por CVE) no dependen de este archivo:
+# llegan de inmediato desde las alertas del repositorio. Aqui solo se
+# programan las actualizaciones de version rutinarias, por eso el intervalo
+# mensual: baja el ruido sin retrasar los parches de seguridad.
+
+updates:
+  # 1. Actions usadas en los workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencias
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # 2. Actions usadas dentro de nuestra composite action.
+  # Hace falta una entrada propia: Dependabot solo busca en /.github/workflows
+  # y en el action.yml de la raiz, no en .github/actions/*/action.yml
+  - package-ecosystem: github-actions
+    directory: /.github/actions/setup
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencias
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # 3. Imagen base del Dockerfile
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: fix
+    labels:
+      - dependencias
+
+  # 4. Dependencias de npm/pnpm (Dependabot maneja pnpm dentro del ecosistema npm)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    labels:
+      - dependencias
+    ignore:
+      # Node esta fijado en 24 LTS (.nvmrc); los tipos deben seguir esa major
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+    groups:
+      # Cada dependencia cae en el PRIMER grupo cuyo patron coincida, por eso
+      # prisma y nestjs van arriba: deben moverse juntos aunque unos sean
+      # dependencies y otros devDependencies. Si la CLI de Prisma y el cliente
+      # se separan, el cliente generado deja de coincidir con la CLI.
+      prisma:
+        patterns:
+          - prisma
+          - "@prisma/*"
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+      # El resto se agrupa por tipo, solo minor y patch: las majors quedan
+      # fuera a proposito, cada una en su PR, para revisarlas con calma
+      produccion:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      desarrollo:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
