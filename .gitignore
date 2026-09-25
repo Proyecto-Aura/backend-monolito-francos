@@ -6,4 +6,8 @@ node_modules
 
 /generated/prisma
 
+# Contexto local para agentes de IA (cada quien trabaja con su propia config)
+AGENTS.md
+CLAUDE.md
+/plans/
 

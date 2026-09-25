@@ -367,3 +367,40 @@ model Promocion {
 
   @@map("promocion")
 }
+
+/**
+ * #########################################################
+ * ##   BLOQUE 3: TABLAS relacionadas a estrategia        ##
+ * #########################################################
+ */
+
+model EstadoPlanEstrategico {
+  id         Int      @id(map: "pk_estado_plan_estrategico") @default(autoincrement())
+  codigo     String   @unique(map: "uq_estado_plan_codigo") @db.VarChar(20)
+  nombre     String   @db.VarChar(100)
+  orden      Int      @unique(map: "uq_estado_plan_orden") @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  planes_estrategicos PlanEstrategico[]
+
+  @@map("estado_plan_estrategico")
+}
+
+model PlanEstrategico {
+  id             Int      @id(map: "pk_plan_estrategico") @default(autoincrement())
+  codigo         String   @db.VarChar(10)
+  nombre         String   @db.VarChar(200)
+  descripcion    String?  @db.Text
+  anio_inicio    Int      @db.SmallInt
+  anio_fin       Int      @db.SmallInt
+  estado_plan_id Int      @default(1)
+  estado         Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  estado_plan EstadoPlanEstrategico @relation(fields: [estado_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_plan_estrategico_estado")
+
+  @@map("plan_estrategico")
+}
