@@ -24,6 +24,7 @@ concurrency:
 #      JOBS      #
 ##################
 jobs:
+  # Build
   build:
     name: build
     runs-on: ubuntu-latest
@@ -37,6 +38,7 @@ jobs:
       - name: Compilar
         run: pnpm build
 
+  # Lint
   lint:
     name: lint
     needs: build
@@ -56,6 +58,7 @@ jobs:
         if: ${{ !cancelled() }} # ejecuta este step aunque uno anterior haya fallado
         run: pnpm format:check
 
+  # Test unitarios
   test-unit:
     name: test-unit
     needs: build
@@ -70,6 +73,7 @@ jobs:
       - name: Tests unitarios
         run: pnpm test --ci
 
+  # Test end-to-end
   test-e2e:
     name: test-e2e
     needs: build
@@ -115,6 +119,7 @@ jobs:
       - name: Tests e2e
         run: pnpm test:e2e --ci
 
+  # Docker (test imagen backend y prueba de humo)
   docker:
     name: docker
     needs: build
@@ -164,6 +169,44 @@ jobs:
           docker logs smoke
           exit 1
 
+      - name: Vulnerabilidades del sistema operativo de la imagen
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: francos-backend:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          ignore-unfixed: true
+
       - name: Limpiar
         if: ${{ always() }}
         run: docker rm -f smoke || true
+
+  security:
+    name: security
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Preparar entorno
+        uses: ./.github/actions/setup
+
+      - name: Dependencias vulnerables (bloquea solo en críticas)
+        run: pnpm audit --prod --audit-level critical
+
+      - name: Informe completo de vulnerabilidades
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: pnpm audit --prod
+
+      - name: Secretos filtrados
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+            detect --source=/repo --no-banner --redact --verbose
