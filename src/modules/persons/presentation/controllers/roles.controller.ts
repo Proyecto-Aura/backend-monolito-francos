@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,8 +26,11 @@ import { GetRolByIdUseCase } from '../../application/use-cases/roles/get-rol-by-
 import { ListRolesUseCase } from '../../application/use-cases/roles/list-roles.use-case';
 import { UpdateRolUseCase } from '../../application/use-cases/roles/update-rol.use-case';
 import { RolPresenter } from '../presenters/rol.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Roles')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller('roles')
 export class RolesController {
   constructor(

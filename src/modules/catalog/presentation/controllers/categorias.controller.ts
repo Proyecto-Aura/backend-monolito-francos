@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,8 +26,11 @@ import { GetCategoriaByIdUseCase } from '../../application/use-cases/categoria/g
 import { ListCategoriasUseCase } from '../../application/use-cases/categoria/list-categorias.use-case';
 import { UpdateCategoriaUseCase } from '../../application/use-cases/categoria/update-categoria.use-case';
 import { CategoriaPresenter } from '../presenters/categoria.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Categorías')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller('categorias')
 export class CategoriasController {
   constructor(

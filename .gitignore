@@ -6,4 +6,13 @@ node_modules
 
 /generated/prisma
 
+# AI agent config (local only)
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
 
+
+
+# macOS
+.DS_Store

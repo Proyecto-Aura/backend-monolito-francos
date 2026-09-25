@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { envs } from '../../../config/envs';
 import { PersonsModule } from '../../persons/presentation/persons.module';
 import { RegisterClienteUseCase } from '../application/use-cases/register-cliente.use-case';
@@ -28,7 +28,11 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: envs.jwtSecret,
-      signOptions: { expiresIn: envs.jwtAccessExpiresIn as any },
+      signOptions: {
+        expiresIn: envs.jwtAccessExpiresIn as NonNullable<
+          JwtModuleOptions['signOptions']
+        >['expiresIn'],
+      },
     }),
   ],
   controllers: [AuthController],
@@ -40,8 +44,14 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     RefreshTokenUseCase,
     LogoutUseCase,
     JwtStrategy,
-    JwtAuthGuard,
-    RolesGuard,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     { provide: RegistroRepository, useClass: PrismaRegistroRepository },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
     { provide: EmailService, useClass: NodemailerEmailService },

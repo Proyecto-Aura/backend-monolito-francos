@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,8 +26,11 @@ import { GetProductoPresentacionUseCase } from '../../application/use-cases/prod
 import { ListProductoPresentacionesUseCase } from '../../application/use-cases/producto_presentacion/list-producto_presentacion.use-case';
 import { UpdateProductoPresentacionUseCase } from '../../application/use-cases/producto_presentacion/update-producto_presentacion.use-case';
 import { ProductoPresentacionPresenter } from '../presenters/producto_presentacion.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Producto-presentaciones')
+@ApiBearerAuth()
+@Roles('admin', 'ventas')
 @Controller('producto-presentaciones')
 export class ProductoPresentacionesController {
   constructor(
