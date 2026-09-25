@@ -18,5 +18,9 @@ Dockerfile
 
 coverage
 *.log
+test
 .claude
 .codex
+AGENTS.md
+CLAUDE.md
+.DS_Store

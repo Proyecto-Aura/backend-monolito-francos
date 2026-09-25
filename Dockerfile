@@ -1,7 +1,7 @@
 ####################################
 #       STAGE 1: INSTALL DEPS      #
 ####################################
-FROM node:26-alpine as deps
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS deps
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 ####################################
 #       STAGE 2: BUILD             #
 ####################################
-FROM node:26-alpine as build
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 
 WORKDIR /app
 
@@ -26,25 +26,33 @@ COPY . .
 RUN pnpm exec prisma generate
 RUN pnpm build
 
+# La poda va aquí y no en el stage final: borrar en una capa posterior no
+# reduce la imagen, solo marca los archivos como invisibles. Al podar antes
+# del COPY, producción recibe el árbol ya limpio.
+RUN pnpm prune --prod
 
 ####################################
-#       STAGE 3: PROD             #
+#       STAGE 3: PROD              #
 ####################################
-FROM node:26-alpine as prod
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS prod
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN corepack enable
+COPY package.json ./
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/prisma ./prisma
 
-RUN pnpm install --prod --frozen-lockfile
-
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prismao
+USER node
 
 EXPOSE 3000
 
-CMD [ "pnpm", "start:prod" ]
+# TODO: apuntar a GET /api/v1/health cuando exista. /api/docs responde 200
+# solo si Nest levantó, pero sirve una página pesada.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+    CMD wget --spider -q http://localhost:3000/api/docs || exit 1
+
+CMD ["node", "dist/main.js"]
