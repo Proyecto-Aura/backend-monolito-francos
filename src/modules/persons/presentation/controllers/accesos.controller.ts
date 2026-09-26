@@ -6,14 +6,22 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GrantRouteToRoleUseCase } from '../../application/use-cases/accesos/grant-route-to-role.use-case';
 import { ListRoleAccessesUseCase } from '../../application/use-cases/accesos/list-role-accesses.use-case';
 import { ListRouteAccessesUseCase } from '../../application/use-cases/accesos/list-route-accesses.use-case';
 import { RevokeRouteFromRoleUseCase } from '../../application/use-cases/accesos/revoke-route-from-role.use-case';
 import { AccesoPresenter } from '../presenters/acceso.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Accesos')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller()
 export class AccesosController {
   constructor(
