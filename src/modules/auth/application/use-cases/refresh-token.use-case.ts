@@ -22,9 +22,14 @@ export class RefreshTokenUseCase {
 
   async execute(refreshTokenPlano: string): Promise<RefreshTokenResult> {
     const tokenHash = hashToken(refreshTokenPlano);
-    const refreshToken = await this.refreshTokenRepository.findByTokenHash(tokenHash);
+    const refreshToken =
+      await this.refreshTokenRepository.findByTokenHash(tokenHash);
 
-    if (!refreshToken || refreshToken.revoked_at || refreshToken.expires_at < new Date()) {
+    if (
+      !refreshToken ||
+      refreshToken.revoked_at ||
+      refreshToken.expires_at < new Date()
+    ) {
       throw new InvalidCredentialsError('Refresh token inválido o expirado');
     }
 
@@ -33,7 +38,9 @@ export class RefreshTokenUseCase {
       throw new InvalidCredentialsError('Refresh token inválido o expirado');
     }
 
-    const rolesAsignados = await this.usuarioRolRepository.findRolesByUserId(user.id);
+    const rolesAsignados = await this.usuarioRolRepository.findRolesByUserId(
+      user.id,
+    );
     const roles = rolesAsignados.map((r) => r.nombre);
 
     const accessToken = await this.jwtService.signAsync(

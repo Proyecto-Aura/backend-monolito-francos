@@ -1,7 +1,14 @@
 import { Transform, Type } from 'class-transformer';
 import {
-  IsBoolean, IsDateString, IsEmail, IsEnum, IsNotEmpty,
-  IsOptional, IsString, MaxLength, MinLength,
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
 import { TipoDocumento, TipoCliente, CategoriaCliente } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -59,7 +66,10 @@ export class RegisterClienteDto {
   @IsEnum(TipoCliente)
   tipo_cliente!: TipoCliente;
 
-  @ApiPropertyOptional({ example: 'Distribuidora El Sol S.A.C.', maxLength: 200 })
+  @ApiPropertyOptional({
+    example: 'Distribuidora El Sol S.A.C.',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
