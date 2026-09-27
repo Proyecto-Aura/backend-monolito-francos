@@ -11,11 +11,7 @@ import {
 } from '../../domain/errors/auth-domain.errors';
 import { hashPassword } from '../utils/password.util';
 import { generateRandomToken } from '../utils/token.util';
-import {
-  TipoDocumento,
-  TipoCliente,
-  CategoriaCliente,
-} from '../../../../modules/persons/domain/enums/persons.enums';
+import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
 
 // por el momento
@@ -71,7 +67,7 @@ export class RegisterClienteUseCase {
         nombres: dto.nombres,
         apellido_paterno: dto.apellido_paterno,
         apellido_materno: dto.apellido_materno,
-        tipo_documento: dto.tipo_documento as TipoDocumento,
+        tipo_documento: dto.tipo_documento,
         numero_documento: dto.numero_documento,
         telefono: dto.telefono ?? null,
         fecha_nacimiento: dto.fecha_nacimiento
@@ -80,9 +76,9 @@ export class RegisterClienteUseCase {
         direccion: dto.direccion ?? null,
       },
       cliente: {
-        tipo_cliente: dto.tipo_cliente as TipoCliente,
+        tipo_cliente: dto.tipo_cliente,
         razon_social: dto.razon_social ?? null,
-        categoria_cliente: dto.categoria_cliente as CategoriaCliente,
+        categoria_cliente: dto.categoria_cliente,
       },
       user: {
         email: dto.email,

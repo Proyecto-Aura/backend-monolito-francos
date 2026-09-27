@@ -10,6 +10,12 @@ export interface JwtPayload {
   roles: string[];
 }
 
+export interface AuthenticatedUser {
+  userId: string;
+  email: string;
+  roles: string[];
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
@@ -21,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   // si todo pasa, passport lo pega al request
-  validate(payload: JwtPayload) {
+  validate(payload: JwtPayload): AuthenticatedUser {
     return { userId: payload.sub, email: payload.email, roles: payload.roles };
   }
 }

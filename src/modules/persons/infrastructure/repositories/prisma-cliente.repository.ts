@@ -6,7 +6,6 @@ import { ClienteRepository } from '../../domain/repositories/cliente.repository'
 import {
   ListClientesParams,
   UpdateClienteConPersonaParams,
-  UpdateClienteParams,
 } from '../../domain/repositories/types/cliente-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import { ClienteMapper } from '../mappers/cliente.mapper';
