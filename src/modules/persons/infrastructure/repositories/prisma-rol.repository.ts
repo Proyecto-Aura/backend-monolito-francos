@@ -13,13 +13,13 @@ import { RolMapper } from '../mappers/rol.mapper';
 
 @Injectable()
 export class PrismaRolRepository implements RolRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(params: CreateRolParams): Promise<RolEntity> {
     const rol = await this.prisma.rol.create({
-      data: params
-    })
-    return RolMapper.toDomain(rol)
+      data: params,
+    });
+    return RolMapper.toDomain(rol);
   }
 
   async findById(id: number): Promise<RolEntity | null> {
@@ -29,9 +29,9 @@ export class PrismaRolRepository implements RolRepository {
 
   async findByName(nombre: string): Promise<RolEntity | null> {
     const rol = await this.prisma.rol.findUnique({
-      where: {nombre}
+      where: { nombre },
     });
-    return rol ? RolMapper.toDomain(rol) : null
+    return rol ? RolMapper.toDomain(rol) : null;
   }
 
   //para paginacion
@@ -40,11 +40,11 @@ export class PrismaRolRepository implements RolRepository {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
       ...(params.search
         ? {
-          nombre: {
-            contains: params.search,
-            mode: 'insensitive',
-          },
-        }
+            nombre: {
+              contains: params.search,
+              mode: 'insensitive',
+            },
+          }
         : {}),
     };
 

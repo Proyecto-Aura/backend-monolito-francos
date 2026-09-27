@@ -1,4 +1,4 @@
-import { PaginationParams } from "./pagination.types";
+import { PaginationParams } from './pagination.types';
 
 export interface CreateUserParams {
   persona_id: string;

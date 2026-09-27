@@ -1,11 +1,20 @@
-import { Transform, Type } from 'class-transformer';
 import {
-  IsBoolean, IsDateString, IsEmail, IsEnum, IsNotEmpty,
-  IsOptional, IsString, MaxLength, MinLength,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
-import { TipoDocumento, TipoCliente, CategoriaCliente } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumeroDocumentoValido } from '../../../../common/validators/numero-documento.validator';
+import {
+  CategoriaCliente,
+  TipoCliente,
+  TipoDocumento,
+} from '../../../persons/domain/enums/persons.enums';
 
 export class RegisterClienteDto {
   // --- datos de Persona ---
@@ -27,7 +36,7 @@ export class RegisterClienteDto {
   @MaxLength(100)
   apellido_materno!: string;
 
-  @ApiProperty({ enum: TipoDocumento, example: TipoDocumento.dni })
+  @ApiProperty({ enum: TipoDocumento, example: TipoDocumento.DNI })
   @IsEnum(TipoDocumento)
   tipo_documento!: TipoDocumento;
 
@@ -55,17 +64,20 @@ export class RegisterClienteDto {
   direccion?: string;
 
   // --- datos de Cliente ---
-  @ApiProperty({ enum: TipoCliente, example: TipoCliente.persona_natural })
+  @ApiProperty({ enum: TipoCliente, example: TipoCliente.PERSONA_NATURAL })
   @IsEnum(TipoCliente)
   tipo_cliente!: TipoCliente;
 
-  @ApiPropertyOptional({ example: 'Distribuidora El Sol S.A.C.', maxLength: 200 })
+  @ApiPropertyOptional({
+    example: 'Distribuidora El Sol S.A.C.',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   razon_social?: string;
 
-  @ApiProperty({ enum: CategoriaCliente, example: CategoriaCliente.minorista })
+  @ApiProperty({ enum: CategoriaCliente, example: CategoriaCliente.MINORISTA })
   @IsEnum(CategoriaCliente)
   categoria_cliente!: CategoriaCliente;
 

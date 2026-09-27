@@ -6,7 +6,6 @@ import { ClienteRepository } from '../../domain/repositories/cliente.repository'
 import {
   ListClientesParams,
   UpdateClienteConPersonaParams,
-  UpdateClienteParams,
 } from '../../domain/repositories/types/cliente-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import { ClienteMapper } from '../mappers/cliente.mapper';
@@ -17,22 +16,25 @@ import { PersonaMapper } from '../mappers/persona.mapper';
 export class PrismaClienteRepository implements ClienteRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  updateWithPersona(clienteId: string, params: UpdateClienteConPersonaParams): Promise<{ cliente: ClienteEntity; persona: PersonaEntity; }> {
+  updateWithPersona(
+    clienteId: string,
+    params: UpdateClienteConPersonaParams,
+  ): Promise<{ cliente: ClienteEntity; persona: PersonaEntity }> {
     return this.prisma.$transaction(async (tx) => {
       const persona = await tx.persona.update({
-        where: {id: params.persona_id},
-        data: params.persona
+        where: { id: params.persona_id },
+        data: params.persona,
       });
       const cliente = await tx.cliente.update({
-        where: {id: clienteId},
-        data: params.cliente
+        where: { id: clienteId },
+        data: params.cliente,
       });
 
       return {
         cliente: ClienteMapper.toDomain(cliente),
-        persona: PersonaMapper.toDomain(persona)
-      }
-    })
+        persona: PersonaMapper.toDomain(persona),
+      };
+    });
   }
 
   async findById(id: string): Promise<ClienteEntity | null> {

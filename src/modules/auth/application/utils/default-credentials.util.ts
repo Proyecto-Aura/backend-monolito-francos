@@ -13,7 +13,9 @@ export interface DefaultCredentialsResult {
   tokenVerificacionEmailExpiracion: Date;
 }
 
-export async function buildDefaultCredentials(numeroDocumento: string): Promise<DefaultCredentialsResult> {
+export async function buildDefaultCredentials(
+  numeroDocumento: string,
+): Promise<DefaultCredentialsResult> {
   const contrasenaPlana = numeroDocumento;
   const contrasenaHash = await hashPassword(contrasenaPlana);
   const tokenVerificacionEmail = generateRandomToken();

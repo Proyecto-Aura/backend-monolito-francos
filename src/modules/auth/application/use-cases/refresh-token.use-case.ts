@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtModuleOptions, JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
@@ -22,9 +22,14 @@ export class RefreshTokenUseCase {
 
   async execute(refreshTokenPlano: string): Promise<RefreshTokenResult> {
     const tokenHash = hashToken(refreshTokenPlano);
-    const refreshToken = await this.refreshTokenRepository.findByTokenHash(tokenHash);
+    const refreshToken =
+      await this.refreshTokenRepository.findByTokenHash(tokenHash);
 
-    if (!refreshToken || refreshToken.revoked_at || refreshToken.expires_at < new Date()) {
+    if (
+      !refreshToken ||
+      refreshToken.revoked_at ||
+      refreshToken.expires_at < new Date()
+    ) {
       throw new InvalidCredentialsError('Refresh token inválido o expirado');
     }
 
@@ -33,12 +38,18 @@ export class RefreshTokenUseCase {
       throw new InvalidCredentialsError('Refresh token inválido o expirado');
     }
 
-    const rolesAsignados = await this.usuarioRolRepository.findRolesByUserId(user.id);
+    const rolesAsignados = await this.usuarioRolRepository.findRolesByUserId(
+      user.id,
+    );
     const roles = rolesAsignados.map((r) => r.nombre);
 
     const accessToken = await this.jwtService.signAsync(
       { sub: user.id, email: user.email, roles },
-      { expiresIn: envs.jwtAccessExpiresIn as any },
+      {
+        expiresIn: envs.jwtAccessExpiresIn as NonNullable<
+          JwtModuleOptions['signOptions']
+        >['expiresIn'],
+      },
     );
 
     return { accessToken };
