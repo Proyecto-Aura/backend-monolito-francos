@@ -87,7 +87,10 @@ export class RegisterEmpleadoDto {
   email!: string;
 
   // --- el admin elige el rol explícitamente ---
-  @ApiProperty({ example: 2, description: 'id del rol a asignar (ver GET /roles)' })
+  @ApiProperty({
+    example: 2,
+    description: 'id del rol a asignar (ver GET /roles)',
+  })
   @Type(() => Number)
   @IsInt()
   @IsPositive()

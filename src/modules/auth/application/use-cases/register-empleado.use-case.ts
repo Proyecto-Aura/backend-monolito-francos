@@ -9,7 +9,10 @@ import {
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
 import { RegisterEmpleadoDto } from '../dto/register-empleado.dto';
-import { TipoDocumento, AreaEmpleado } from '../../../persons/domain/enums/persons.enums';
+import {
+  TipoDocumento,
+  AreaEmpleado,
+} from '../../../persons/domain/enums/persons.enums';
 import { buildDefaultCredentials } from '../utils/default-credentials.util';
 import { RegistroEmpleadoResult } from '../../domain/repositories/types/registro-repository.types';
 
@@ -28,13 +31,17 @@ export class RegisterEmpleadoUseCase {
   async execute(dto: RegisterEmpleadoDto): Promise<RegistroEmpleadoResult> {
     // Validaciones de duplicados
     if (await this.personaRepository.existsByDocument(dto.numero_documento)) {
-      throw new ResourceConflictError('Existe una persona con ese mismo número de documento');
+      throw new ResourceConflictError(
+        'Existe una persona con ese mismo número de documento',
+      );
     }
     if (await this.userRepository.existsByEmail(dto.email)) {
       throw new ResourceConflictError('Existe un usuario con ese mismo email');
     }
     if (await this.userRepository.existsByUsername(dto.numero_documento)) {
-      throw new ResourceConflictError('Ya existe un usuario con ese nombre de usuario');
+      throw new ResourceConflictError(
+        'Ya existe un usuario con ese nombre de usuario',
+      );
     }
 
     // El admin elige el rol — validamos que exista y esté activo
@@ -47,7 +54,9 @@ export class RegisterEmpleadoUseCase {
     }
 
     // Credenciales por defecto (username=DNI, password=DNI hasheada)
-    const default_credentials = await buildDefaultCredentials(dto.numero_documento);
+    const default_credentials = await buildDefaultCredentials(
+      dto.numero_documento,
+    );
 
     // Transacción atómica
     const resultado = await this.registroRepository.registerEmpleado({
@@ -58,13 +67,17 @@ export class RegisterEmpleadoUseCase {
         tipo_documento: dto.tipo_documento as TipoDocumento,
         numero_documento: dto.numero_documento,
         telefono: dto.telefono ?? null,
-        fecha_nacimiento: dto.fecha_nacimiento ? new Date(dto.fecha_nacimiento) : null,
+        fecha_nacimiento: dto.fecha_nacimiento
+          ? new Date(dto.fecha_nacimiento)
+          : null,
         direccion: dto.direccion ?? null,
       },
       empleado: {
         cargo: dto.cargo,
         area: dto.area as AreaEmpleado,
-        fecha_ingreso: dto.fecha_ingreso ? new Date(dto.fecha_ingreso) : new Date(),
+        fecha_ingreso: dto.fecha_ingreso
+          ? new Date(dto.fecha_ingreso)
+          : new Date(),
         fecha_des_lab: null,
       },
       user: {
@@ -74,7 +87,8 @@ export class RegisterEmpleadoUseCase {
         email_verificado: default_credentials.emailVerificado,
         debe_cambiar_contrasena: default_credentials.debeCambiarContrasena,
         token_verificacion_email: default_credentials.tokenVerificacionEmail,
-        token_verificacion_email_expiracion: default_credentials.tokenVerificacionEmailExpiracion,
+        token_verificacion_email_expiracion:
+          default_credentials.tokenVerificacionEmailExpiracion,
       },
       rol_id: rol.id,
     });

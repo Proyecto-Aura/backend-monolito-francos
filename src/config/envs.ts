@@ -17,7 +17,7 @@ interface EnvVars {
 }
 
 const envSchema = joi
-  .object({
+  .object<EnvVars>({
     PORT: joi.number().default(3000),
     DATABASE_URL: joi.string().required(),
     JWT_SECRET: joi.string().required(),
@@ -33,11 +33,13 @@ const envSchema = joi
   })
   .unknown(true);
 
-const { error, value } = envSchema.validate(process.env);
+const validationResult = envSchema.validate(process.env);
 
-if (error) throw new Error(`Config validation error: ${error.message}`);
+if (validationResult.error) {
+  throw new Error(`Config validation error: ${validationResult.error.message}`);
+}
 
-const envVars: EnvVars = value;
+const envVars = validationResult.value;
 
 export const envs = {
   port: envVars.PORT,

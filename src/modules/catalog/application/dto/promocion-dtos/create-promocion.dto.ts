@@ -1,5 +1,5 @@
 import { TipoPromocion } from '@prisma/client';
-import { Transform, Type } from 'class-transformer';
+import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
@@ -66,7 +66,8 @@ export class CreatePromocionDto {
   fecha_fin!: Date;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform((params: TransformFnParams): unknown => {
+    const value: unknown = params.value;
     if (value === 'true') return true;
     if (value === 'false') return false;
     return value;

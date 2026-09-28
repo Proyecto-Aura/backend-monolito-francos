@@ -8,8 +8,16 @@ import {
 
 export abstract class ClienteRepository {
   abstract findById(id: string): Promise<ClienteEntity | null>;
-  abstract findMany(params: ListClientesParams): Promise<PaginatedResult<ClienteEntity>>;
-  abstract existsByPersonaId(personaId: string, excludeId?: string): Promise<boolean>;
-  abstract updateWithPersona(clienteId: string, params: UpdateClienteConPersonaParams): Promise<{ cliente: ClienteEntity; persona: PersonaEntity }>;
+  abstract findMany(
+    params: ListClientesParams,
+  ): Promise<PaginatedResult<ClienteEntity>>;
+  abstract existsByPersonaId(
+    personaId: string,
+    excludeId?: string,
+  ): Promise<boolean>;
+  abstract updateWithPersona(
+    clienteId: string,
+    params: UpdateClienteConPersonaParams,
+  ): Promise<{ cliente: ClienteEntity; persona: PersonaEntity }>;
   abstract setStatus(id: string, estado: boolean): Promise<ClienteEntity>;
 }

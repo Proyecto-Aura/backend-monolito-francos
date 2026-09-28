@@ -21,7 +21,9 @@ export class NodemailerEmailService implements EmailService {
   });
 
   // Envía el correo con el link para confirmar el email del usuario.
-  async sendVerificationEmail(params: SendVerificationEmailParams): Promise<void> {
+  async sendVerificationEmail(
+    params: SendVerificationEmailParams,
+  ): Promise<void> {
     // Link que el usuario abrirá desde el correo (lo maneja el frontend).
     const url = `${envs.frontendUrl}/verify-email?token=${params.verificationToken}`;
 
@@ -34,7 +36,9 @@ export class NodemailerEmailService implements EmailService {
   }
 
   // Envía el correo con usuario/contraseña por defecto (cliente-por-staff y empleado).
-  async sendDefaultCredentialsEmail(params: SendDefaultCredentialsEmailParams): Promise<void> {
+  async sendDefaultCredentialsEmail(
+    params: SendDefaultCredentialsEmailParams,
+  ): Promise<void> {
     await this.transporter.sendMail({
       from: envs.smtpFrom,
       to: params.to,
