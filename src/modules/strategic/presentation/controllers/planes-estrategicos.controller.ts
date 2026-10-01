@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -23,8 +24,11 @@ import { CreatePlanEstrategicoUseCase } from '../../application/use-cases/plan-e
 import { GetPlanEstrategicoByIdUseCase } from '../../application/use-cases/plan-estrategico/get-plan-estrategico-by-id.use-case';
 import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-planes-estrategicos.use-case';
 import { PlanEstrategicoPresenter } from '../presenters/plan-estrategico.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Planes Estratégicos')
+@ApiBearerAuth()
+@Roles('admin', 'estrategico')
 @Controller('planes-estrategicos')
 export class PlanesEstrategicosController {
   constructor(
