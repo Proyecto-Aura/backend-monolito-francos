@@ -1,5 +1,8 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
+
+jest.mock('../../config/envs', () => ({ envs: {} }));
+
 import { HealthController } from './health.controller';
 
 describe('HealthController', () => {
