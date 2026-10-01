@@ -3,6 +3,7 @@ import {
   CreatePlanEstrategicoParams,
   ListPlanesEstrategicosParams,
   PlanEstrategicoEntityConEstado,
+  UpdatePlanEstrategicoParams,
 } from './types/plan-estrategico-repository.types';
 
 export abstract class PlanEstrategicoRepository {
@@ -13,7 +14,15 @@ export abstract class PlanEstrategicoRepository {
   abstract findMany(
     params: ListPlanesEstrategicosParams,
   ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>>;
-  abstract existsByName(nombre: string): Promise<boolean>;
+  abstract existsByName(nombre: string, excludeId?: number): Promise<boolean>;
+  abstract update(
+    id: number,
+    params: UpdatePlanEstrategicoParams,
+  ): Promise<PlanEstrategicoEntityConEstado>;
+  abstract setEstado(
+    id: number,
+    estado: boolean,
+  ): Promise<PlanEstrategicoEntityConEstado>;
   abstract updateEstado(
     id: number,
     nuevoEstadoPlanId: number,

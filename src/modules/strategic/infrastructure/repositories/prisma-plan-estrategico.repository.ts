@@ -7,6 +7,7 @@ import {
   CreatePlanEstrategicoParams,
   ListPlanesEstrategicosParams,
   PlanEstrategicoEntityConEstado,
+  UpdatePlanEstrategicoParams,
 } from '../../domain/repositories/types/plan-estrategico-repository.types';
 import { PlanEstrategicoMapper } from '../mappers/plan-estrategico.mapper';
 
@@ -74,16 +75,43 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
     };
   }
 
-  async existsByName(nombre: string): Promise<boolean> {
+  async existsByName(nombre: string, excludeId?: number): Promise<boolean> {
     const plan = await this.prisma.planEstrategico.findFirst({
       where: {
         nombre: { equals: nombre, mode: 'insensitive' },
         estado: true,
+        ...(excludeId === undefined ? {} : { id: { not: excludeId } }),
       },
       select: { id: true },
     });
 
     return plan !== null;
+  }
+
+  async update(
+    id: number,
+    params: UpdatePlanEstrategicoParams,
+  ): Promise<PlanEstrategicoEntityConEstado> {
+    const plan = await this.prisma.planEstrategico.update({
+      where: { id },
+      data: params,
+      include: { estado_plan: true },
+    });
+
+    return PlanEstrategicoMapper.toDomain(plan);
+  }
+
+  async setEstado(
+    id: number,
+    estado: boolean,
+  ): Promise<PlanEstrategicoEntityConEstado> {
+    const plan = await this.prisma.planEstrategico.update({
+      where: { id },
+      data: { estado },
+      include: { estado_plan: true },
+    });
+
+    return PlanEstrategicoMapper.toDomain(plan);
   }
 
   async updateEstado(

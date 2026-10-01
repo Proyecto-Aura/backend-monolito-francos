@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -18,11 +19,14 @@ import {
 } from '@nestjs/swagger';
 import { CreatePlanEstrategicoDto } from '../../application/dto/plan-estrategico-dtos/create-plan-estrategico.dto';
 import { ListPlanEstrategicoQueryDto } from '../../application/dto/plan-estrategico-dtos/list-plan-estrategico-query.dto';
+import { UpdatePlanEstrategicoDto } from '../../application/dto/plan-estrategico-dtos/update-plan-estrategico.dto';
 import { ActivarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/activar-plan-estrategico.use-case';
 import { CerrarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/cerrar-plan-estrategico.use-case';
 import { CreatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/create-plan-estrategico.use-case';
+import { EliminarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/eliminar-plan-estrategico.use-case';
 import { GetPlanEstrategicoByIdUseCase } from '../../application/use-cases/plan-estrategico/get-plan-estrategico-by-id.use-case';
 import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-planes-estrategicos.use-case';
+import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { PlanEstrategicoPresenter } from '../presenters/plan-estrategico.presenter';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
@@ -35,6 +39,8 @@ export class PlanesEstrategicosController {
     private readonly createPlanEstrategico: CreatePlanEstrategicoUseCase,
     private readonly listPlanesEstrategicos: ListPlanesEstrategicosUseCase,
     private readonly getPlanEstrategicoById: GetPlanEstrategicoByIdUseCase,
+    private readonly updatePlanEstrategico: UpdatePlanEstrategicoUseCase,
+    private readonly eliminarPlanEstrategico: EliminarPlanEstrategicoUseCase,
     private readonly activarPlanEstrategico: ActivarPlanEstrategicoUseCase,
     private readonly cerrarPlanEstrategico: CerrarPlanEstrategicoUseCase,
   ) {}
@@ -64,6 +70,29 @@ export class PlanesEstrategicosController {
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return PlanEstrategicoPresenter.toHttp(
       await this.getPlanEstrategicoById.execute(id),
+    );
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar los datos de un plan estratégico' })
+  @ApiOkResponse({ description: 'Plan estratégico actualizado correctamente' })
+  @ApiParam({ name: 'id', type: Number })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePlanEstrategicoDto,
+  ) {
+    return PlanEstrategicoPresenter.toHttp(
+      await this.updatePlanEstrategico.execute(id, dto),
+    );
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar lógicamente un plan estratégico' })
+  @ApiOkResponse({ description: 'Plan estratégico eliminado correctamente' })
+  @ApiParam({ name: 'id', type: Number })
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return PlanEstrategicoPresenter.toHttp(
+      await this.eliminarPlanEstrategico.execute(id),
     );
   }
 

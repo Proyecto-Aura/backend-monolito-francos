@@ -3,8 +3,10 @@ import { APP_FILTER } from '@nestjs/core';
 import { ActivarPlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/activar-plan-estrategico.use-case';
 import { CerrarPlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/cerrar-plan-estrategico.use-case';
 import { CreatePlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/create-plan-estrategico.use-case';
+import { EliminarPlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/eliminar-plan-estrategico.use-case';
 import { GetPlanEstrategicoByIdUseCase } from '../application/use-cases/plan-estrategico/get-plan-estrategico-by-id.use-case';
 import { ListPlanesEstrategicosUseCase } from '../application/use-cases/plan-estrategico/list-planes-estrategicos.use-case';
+import { UpdatePlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { PlanEstrategicoRepository } from '../domain/repositories/plan-estrategico.repository';
 import { PrismaEstadoPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-estado-plan-estrategico.repository';
@@ -18,6 +20,8 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     CreatePlanEstrategicoUseCase,
     GetPlanEstrategicoByIdUseCase,
     ListPlanesEstrategicosUseCase,
+    UpdatePlanEstrategicoUseCase,
+    EliminarPlanEstrategicoUseCase,
     ActivarPlanEstrategicoUseCase,
     CerrarPlanEstrategicoUseCase,
     {

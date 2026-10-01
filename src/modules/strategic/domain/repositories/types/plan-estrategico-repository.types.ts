@@ -11,6 +11,13 @@ export interface CreatePlanEstrategicoParams {
   anio_fin: number;
 }
 
+export interface UpdatePlanEstrategicoParams {
+  nombre?: string;
+  descripcion?: string | null;
+  anio_inicio?: number;
+  anio_fin?: number;
+}
+
 export interface ListPlanesEstrategicosParams extends PaginationParams {
   search?: string;
   estado_codigo?: string;
