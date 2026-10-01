@@ -50,9 +50,7 @@ USER node
 
 EXPOSE 3000
 
-# TODO: apuntar a GET /api/v1/health cuando exista. /api/docs responde 200
-# solo si Nest levantó, pero sirve una página pesada.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
-    CMD wget --spider -q http://localhost:3000/api/docs || exit 1
+    CMD wget --spider -q http://localhost:3000/api/v1/health || exit 1
 
 CMD ["node", "dist/main.js"]
