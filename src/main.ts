@@ -11,6 +11,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
 
   // CORS
   app.enableCors({

@@ -7,10 +7,12 @@ import { InventoryModule } from './modules/inventory/presentation/inventory.modu
 import { ProductionModule } from './modules/production/presentation/production.module';
 import { StrategicModule } from './modules/strategic/presentation/strategic.module';
 import { CatalogModule } from './modules/catalog/presentation/catalog.module';
+import { HealthModule } from './common/health/health.module';
 
 @Module({
   imports: [
     PrismaModule,
+    HealthModule,
     AuthModule,
     PersonsModule,
     CatalogModule,

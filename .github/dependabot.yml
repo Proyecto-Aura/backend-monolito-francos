@@ -9,6 +9,7 @@ updates:
   # 1. Actions usadas en los workflows
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     commit-message:
@@ -25,6 +26,7 @@ updates:
   # y en el action.yml de la raiz, no en .github/actions/*/action.yml
   - package-ecosystem: github-actions
     directory: /.github/actions/setup
+    target-branch: develop
     schedule:
       interval: monthly
     commit-message:
@@ -39,6 +41,7 @@ updates:
   # 3. Imagen base del Dockerfile
   - package-ecosystem: docker
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     commit-message:
@@ -49,6 +52,7 @@ updates:
   # 4. Dependencias de npm/pnpm (Dependabot maneja pnpm dentro del ecosistema npm)
   - package-ecosystem: npm
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
