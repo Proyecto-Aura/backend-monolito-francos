@@ -10,3 +10,9 @@ export interface SendDefaultCredentialsEmailParams {
   username: string;
   contrasenaDefault: string;
 }
+
+export interface SendPasswordResetEmailParams {
+  to: string;
+  nombre: string;
+  resetToken: string;
+}

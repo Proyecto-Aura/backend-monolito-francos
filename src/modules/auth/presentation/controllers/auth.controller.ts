@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  HttpCode,
   Post,
   Req,
   Res,
@@ -9,7 +10,9 @@ import {
 import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
+  ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -23,6 +26,10 @@ import { RegisterEmpleadoUseCase } from '../../application/use-cases/register-em
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
+import { ForgotPasswordDto } from '../../application/dto/forgot-password.dto';
+import { ResetPasswordDto } from '../../application/dto/reset-password.dto';
+import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
 import { envs } from '../../../../config/envs';
 import { Roles } from '../decorators/roles.decorator';
@@ -30,6 +37,9 @@ import { Public } from '../decorators/public.decorator';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
+const FORGOT_PASSWORD_MESSAGE =
+  'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña';
+const RESET_PASSWORD_MESSAGE = 'Contraseña restablecida correctamente';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -41,6 +51,8 @@ export class AuthController {
     private readonly login: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly requestPasswordReset: RequestPasswordResetUseCase,
+    private readonly resetPassword: ResetPasswordUseCase,
   ) {}
 
   @Post('register')
@@ -117,6 +129,34 @@ export class AuthController {
     }
     res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/api/v1/auth' });
     return { message: 'Sesión cerrada' };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  @Public()
+  @ApiOperation({
+    summary: 'Solicitar un enlace para restablecer la contraseña',
+  })
+  @ApiOkResponse({ description: 'Solicitud procesada correctamente' })
+  @ApiBadRequestResponse({
+    description: 'El correo no tiene un formato válido',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.requestPasswordReset.execute(dto);
+    return { message: FORGOT_PASSWORD_MESSAGE };
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  @Public()
+  @ApiOperation({ summary: 'Restablecer la contraseña con un enlace válido' })
+  @ApiOkResponse({ description: 'Contraseña restablecida correctamente' })
+  @ApiBadRequestResponse({
+    description: 'La solicitud no es válida o el enlace expiró',
+  })
+  async resetPasswordFromToken(@Body() dto: ResetPasswordDto) {
+    await this.resetPassword.execute(dto);
+    return { message: RESET_PASSWORD_MESSAGE };
   }
 
   private setRefreshTokenCookie(res: Response, refreshTokenPlano: string) {

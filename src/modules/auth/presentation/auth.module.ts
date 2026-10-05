@@ -10,10 +10,14 @@ import { RegisterEmpleadoUseCase } from '../application/use-cases/register-emple
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../application/use-cases/refresh-token.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { RequestPasswordResetUseCase } from '../application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
 import { RegistroRepository } from '../domain/repositories/registro.repository';
 import { PrismaRegistroRepository } from '../infrastructure/repositories/prisma-registro.repository';
 import { RefreshTokenRepository } from '../domain/repositories/refresh-token.repository';
 import { PrismaRefreshTokenRepository } from '../infrastructure/repositories/prisma-refresh-token.repository';
+import { PasswordResetRepository } from '../domain/repositories/password-reset.repository';
+import { PrismaPasswordResetRepository } from '../infrastructure/repositories/prisma-password-reset.repository';
 import { EmailService } from '../domain/services/email.service';
 import { NodemailerEmailService } from '../infrastructure/services/nodemailer-email.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -43,6 +47,8 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
     JwtStrategy,
     {
       provide: APP_GUARD,
@@ -54,6 +60,10 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     },
     { provide: RegistroRepository, useClass: PrismaRegistroRepository },
     { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
+    {
+      provide: PasswordResetRepository,
+      useClass: PrismaPasswordResetRepository,
+    },
     { provide: EmailService, useClass: NodemailerEmailService },
     {
       provide: APP_FILTER,
