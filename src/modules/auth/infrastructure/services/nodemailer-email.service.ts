@@ -6,6 +6,7 @@ import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
   SendPasswordResetEmailParams,
+  FrontendDestino,
 } from '../../domain/services/types/email-service.types';
 
 @Injectable()
@@ -26,7 +27,7 @@ export class NodemailerEmailService implements EmailService {
     params: SendVerificationEmailParams,
   ): Promise<void> {
     // Link que el usuario abrirá desde el correo (lo maneja el frontend).
-    const url = `${envs.frontendUrl}/verify-email?token=${params.verificationToken}`;
+    const url = `${this.getFrontendUrl(params.frontend)}/verify-email?token=${params.verificationToken}`;
 
     await this.transporter.sendMail({
       from: envs.smtpFrom,
@@ -51,7 +52,7 @@ export class NodemailerEmailService implements EmailService {
   async sendPasswordResetEmail(
     params: SendPasswordResetEmailParams,
   ): Promise<void> {
-    const url = `${envs.frontendUrl}/reset-password?token=${params.resetToken}`;
+    const url = `${envs.frontendPortalUrl}/reset-password?token=${params.resetToken}`;
     const nombre = this.escapeHtml(params.nombre);
 
     await this.transporter.sendMail({
@@ -73,5 +74,11 @@ export class NodemailerEmailService implements EmailService {
       };
       return entities[character];
     });
+  }
+
+  private getFrontendUrl(frontend: FrontendDestino): string {
+    return frontend === 'tienda'
+      ? envs.frontendStoreUrl
+      : envs.frontendPortalUrl;
   }
 }

@@ -11,8 +11,7 @@ node_modules
 .codex/
 AGENTS.md
 CLAUDE.md
-
-
+/plans/
 
 # macOS
 .DS_Store
