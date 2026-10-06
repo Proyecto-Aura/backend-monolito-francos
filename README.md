@@ -40,7 +40,8 @@ PORT=3000
 DATABASE_URL="postgresql://user:password@localhost:5432/francos_erp?schema=public"
 JWT_SECRET=your_super_secret_key_change_in_production
 JWT_EXPIRES_IN=1d
-FRONTEND_URL=http://localhost:4200
+FRONTEND_STORE_URL=http://localhost:4200
+FRONTEND_PORTAL_URL=http://localhost:4201
 ```
 
 ## Inicio rápido
