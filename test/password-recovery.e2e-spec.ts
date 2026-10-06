@@ -23,6 +23,7 @@ interface PasswordResetEmail {
   to: string;
   nombre: string;
   resetToken: string;
+  frontend: 'tienda' | 'portal';
 }
 
 describe('Password recovery (e2e)', () => {
@@ -140,7 +141,10 @@ describe('Password recovery (e2e)', () => {
     });
     expect(user.token_recuperacion).toBe(hashToken(resetToken));
     expect(user.token_recuperacion).not.toBe(resetToken);
-    expect(email).toMatchObject({ to: RECOVERY_USER.email });
+    expect(email).toMatchObject({
+      to: RECOVERY_USER.email,
+      frontend: 'tienda',
+    });
   });
 
   it('restablece la contraseña con el token, sin Authorization', async () => {

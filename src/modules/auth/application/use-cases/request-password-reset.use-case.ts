@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
+import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { PasswordResetRepository } from '../../domain/repositories/password-reset.repository';
 import { EmailService } from '../../domain/services/email.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
@@ -8,6 +9,7 @@ import { generateRandomToken, hashToken } from '../utils/token.util';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const RESET_COOLDOWN_MS = 60 * 1000;
+const ROL_CLIENTE = 'cliente';
 
 @Injectable()
 export class RequestPasswordResetUseCase {
@@ -16,6 +18,7 @@ export class RequestPasswordResetUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly personaRepository: PersonaRepository,
+    private readonly usuarioRolRepository: UsuarioRolRepository,
     private readonly passwordResetRepository: PasswordResetRepository,
     private readonly emailService: EmailService,
   ) {}
@@ -36,10 +39,16 @@ export class RequestPasswordResetUseCase {
 
     try {
       const persona = await this.personaRepository.findById(user.persona_id);
+      const roles = await this.usuarioRolRepository.findRolesByUserId(user.id);
+      const frontend =
+        roles.length > 0 && roles.every((role) => role.nombre === ROL_CLIENTE)
+          ? 'tienda'
+          : 'portal';
       await this.emailService.sendPasswordResetEmail({
         to: user.email,
         nombre: persona?.nombres ?? 'usuario',
         resetToken,
+        frontend,
       });
     } catch {
       this.logger.warn(

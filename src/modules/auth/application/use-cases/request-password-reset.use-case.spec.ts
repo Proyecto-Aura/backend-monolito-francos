@@ -3,6 +3,7 @@ import { PasswordResetRepository } from '../../domain/repositories/password-rese
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UserEntity } from '../../../persons/domain/entities/user.entity';
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
+import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { hashToken } from '../utils/token.util';
 import { RequestPasswordResetUseCase } from './request-password-reset.use-case';
 
@@ -36,18 +37,25 @@ describe('RequestPasswordResetUseCase', () => {
   const personaRepository = {
     findById: jest.fn(),
   };
+  const usuarioRolRepository = {
+    findRolesByUserId: jest.fn(),
+  };
   const emailService = {
     sendPasswordResetEmail: jest.fn(),
   };
   const useCase = new RequestPasswordResetUseCase(
     userRepository as unknown as UserRepository,
     personaRepository as unknown as PersonaRepository,
+    usuarioRolRepository as unknown as UsuarioRolRepository,
     passwordResetRepository as unknown as PasswordResetRepository,
     emailService as unknown as EmailService,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    usuarioRolRepository.findRolesByUserId.mockResolvedValue([
+      { nombre: 'cliente' },
+    ]);
   });
 
   it('no hace nada cuando el correo no existe', async () => {
@@ -81,7 +89,7 @@ describe('RequestPasswordResetUseCase', () => {
     const [, tokenHash, expiresAt] = passwordResetRepository.saveToken.mock
       .calls[0] as [string, string, Date];
     const [emailParams] = emailService.sendPasswordResetEmail.mock.calls[0] as [
-      { to: string; nombre: string; resetToken: string },
+      { to: string; nombre: string; resetToken: string; frontend: string },
     ];
     expect(tokenHash).toBe(hashToken(emailParams.resetToken));
     expect(tokenHash).not.toBe(emailParams.resetToken);
@@ -89,6 +97,7 @@ describe('RequestPasswordResetUseCase', () => {
     expect(emailParams).toMatchObject({
       to: user.email,
       nombre: 'María',
+      frontend: 'tienda',
     });
   });
 
@@ -109,6 +118,28 @@ describe('RequestPasswordResetUseCase', () => {
       expect.objectContaining({ nombre: 'usuario' }),
     );
   });
+
+  it.each([
+    ['un rol de staff', [{ nombre: 'ventas' }], 'portal'],
+    ['roles mixtos', [{ nombre: 'cliente' }, { nombre: 'ventas' }], 'portal'],
+    ['sin roles', [], 'portal'],
+  ])(
+    'envía al frontend correcto para %s',
+    async (_description, roles, frontend) => {
+      const user = createUser();
+      userRepository.findByEmail.mockResolvedValue(user);
+      passwordResetRepository.saveToken.mockResolvedValue(undefined);
+      personaRepository.findById.mockResolvedValue({ nombres: 'María' });
+      usuarioRolRepository.findRolesByUserId.mockResolvedValue(roles);
+      emailService.sendPasswordResetEmail.mockResolvedValue(undefined);
+
+      await useCase.execute({ email: user.email });
+
+      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ frontend }),
+      );
+    },
+  );
 
   it('no reenvía mientras el enlace anterior tiene menos de 60 segundos', async () => {
     userRepository.findByEmail.mockResolvedValue(

@@ -52,7 +52,7 @@ export class NodemailerEmailService implements EmailService {
   async sendPasswordResetEmail(
     params: SendPasswordResetEmailParams,
   ): Promise<void> {
-    const url = `${envs.frontendPortalUrl}/reset-password?token=${params.resetToken}`;
+    const url = `${this.getFrontendUrl(params.frontend)}/reset-password?token=${params.resetToken}`;
     const nombre = this.escapeHtml(params.nombre);
 
     await this.transporter.sendMail({

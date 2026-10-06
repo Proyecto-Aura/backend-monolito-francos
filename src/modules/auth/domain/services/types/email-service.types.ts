@@ -18,4 +18,5 @@ export interface SendPasswordResetEmailParams {
   to: string;
   nombre: string;
   resetToken: string;
+  frontend: FrontendDestino;
 }
