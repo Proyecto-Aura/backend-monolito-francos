@@ -105,6 +105,7 @@ export class RegisterEmpleadoUseCase {
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
         verificationToken: default_credentials.tokenVerificacionEmail,
+        frontend: 'portal',
       });
     } catch (error) {
       this.logger.warn(

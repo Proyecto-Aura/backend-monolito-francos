@@ -7,7 +7,8 @@ interface EnvVars {
   JWT_SECRET: string;
   JWT_ACCESS_EXPIRES_IN: string;
   REFRESH_TOKEN_EXPIRES_IN_DAYS: number;
-  FRONTEND_URL: string;
+  FRONTEND_STORE_URL: string;
+  FRONTEND_PORTAL_URL: string;
   SMTP_HOST: string;
   SMTP_PORT: number;
   SMTP_SECURE: boolean;
@@ -23,7 +24,8 @@ const envSchema = joi
     JWT_SECRET: joi.string().required(),
     JWT_ACCESS_EXPIRES_IN: joi.string().default('40m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: joi.number().default(7),
-    FRONTEND_URL: joi.string().required(),
+    FRONTEND_STORE_URL: joi.string().required(),
+    FRONTEND_PORTAL_URL: joi.string().required(),
     SMTP_HOST: joi.string().required(),
     SMTP_PORT: joi.number().default(587),
     SMTP_SECURE: joi.boolean().default(false),
@@ -47,7 +49,8 @@ export const envs = {
   jwtSecret: envVars.JWT_SECRET,
   jwtAccessExpiresIn: envVars.JWT_ACCESS_EXPIRES_IN,
   refreshTokenExpiresInDays: envVars.REFRESH_TOKEN_EXPIRES_IN_DAYS,
-  frontendUrl: envVars.FRONTEND_URL,
+  frontendStoreUrl: envVars.FRONTEND_STORE_URL,
+  frontendPortalUrl: envVars.FRONTEND_PORTAL_URL,
   smtpHost: envVars.SMTP_HOST,
   smtpPort: envVars.SMTP_PORT,
   smtpSecure: envVars.SMTP_SECURE,

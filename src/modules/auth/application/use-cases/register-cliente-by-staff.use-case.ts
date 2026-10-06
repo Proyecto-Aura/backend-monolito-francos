@@ -102,6 +102,7 @@ export class RegisterClienteByStaffUseCase {
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
         verificationToken: default_credentials.tokenVerificacionEmail,
+        frontend: 'tienda',
       });
     } catch (error) {
       this.logger.warn(
