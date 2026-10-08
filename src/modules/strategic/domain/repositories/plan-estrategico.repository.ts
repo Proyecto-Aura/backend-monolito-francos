@@ -11,6 +11,9 @@ export abstract class PlanEstrategicoRepository {
     params: CreatePlanEstrategicoParams,
   ): Promise<PlanEstrategicoEntityConEstado>;
   abstract findById(id: number): Promise<PlanEstrategicoEntityConEstado | null>;
+  abstract findActivoById(
+    id: number,
+  ): Promise<PlanEstrategicoEntityConEstado | null>;
   abstract findMany(
     params: ListPlanesEstrategicosParams,
   ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>>;

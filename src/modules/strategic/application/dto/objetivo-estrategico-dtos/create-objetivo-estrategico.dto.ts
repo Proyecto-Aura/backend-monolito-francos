@@ -26,10 +26,10 @@ export class CreateObjetivoEstrategicoDto {
   @MaxLength(200)
   nombre!: string;
 
-  @ApiProperty({ example: 'Mejorar el margen operativo de la empresa' })
+  @ApiPropertyOptional({ example: 'Mejorar el margen operativo de la empresa' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  descripcion!: string;
+  descripcion?: string;
 
   @ApiProperty({ example: 'Carlos Mendoza', maxLength: 200 })
   @IsString()
@@ -41,5 +41,5 @@ export class CreateObjetivoEstrategicoDto {
   @IsOptional()
   @IsArray()
   @IsInt({ each: true })
-  relaciones_destino_ids: number[] = [];
+  relaciones_destino_ids?: number[];
 }

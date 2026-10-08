@@ -7,6 +7,7 @@ import {
 import { EstadoObjetivoRepository } from '../../../domain/repositories/estado-objetivo.repository';
 import { ObjetivoEstrategicoRepository } from '../../../domain/repositories/objetivo-estrategico.repository';
 import { PlanEstrategicoRepository } from '../../../domain/repositories/plan-estrategico.repository';
+import { TipoModuloRepository } from '../../../domain/repositories/tipo-modulo.repository';
 import { ObjetivoEstrategicoEntityEnriquecido } from '../../../domain/repositories/types/objetivo-estrategico-repository.types';
 
 const TRANSICIONES: Record<string, string[]> = {
@@ -21,6 +22,7 @@ export class ActualizarEstadoObjetivoUseCase {
   constructor(
     private readonly objetivoEstrategicoRepository: ObjetivoEstrategicoRepository,
     private readonly planEstrategicoRepository: PlanEstrategicoRepository,
+    private readonly tipoModuloRepository: TipoModuloRepository,
     private readonly estadoObjetivoRepository: EstadoObjetivoRepository,
   ) {}
 
@@ -28,13 +30,15 @@ export class ActualizarEstadoObjetivoUseCase {
     id: number,
     dto: UpdateEstadoObjetivoDto,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido> {
-    const objetivo = await this.objetivoEstrategicoRepository.findById(id);
+    const objetivo =
+      await this.objetivoEstrategicoRepository.findActivoById(id);
+    const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
 
-    if (!objetivo) {
+    if (!objetivo || !tipoModulo || objetivo.tipo_modulo_id !== tipoModulo.id) {
       throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
     }
 
-    const plan = await this.planEstrategicoRepository.findById(
+    const plan = await this.planEstrategicoRepository.findActivoById(
       objetivo.plan_estrategico_id,
     );
 

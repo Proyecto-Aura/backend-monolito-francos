@@ -44,6 +44,17 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
     return plan ? PlanEstrategicoMapper.toDomain(plan) : null;
   }
 
+  async findActivoById(
+    id: number,
+  ): Promise<PlanEstrategicoEntityConEstado | null> {
+    const plan = await this.prisma.planEstrategico.findFirst({
+      where: { id, estado: true },
+      include: { estado_plan: true },
+    });
+
+    return plan ? PlanEstrategicoMapper.toDomain(plan) : null;
+  }
+
   private async buscar(
     params: ListPlanesEstrategicosParams,
     soloActivos: boolean,

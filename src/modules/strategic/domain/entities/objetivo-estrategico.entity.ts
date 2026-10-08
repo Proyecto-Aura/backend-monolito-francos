@@ -9,7 +9,7 @@ export class ObjetivoEstrategicoEntity {
     public estado_objetivo_id: number,
     public responsable: string,
     public nombre: string,
-    public descripcion: string,
+    public descripcion: string | null,
     public estado: boolean,
     public readonly created_at: Date,
     public updated_at: Date,

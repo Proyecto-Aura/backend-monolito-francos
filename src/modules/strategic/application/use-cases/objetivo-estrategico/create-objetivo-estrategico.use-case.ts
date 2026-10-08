@@ -24,7 +24,7 @@ export class CreateObjetivoEstrategicoUseCase {
   async execute(
     dto: CreateObjetivoEstrategicoDto,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido> {
-    const plan = await this.planEstrategicoRepository.findById(
+    const plan = await this.planEstrategicoRepository.findActivoById(
       dto.plan_estrategico_id,
     );
 
@@ -69,7 +69,7 @@ export class CreateObjetivoEstrategicoUseCase {
     await this.validarRelacionesOe.execute({
       plan_estrategico_id: plan.id,
       tipo_modulo_id: tipoModulo.id,
-      relaciones_destino_ids: dto.relaciones_destino_ids,
+      relaciones_destino_ids: dto.relaciones_destino_ids ?? [],
     });
 
     return this.objetivoEstrategicoRepository.create(
@@ -78,8 +78,8 @@ export class CreateObjetivoEstrategicoUseCase {
         perspectiva_bsc_id: perspectiva.id,
         responsable: dto.responsable,
         nombre,
-        descripcion: dto.descripcion,
-        relaciones_destino_ids: dto.relaciones_destino_ids,
+        descripcion: dto.descripcion?.trim() || null,
+        relaciones_destino_ids: dto.relaciones_destino_ids ?? [],
       },
       tipoModulo.id,
     );

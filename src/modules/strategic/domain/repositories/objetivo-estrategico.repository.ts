@@ -15,6 +15,9 @@ export abstract class ObjetivoEstrategicoRepository {
   abstract findById(
     id: number,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido | null>;
+  abstract findActivoById(
+    id: number,
+  ): Promise<ObjetivoEstrategicoEntityEnriquecido | null>;
   abstract findMany(
     params: ListObjetivosEstrategicosParams,
   ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>>;

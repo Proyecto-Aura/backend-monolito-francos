@@ -89,6 +89,21 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
     return objetivo ? ObjetivoEstrategicoMapper.toDomain(objetivo) : null;
   }
 
+  async findActivoById(
+    id: number,
+  ): Promise<ObjetivoEstrategicoEntityEnriquecido | null> {
+    const objetivo = await this.prisma.objetivoEstrategico.findFirst({
+      where: { id, estado: true },
+      include: {
+        perspectiva_bsc: true,
+        estado_objetivo: true,
+        relaciones_como_origen: true,
+      },
+    });
+
+    return objetivo ? ObjetivoEstrategicoMapper.toDomain(objetivo) : null;
+  }
+
   private async buscar(
     params: ListObjetivosEstrategicosParams,
     soloActivos: boolean,
@@ -197,10 +212,38 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         data,
       });
 
-      for (const destinoId of relaciones_destino_ids ?? []) {
-        await tx.relacionOe.create({
-          data: { origen_id: id, destino_id: destinoId },
+      if (relaciones_destino_ids !== undefined) {
+        const activas = await tx.relacionOe.findMany({
+          where: { origen_id: id, estado: true },
+          select: { destino_id: true },
         });
+
+        const destinosActuales = new Set(activas.map((r) => r.destino_id));
+        const destinosFinal = new Set(relaciones_destino_ids);
+
+        const destinosAQuitar = [...destinosActuales].filter(
+          (destinoId) => !destinosFinal.has(destinoId),
+        );
+        const destinosACrear = [...destinosFinal].filter(
+          (destinoId) => !destinosActuales.has(destinoId),
+        );
+
+        if (destinosAQuitar.length > 0) {
+          await tx.relacionOe.updateMany({
+            where: {
+              origen_id: id,
+              destino_id: { in: destinosAQuitar },
+              estado: true,
+            },
+            data: { estado: false },
+          });
+        }
+
+        for (const destinoId of destinosACrear) {
+          await tx.relacionOe.create({
+            data: { origen_id: id, destino_id: destinoId },
+          });
+        }
       }
 
       const objetivo = await tx.objetivoEstrategico.findUniqueOrThrow({

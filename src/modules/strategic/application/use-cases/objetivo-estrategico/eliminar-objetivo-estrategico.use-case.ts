@@ -17,7 +17,8 @@ export class EliminarObjetivoEstrategicoUseCase {
   ) {}
 
   async execute(id: number): Promise<ObjetivoEstrategicoEntityEnriquecido> {
-    const objetivo = await this.objetivoEstrategicoRepository.findById(id);
+    const objetivo =
+      await this.objetivoEstrategicoRepository.findActivoById(id);
 
     const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
 
@@ -25,7 +26,7 @@ export class EliminarObjetivoEstrategicoUseCase {
       throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
     }
 
-    const plan = await this.planEstrategicoRepository.findById(
+    const plan = await this.planEstrategicoRepository.findActivoById(
       objetivo.plan_estrategico_id,
     );
 

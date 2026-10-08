@@ -13,7 +13,7 @@ export class EliminarPlanEstrategicoUseCase {
   ) {}
 
   async execute(id: number): Promise<PlanEstrategicoEntityConEstado> {
-    const plan = await this.planEstrategicoRepository.findById(id);
+    const plan = await this.planEstrategicoRepository.findActivoById(id);
 
     if (!plan) {
       throw new ResourceNotFoundError('Plan estratégico no encontrado');

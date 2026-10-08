@@ -11,7 +11,7 @@ export interface CreateObjetivoEstrategicoParams {
   perspectiva_bsc_id: number;
   responsable: string;
   nombre: string;
-  descripcion: string;
+  descripcion: string | null;
   relaciones_destino_ids: number[];
 }
 
@@ -19,7 +19,7 @@ export interface UpdateObjetivoEstrategicoParams {
   perspectiva_bsc_id?: number;
   responsable?: string;
   nombre?: string;
-  descripcion?: string;
+  descripcion?: string | null;
   relaciones_destino_ids?: number[];
 }
 

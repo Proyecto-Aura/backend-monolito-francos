@@ -25,7 +25,8 @@ export class UpdateObjetivoEstrategicoUseCase {
     id: number,
     dto: UpdateObjetivoEstrategicoDto,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido> {
-    const objetivo = await this.objetivoEstrategicoRepository.findById(id);
+    const objetivo =
+      await this.objetivoEstrategicoRepository.findActivoById(id);
 
     const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
 
@@ -33,7 +34,7 @@ export class UpdateObjetivoEstrategicoUseCase {
       throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
     }
 
-    const plan = await this.planEstrategicoRepository.findById(
+    const plan = await this.planEstrategicoRepository.findActivoById(
       objetivo.plan_estrategico_id,
     );
 
@@ -81,21 +82,40 @@ export class UpdateObjetivoEstrategicoUseCase {
       }
     }
 
+    let relacionesDestinoFinal: number[] | undefined;
+
     if (dto.relaciones_destino_ids !== undefined) {
+      relacionesDestinoFinal = Array.from(new Set(dto.relaciones_destino_ids));
+
+      const destinosActuales = new Set(
+        objetivo.relaciones_como_origen
+          .filter((relacion) => relacion.estado)
+          .map((relacion) => relacion.destino_id),
+      );
+
+      const destinosNuevos = relacionesDestinoFinal.filter(
+        (destinoId) => !destinosActuales.has(destinoId),
+      );
+
       await this.validarRelacionesOe.execute({
         origen_id: objetivo.id,
         plan_estrategico_id: objetivo.plan_estrategico_id,
         tipo_modulo_id: objetivo.tipo_modulo_id,
-        relaciones_destino_ids: dto.relaciones_destino_ids,
+        relaciones_destino_ids: destinosNuevos,
       });
     }
+
+    const descripcionNormalizada =
+      dto.descripcion === undefined
+        ? undefined
+        : dto.descripcion.trim() || null;
 
     return this.objetivoEstrategicoRepository.update(id, {
       perspectiva_bsc_id: dto.perspectiva_bsc_id,
       responsable: dto.responsable,
       nombre,
-      descripcion: dto.descripcion,
-      relaciones_destino_ids: dto.relaciones_destino_ids,
+      descripcion: descripcionNormalizada,
+      relaciones_destino_ids: relacionesDestinoFinal,
     });
   }
 }

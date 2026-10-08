@@ -13,7 +13,7 @@ export class ObtenerObjetivosPorPlanUseCase {
   ) {}
 
   async execute(planId: number) {
-    const plan = await this.planEstrategicoRepository.findById(planId);
+    const plan = await this.planEstrategicoRepository.findActivoById(planId);
     if (!plan) {
       throw new ResourceNotFoundError('Plan estratégico no encontrado');
     }

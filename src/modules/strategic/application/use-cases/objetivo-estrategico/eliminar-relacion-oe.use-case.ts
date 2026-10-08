@@ -18,7 +18,8 @@ export class EliminarRelacionOeUseCase {
     id: number,
     relacionId: number,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido> {
-    const objetivo = await this.objetivoEstrategicoRepository.findById(id);
+    const objetivo =
+      await this.objetivoEstrategicoRepository.findActivoById(id);
 
     if (!objetivo) {
       throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
@@ -31,7 +32,7 @@ export class EliminarRelacionOeUseCase {
       throw new ResourceNotFoundError('Relación no encontrada');
     }
 
-    const plan = await this.planEstrategicoRepository.findById(
+    const plan = await this.planEstrategicoRepository.findActivoById(
       objetivo.plan_estrategico_id,
     );
 

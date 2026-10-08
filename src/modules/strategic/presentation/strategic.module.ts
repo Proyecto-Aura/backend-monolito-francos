@@ -18,6 +18,7 @@ import { ListTodosObjetivosEstrategicosUseCase } from '../application/use-cases/
 import { UpdateObjetivoEstrategicoUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
 import { ValidarRelacionesOeService } from '../application/use-cases/objetivo-estrategico/validar-relaciones-oe.service';
+import { ListPerspectivasBscUseCase } from '../application/use-cases/perspectiva-bsc/list-perspectivas-bsc.use-case';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
 import { ObjetivoEstrategicoRepository } from '../domain/repositories/objetivo-estrategico.repository';
@@ -31,11 +32,16 @@ import { PrismaPerspectivaBscRepository } from '../infrastructure/repositories/p
 import { PrismaPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-plan-estrategico.repository';
 import { PrismaTipoModuloRepository } from '../infrastructure/repositories/prisma-tipo-modulo.repository';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
+import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
 import { StrategicDomainExceptionFilter } from './filters/strategic-domain-exception.filter';
 
 @Module({
-  controllers: [PlanesEstrategicosController, ObjetivosEstrategicosController],
+  controllers: [
+    PlanesEstrategicosController,
+    ObjetivosEstrategicosController,
+    PerspectivasBscController,
+  ],
   providers: [
     CreatePlanEstrategicoUseCase,
     GetPlanEstrategicoByIdUseCase,
@@ -55,6 +61,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ActualizarEstadoObjetivoUseCase,
     ObtenerObjetivosPorPlanUseCase,
     ValidarRelacionesOeService,
+    ListPerspectivasBscUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,

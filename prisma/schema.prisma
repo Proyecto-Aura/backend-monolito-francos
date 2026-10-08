@@ -458,7 +458,7 @@ model ObjetivoEstrategico {
   estado_objetivo_id  Int      @default(1)
   responsable         String   @db.VarChar(200)
   nombre              String   @db.VarChar(200)
-  descripcion         String   @db.Text
+  descripcion         String?  @db.Text
   estado              Boolean  @default(true)
   created_at          DateTime @default(now()) @db.Timestamptz(6)
   updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
