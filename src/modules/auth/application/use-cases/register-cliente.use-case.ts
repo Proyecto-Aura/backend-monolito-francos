@@ -98,6 +98,7 @@ export class RegisterClienteUseCase {
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
         verificationToken: tokenVerificacion,
+        frontend: 'tienda',
       });
     } catch (error) {
       this.logger.warn(

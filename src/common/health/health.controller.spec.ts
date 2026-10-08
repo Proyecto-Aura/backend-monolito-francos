@@ -15,6 +15,18 @@ describe('HealthController', () => {
     queryRaw.mockReset();
   });
 
+  it('devuelve el estado ok sin consultar la base de datos', () => {
+    expect(controller.live()).toEqual({ status: 'ok' });
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('sigue devolviendo el estado ok con la base de datos caída', () => {
+    queryRaw.mockRejectedValue(new Error('connection failed'));
+
+    expect(controller.live()).toEqual({ status: 'ok' });
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
   it('devuelve el estado ok cuando la base de datos responde', async () => {
     queryRaw.mockResolvedValue([{ '?column?': 1 }]);
 
