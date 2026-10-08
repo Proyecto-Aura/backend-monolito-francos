@@ -26,7 +26,10 @@ import { CreatePlanEstrategicoUseCase } from '../../application/use-cases/plan-e
 import { EliminarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/eliminar-plan-estrategico.use-case';
 import { GetPlanEstrategicoByIdUseCase } from '../../application/use-cases/plan-estrategico/get-plan-estrategico-by-id.use-case';
 import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-planes-estrategicos.use-case';
+import { ListTodosPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-todos-planes-estrategicos.use-case';
 import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
+import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
 import { PlanEstrategicoPresenter } from '../presenters/plan-estrategico.presenter';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
@@ -38,11 +41,13 @@ export class PlanesEstrategicosController {
   constructor(
     private readonly createPlanEstrategico: CreatePlanEstrategicoUseCase,
     private readonly listPlanesEstrategicos: ListPlanesEstrategicosUseCase,
+    private readonly listTodosPlanesEstrategicos: ListTodosPlanesEstrategicosUseCase,
     private readonly getPlanEstrategicoById: GetPlanEstrategicoByIdUseCase,
     private readonly updatePlanEstrategico: UpdatePlanEstrategicoUseCase,
     private readonly eliminarPlanEstrategico: EliminarPlanEstrategicoUseCase,
     private readonly activarPlanEstrategico: ActivarPlanEstrategicoUseCase,
     private readonly cerrarPlanEstrategico: CerrarPlanEstrategicoUseCase,
+    private readonly obtenerObjetivosPorPlan: ObtenerObjetivosPorPlanUseCase,
   ) {}
 
   @Post()
@@ -63,6 +68,22 @@ export class PlanesEstrategicosController {
     );
   }
 
+  @Get('todos')
+  @Roles('admin')
+  @ApiOperation({
+    summary:
+      'Listar TODOS los planes estratégicos, incluidos los eliminados lógicamente',
+  })
+  @ApiOkResponse({
+    description:
+      'Lista paginada de planes estratégicos (sin filtrar por estado)',
+  })
+  async findAllTodos(@Query() query: ListPlanEstrategicoQueryDto) {
+    return PlanEstrategicoPresenter.paginatedToHttp(
+      await this.listTodosPlanesEstrategicos.execute(query),
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un plan estratégico por ID' })
   @ApiOkResponse({ description: 'Plan estratégico encontrado' })
@@ -71,6 +92,18 @@ export class PlanesEstrategicosController {
     return PlanEstrategicoPresenter.toHttp(
       await this.getPlanEstrategicoById.execute(id),
     );
+  }
+
+  @Get(':id/objetivos-estrategicos')
+  @ApiOperation({
+    summary:
+      'Resumen del plan con sus objetivos estratégicos agrupados por perspectiva',
+  })
+  @ApiOkResponse({ description: 'Plan y sus objetivos estratégicos (Negocio)' })
+  @ApiParam({ name: 'id', type: Number })
+  async objetivosDelPlan(@Param('id', ParseIntPipe) id: number) {
+    const { plan, objetivos } = await this.obtenerObjetivosPorPlan.execute(id);
+    return ObjetivoEstrategicoPresenter.resumenPorPlanToHttp(plan, objetivos);
   }
 
   @Patch(':id')

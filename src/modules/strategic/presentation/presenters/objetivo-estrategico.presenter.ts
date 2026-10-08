@@ -1,5 +1,7 @@
 import { ObjetivoEstrategicoEntityEnriquecido } from '../../domain/repositories/types/objetivo-estrategico-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
+import { PlanEstrategicoEntityConEstado } from '../../domain/repositories/types/plan-estrategico-repository.types';
+import { PlanEstrategicoPresenter } from './plan-estrategico.presenter';
 
 export class ObjetivoEstrategicoPresenter {
   static toHttp(objetivo: ObjetivoEstrategicoEntityEnriquecido) {
@@ -33,6 +35,31 @@ export class ObjetivoEstrategicoPresenter {
   static paginatedGroupedToHttp(
     result: PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>,
   ) {
+    return {
+      data: this.agruparPorPerspectiva(result.data),
+      meta: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        total_pages: Math.ceil(result.total / result.limit),
+      },
+    };
+  }
+
+  static resumenPorPlanToHttp(
+    plan: PlanEstrategicoEntityConEstado,
+    objetivos: ObjetivoEstrategicoEntityEnriquecido[],
+  ) {
+    return {
+      plan: PlanEstrategicoPresenter.toHttp(plan),
+      total_objetivos: objetivos.length,
+      perspectivas: this.agruparPorPerspectiva(objetivos),
+    };
+  }
+
+  private static agruparPorPerspectiva(
+    objetivos: ObjetivoEstrategicoEntityEnriquecido[],
+  ) {
     const grupos = new Map<
       number,
       {
@@ -46,7 +73,7 @@ export class ObjetivoEstrategicoPresenter {
       }
     >();
 
-    for (const objetivo of result.data) {
+    for (const objetivo of objetivos) {
       let grupo = grupos.get(objetivo.perspectiva_bsc.id);
 
       if (!grupo) {
@@ -65,14 +92,6 @@ export class ObjetivoEstrategicoPresenter {
       grupo.objetivos.push(this.toHttp(objetivo));
     }
 
-    return {
-      data: Array.from(grupos.values()),
-      meta: {
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        total_pages: Math.ceil(result.total / result.limit),
-      },
-    };
+    return Array.from(grupos.values());
   }
 }

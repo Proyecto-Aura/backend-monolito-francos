@@ -89,13 +89,14 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
     return objetivo ? ObjetivoEstrategicoMapper.toDomain(objetivo) : null;
   }
 
-  async findMany(
+  private async buscar(
     params: ListObjetivosEstrategicosParams,
+    soloActivos: boolean,
   ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>> {
     const where: Prisma.ObjetivoEstrategicoWhereInput = {
       plan_estrategico_id: params.plan_estrategico_id,
       tipo_modulo: { codigo: 'NEG' },
-      estado: true,
+      ...(soloActivos ? { estado: true } : {}),
       ...(params.perspectiva_bsc_id === undefined
         ? {}
         : { perspectiva_bsc_id: params.perspectiva_bsc_id }),
@@ -127,6 +128,41 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
       page: params.page,
       limit: params.limit,
     };
+  }
+
+  async findMany(
+    params: ListObjetivosEstrategicosParams,
+  ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>> {
+    return this.buscar(params, true);
+  }
+
+  async findManyIncluyendoInactivos(
+    params: ListObjetivosEstrategicosParams,
+  ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>> {
+    return this.buscar(params, false);
+  }
+
+  async findActivosPorPlan(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<ObjetivoEstrategicoEntityEnriquecido[]> {
+    const objetivos = await this.prisma.objetivoEstrategico.findMany({
+      where: {
+        plan_estrategico_id: planId,
+        tipo_modulo_id: tipoModuloId,
+        estado: true,
+      },
+      include: {
+        perspectiva_bsc: true,
+        estado_objetivo: true,
+        relaciones_como_origen: true,
+      },
+      orderBy: [{ perspectiva_bsc: { orden: 'asc' } }, { nombre: 'asc' }],
+    });
+
+    return objetivos.map((objetivo) =>
+      ObjetivoEstrategicoMapper.toDomain(objetivo),
+    );
   }
 
   async existsByName(

@@ -6,6 +6,7 @@ import { CreatePlanEstrategicoUseCase } from '../application/use-cases/plan-estr
 import { EliminarPlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/eliminar-plan-estrategico.use-case';
 import { GetPlanEstrategicoByIdUseCase } from '../application/use-cases/plan-estrategico/get-plan-estrategico-by-id.use-case';
 import { ListPlanesEstrategicosUseCase } from '../application/use-cases/plan-estrategico/list-planes-estrategicos.use-case';
+import { ListTodosPlanesEstrategicosUseCase } from '../application/use-cases/plan-estrategico/list-todos-planes-estrategicos.use-case';
 import { UpdatePlanEstrategicoUseCase } from '../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { CreateObjetivoEstrategicoUseCase } from '../application/use-cases/objetivo-estrategico/create-objetivo-estrategico.use-case';
 import { ActualizarEstadoObjetivoUseCase } from '../application/use-cases/objetivo-estrategico/actualizar-estado-objetivo.use-case';
@@ -13,7 +14,9 @@ import { EliminarObjetivoEstrategicoUseCase } from '../application/use-cases/obj
 import { EliminarRelacionOeUseCase } from '../application/use-cases/objetivo-estrategico/eliminar-relacion-oe.use-case';
 import { GetObjetivoEstrategicoByIdUseCase } from '../application/use-cases/objetivo-estrategico/get-objetivo-estrategico-by-id.use-case';
 import { ListObjetivosEstrategicosUseCase } from '../application/use-cases/objetivo-estrategico/list-objetivos-estrategicos.use-case';
+import { ListTodosObjetivosEstrategicosUseCase } from '../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos.use-case';
 import { UpdateObjetivoEstrategicoUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico.use-case';
+import { ObtenerObjetivosPorPlanUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
 import { ValidarRelacionesOeService } from '../application/use-cases/objetivo-estrategico/validar-relaciones-oe.service';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -37,6 +40,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     CreatePlanEstrategicoUseCase,
     GetPlanEstrategicoByIdUseCase,
     ListPlanesEstrategicosUseCase,
+    ListTodosPlanesEstrategicosUseCase,
     UpdatePlanEstrategicoUseCase,
     EliminarPlanEstrategicoUseCase,
     ActivarPlanEstrategicoUseCase,
@@ -44,10 +48,12 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     CreateObjetivoEstrategicoUseCase,
     GetObjetivoEstrategicoByIdUseCase,
     ListObjetivosEstrategicosUseCase,
+    ListTodosObjetivosEstrategicosUseCase,
     UpdateObjetivoEstrategicoUseCase,
     EliminarObjetivoEstrategicoUseCase,
     EliminarRelacionOeUseCase,
     ActualizarEstadoObjetivoUseCase,
+    ObtenerObjetivosPorPlanUseCase,
     ValidarRelacionesOeService,
     {
       provide: EstadoPlanEstrategicoRepository,

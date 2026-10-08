@@ -14,6 +14,9 @@ export abstract class PlanEstrategicoRepository {
   abstract findMany(
     params: ListPlanesEstrategicosParams,
   ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>>;
+  abstract findManyIncluyendoInactivos(
+    params: ListPlanesEstrategicosParams,
+  ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>>;
   abstract existsByName(nombre: string, excludeId?: number): Promise<boolean>;
   abstract update(
     id: number,

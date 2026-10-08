@@ -28,6 +28,7 @@ import { EliminarObjetivoEstrategicoUseCase } from '../../application/use-cases/
 import { EliminarRelacionOeUseCase } from '../../application/use-cases/objetivo-estrategico/eliminar-relacion-oe.use-case';
 import { GetObjetivoEstrategicoByIdUseCase } from '../../application/use-cases/objetivo-estrategico/get-objetivo-estrategico-by-id.use-case';
 import { ListObjetivosEstrategicosUseCase } from '../../application/use-cases/objetivo-estrategico/list-objetivos-estrategicos.use-case';
+import { ListTodosObjetivosEstrategicosUseCase } from '../../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos.use-case';
 import { UpdateObjetivoEstrategicoUseCase } from '../../application/use-cases/objetivo-estrategico/update-objetivo-estrategico.use-case';
 import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
 
@@ -39,6 +40,7 @@ export class ObjetivosEstrategicosController {
   constructor(
     private readonly createObjetivoEstrategico: CreateObjetivoEstrategicoUseCase,
     private readonly listObjetivosEstrategicos: ListObjetivosEstrategicosUseCase,
+    private readonly listTodosObjetivosEstrategicos: ListTodosObjetivosEstrategicosUseCase,
     private readonly getObjetivoEstrategicoById: GetObjetivoEstrategicoByIdUseCase,
     private readonly updateObjetivoEstrategico: UpdateObjetivoEstrategicoUseCase,
     private readonly eliminarObjetivoEstrategico: EliminarObjetivoEstrategicoUseCase,
@@ -65,6 +67,21 @@ export class ObjetivosEstrategicosController {
   async findAll(@Query() query: ListObjetivoEstrategicoQueryDto) {
     return ObjetivoEstrategicoPresenter.paginatedGroupedToHttp(
       await this.listObjetivosEstrategicos.execute(query),
+    );
+  }
+
+  @Get('todos')
+  @Roles('admin')
+  @ApiOperation({
+    summary:
+      'Listar TODOS los objetivos estratégicos de un plan, incluidos los eliminados lógicamente',
+  })
+  @ApiOkResponse({
+    description: 'Objetivos estratégicos (todos) agrupados por perspectiva BSC',
+  })
+  async findAllTodos(@Query() query: ListObjetivoEstrategicoQueryDto) {
+    return ObjetivoEstrategicoPresenter.paginatedGroupedToHttp(
+      await this.listTodosObjetivosEstrategicos.execute(query),
     );
   }
 

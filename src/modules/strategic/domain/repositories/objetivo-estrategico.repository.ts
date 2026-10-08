@@ -18,6 +18,13 @@ export abstract class ObjetivoEstrategicoRepository {
   abstract findMany(
     params: ListObjetivosEstrategicosParams,
   ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>>;
+  abstract findManyIncluyendoInactivos(
+    params: ListObjetivosEstrategicosParams,
+  ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>>;
+  abstract findActivosPorPlan(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<ObjetivoEstrategicoEntityEnriquecido[]>;
   abstract existsByName(
     planId: number,
     tipoModuloId: number,
