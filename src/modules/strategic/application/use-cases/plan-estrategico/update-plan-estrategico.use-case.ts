@@ -32,9 +32,9 @@ export class UpdatePlanEstrategicoUseCase {
     const anioInicio = dto.anio_inicio ?? plan.anio_inicio;
     const anioFin = dto.anio_fin ?? plan.anio_fin;
 
-    if (anioFin < anioInicio) {
+    if (anioFin <= anioInicio) {
       throw new ResourceConflictError(
-        'El año de fin no puede ser anterior al año de inicio',
+        'El año de fin debe ser posterior al año de inicio',
       );
     }
 

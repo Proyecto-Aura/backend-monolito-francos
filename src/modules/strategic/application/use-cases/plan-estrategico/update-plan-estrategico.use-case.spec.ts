@@ -5,11 +5,11 @@ import { UpdatePlanEstrategicoDto } from '../../dto/plan-estrategico-dtos/update
 import { UpdatePlanEstrategicoUseCase } from './update-plan-estrategico.use-case';
 
 describe('UpdatePlanEstrategicoUseCase', () => {
-  const findById = jest.fn();
+  const findActivoById = jest.fn();
   const existsByName = jest.fn();
   const update = jest.fn();
   const repository = {
-    findById,
+    findActivoById,
     existsByName,
     update,
   } as unknown as jest.Mocked<PlanEstrategicoRepository>;
@@ -44,7 +44,7 @@ describe('UpdatePlanEstrategicoUseCase', () => {
   it('edita un plan en borrador', async () => {
     const plan = createPlan('BORRADOR');
     const planActualizado = { ...plan, nombre: 'Plan Actualizado' };
-    findById.mockResolvedValue(plan);
+    findActivoById.mockResolvedValue(plan);
     existsByName.mockResolvedValue(false);
     update.mockResolvedValue(planActualizado);
 
@@ -67,7 +67,7 @@ describe('UpdatePlanEstrategicoUseCase', () => {
   });
 
   it('lanza 409 si el plan no está en borrador', async () => {
-    findById.mockResolvedValue(createPlan('ACTIVO'));
+    findActivoById.mockResolvedValue(createPlan('ACTIVO'));
 
     await expect(
       useCase.execute(1, { nombre: 'Plan Actualizado' }),
@@ -79,16 +79,29 @@ describe('UpdatePlanEstrategicoUseCase', () => {
     { dto: { anio_inicio: 2031 }, caso: 'usa el año de fin actual' },
     { dto: { anio_fin: 2025 }, caso: 'usa el año de inicio actual' },
   ])('lanza 409 si el rango resultante es inválido: $caso', async ({ dto }) => {
-    findById.mockResolvedValue(createPlan('BORRADOR'));
+    findActivoById.mockResolvedValue(createPlan('BORRADOR'));
 
     await expect(useCase.execute(1, dto)).rejects.toBeInstanceOf(
       ResourceConflictError,
     );
+    await expect(useCase.execute(1, dto)).rejects.toThrow(
+      'El año de fin debe ser posterior al año de inicio',
+    );
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('lanza 409 si el año de fin queda igual al año de inicio', async () => {
+    findActivoById.mockResolvedValue(createPlan('BORRADOR'));
+
+    await expect(useCase.execute(1, { anio_fin: 2026 })).rejects.toThrow(
+      'El año de fin debe ser posterior al año de inicio',
+    );
+
     expect(update).not.toHaveBeenCalled();
   });
 
   it('lanza 409 si el nuevo nombre ya existe y excluye el ID actual', async () => {
-    findById.mockResolvedValue(createPlan('BORRADOR'));
+    findActivoById.mockResolvedValue(createPlan('BORRADOR'));
     existsByName.mockResolvedValue(true);
 
     await expect(
@@ -106,7 +119,7 @@ describe('UpdatePlanEstrategicoUseCase', () => {
     'no consulta duplicados cuando el nombre $caso',
     async ({ dto }: { dto: UpdatePlanEstrategicoDto; caso: string }) => {
       const plan = createPlan('BORRADOR');
-      findById.mockResolvedValue(plan);
+      findActivoById.mockResolvedValue(plan);
       update.mockResolvedValue(plan);
 
       await useCase.execute(1, dto);
