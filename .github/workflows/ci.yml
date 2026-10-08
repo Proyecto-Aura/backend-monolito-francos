@@ -157,7 +157,7 @@ jobs:
             francos-backend:ci
 
           for _ in $(seq 1 30); do
-            if curl -fsS http://localhost:3000/api/docs > /dev/null; then
+            if curl -fsS http://localhost:3000/api/v1/health/live > /dev/null; then
               echo "La aplicación responde"
               estado=$(docker inspect -f '{{.State.Health.Status}}' smoke)
               echo "Estado del HEALTHCHECK: $estado"
