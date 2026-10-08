@@ -7,10 +7,10 @@ import { PlanEstrategicoEntityConEstado } from '../../../domain/repositories/typ
 import { EliminarPlanEstrategicoUseCase } from './eliminar-plan-estrategico.use-case';
 
 describe('EliminarPlanEstrategicoUseCase', () => {
-  const findById = jest.fn();
+  const findActivoById = jest.fn();
   const setEstado = jest.fn();
   const repository = {
-    findById,
+    findActivoById,
     setEstado,
   } as unknown as jest.Mocked<PlanEstrategicoRepository>;
   const useCase = new EliminarPlanEstrategicoUseCase(repository);
@@ -46,7 +46,7 @@ describe('EliminarPlanEstrategicoUseCase', () => {
   it('elimina lógicamente un plan en borrador', async () => {
     const plan = createPlan('BORRADOR');
     const planEliminado = { ...plan, estado: false };
-    findById.mockResolvedValue(plan);
+    findActivoById.mockResolvedValue(plan);
     setEstado.mockResolvedValue(planEliminado);
 
     await expect(useCase.execute(1)).resolves.toBe(planEliminado);
@@ -54,7 +54,7 @@ describe('EliminarPlanEstrategicoUseCase', () => {
   });
 
   it('lanza 404 si el plan no existe', async () => {
-    findById.mockResolvedValue(null);
+    findActivoById.mockResolvedValue(null);
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceNotFoundError,
@@ -63,7 +63,7 @@ describe('EliminarPlanEstrategicoUseCase', () => {
   });
 
   it('lanza 409 si el plan está activo', async () => {
-    findById.mockResolvedValue(createPlan('ACTIVO'));
+    findActivoById.mockResolvedValue(createPlan('ACTIVO'));
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceConflictError,
@@ -72,7 +72,7 @@ describe('EliminarPlanEstrategicoUseCase', () => {
   });
 
   it('lanza 409 si el plan está cerrado', async () => {
-    findById.mockResolvedValue(createPlan('CERRADO'));
+    findActivoById.mockResolvedValue(createPlan('CERRADO'));
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceConflictError,

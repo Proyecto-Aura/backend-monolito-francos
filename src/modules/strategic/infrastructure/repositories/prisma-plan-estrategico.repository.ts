@@ -44,10 +44,23 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
     return plan ? PlanEstrategicoMapper.toDomain(plan) : null;
   }
 
-  async findMany(
+  async findActivoById(
+    id: number,
+  ): Promise<PlanEstrategicoEntityConEstado | null> {
+    const plan = await this.prisma.planEstrategico.findFirst({
+      where: { id, estado: true },
+      include: { estado_plan: true },
+    });
+
+    return plan ? PlanEstrategicoMapper.toDomain(plan) : null;
+  }
+
+  private async buscar(
     params: ListPlanesEstrategicosParams,
+    soloActivos: boolean,
   ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>> {
     const where: Prisma.PlanEstrategicoWhereInput = {
+      ...(soloActivos ? { estado: true } : {}),
       ...(params.search
         ? { nombre: { contains: params.search, mode: 'insensitive' } }
         : {}),
@@ -62,7 +75,7 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
         include: { estado_plan: true },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        orderBy: { nombre: 'asc' },
+        orderBy: [{ estado_plan: { orden: 'asc' } }, { nombre: 'asc' }],
       }),
       this.prisma.planEstrategico.count({ where }),
     ]);
@@ -73,6 +86,18 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
       page: params.page,
       limit: params.limit,
     };
+  }
+
+  async findMany(
+    params: ListPlanesEstrategicosParams,
+  ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>> {
+    return this.buscar(params, true);
+  }
+
+  async findManyIncluyendoInactivos(
+    params: ListPlanesEstrategicosParams,
+  ): Promise<PaginatedResult<PlanEstrategicoEntityConEstado>> {
+    return this.buscar(params, false);
   }
 
   async existsByName(nombre: string, excludeId?: number): Promise<boolean> {

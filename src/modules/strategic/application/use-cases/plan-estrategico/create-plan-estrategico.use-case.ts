@@ -15,9 +15,9 @@ export class CreatePlanEstrategicoUseCase {
   ): Promise<PlanEstrategicoEntityConEstado> {
     const nombre = dto.nombre.trim().replace(/\s+/g, ' ');
 
-    if (dto.anio_fin < dto.anio_inicio) {
+    if (dto.anio_fin <= dto.anio_inicio) {
       throw new ResourceConflictError(
-        'El año de fin no puede ser anterior al año de inicio',
+        'El año de fin debe ser posterior al año de inicio',
       );
     }
 
