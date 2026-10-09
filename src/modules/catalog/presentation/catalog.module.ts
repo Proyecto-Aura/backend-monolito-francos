@@ -36,11 +36,13 @@ import { CategoriaRepository } from '../domain/repositories/categoria.repository
 import { PresentacionRepository } from '../domain/repositories/presentacion.repository';
 import { ProductoRepository } from '../domain/repositories/producto.repository';
 import { ProductoPresentacionRepository } from '../domain/repositories/producto_presentacion.repository';
+import { ProductoTerminadoRepository } from '../domain/repositories/producto-terminado.repository';
 import { PromocionRepository } from '../domain/repositories/promocion.repository';
 import { PrismaCategoriaRepository } from '../infrastructure/repositories/prisma-categoria.repository';
 import { PrismaPresentacionRepository } from '../infrastructure/repositories/prisma-presentacion.repository';
 import { PrismaProductoRepository } from '../infrastructure/repositories/prisma-producto.repository';
 import { PrismaProductoPresentacionRepository } from '../infrastructure/repositories/prisma-producto_presentacion.repository';
+import { PrismaProductoTerminadoRepository } from '../infrastructure/repositories/prisma-producto-terminado.repository';
 import { PrismaPromocionRepository } from '../infrastructure/repositories/prisma-promocion.repository';
 import { CategoriasController } from './controllers/categorias.controller';
 import { PresentacionesController } from './controllers/presentaciones.controller';
@@ -111,6 +113,10 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     {
       provide: CatalogoPublicoRepository,
       useClass: PrismaCatalogoPublicoRepository,
+    },
+    {
+      provide: ProductoTerminadoRepository,
+      useClass: PrismaProductoTerminadoRepository,
     },
     {
       provide: APP_FILTER,
