@@ -19,6 +19,12 @@ import { UpdateObjetivoEstrategicoUseCase } from '../application/use-cases/objet
 import { ObtenerObjetivosPorPlanUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
 import { ValidarRelacionesOeService } from '../application/use-cases/objetivo-estrategico/validar-relaciones-oe.service';
 import { ListPerspectivasBscUseCase } from '../application/use-cases/perspectiva-bsc/list-perspectivas-bsc.use-case';
+import { EliminarDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/eliminar-documento-estrategico.use-case';
+import { ListarDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-documentos-estrategicos.use-case';
+import { ListarTodosDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos.use-case';
+import { ObtenerDocumentoEstrategicoByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-by-id.use-case';
+import { SubirDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico.use-case';
+import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
 import { ObjetivoEstrategicoRepository } from '../domain/repositories/objetivo-estrategico.repository';
@@ -31,6 +37,8 @@ import { PrismaObjetivoEstrategicoRepository } from '../infrastructure/repositor
 import { PrismaPerspectivaBscRepository } from '../infrastructure/repositories/prisma-perspectiva-bsc.repository';
 import { PrismaPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-plan-estrategico.repository';
 import { PrismaTipoModuloRepository } from '../infrastructure/repositories/prisma-tipo-modulo.repository';
+import { PrismaDocumentoEstrategicoRepository } from '../infrastructure/repositories/prisma-documento-estrategico.repository';
+import { DocumentosEstrategicosController } from './controllers/documentos-estrategicos.controller';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
 import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
@@ -41,6 +49,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     PlanesEstrategicosController,
     ObjetivosEstrategicosController,
     PerspectivasBscController,
+    DocumentosEstrategicosController,
   ],
   providers: [
     CreatePlanEstrategicoUseCase,
@@ -62,6 +71,11 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ObtenerObjetivosPorPlanUseCase,
     ValidarRelacionesOeService,
     ListPerspectivasBscUseCase,
+    SubirDocumentoEstrategicoUseCase,
+    ListarDocumentosEstrategicosUseCase,
+    ListarTodosDocumentosEstrategicosUseCase,
+    ObtenerDocumentoEstrategicoByIdUseCase,
+    EliminarDocumentoEstrategicoUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,
@@ -85,6 +99,10 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     {
       provide: ObjetivoEstrategicoRepository,
       useClass: PrismaObjetivoEstrategicoRepository,
+    },
+    {
+      provide: DocumentoEstrategicoRepository,
+      useClass: PrismaDocumentoEstrategicoRepository,
     },
     {
       provide: APP_FILTER,

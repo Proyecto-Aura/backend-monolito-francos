@@ -8,10 +8,12 @@ import { ProductionModule } from './modules/production/presentation/production.m
 import { StrategicModule } from './modules/strategic/presentation/strategic.module';
 import { CatalogModule } from './modules/catalog/presentation/catalog.module';
 import { HealthModule } from './common/health/health.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
 
 @Module({
   imports: [
     PrismaModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     PersonsModule,
