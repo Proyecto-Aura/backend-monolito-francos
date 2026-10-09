@@ -48,6 +48,9 @@ export class CategoriasController {
     return CategoriaPresenter.toHttp(await this.createCategoria.execute(dto));
   }
 
+  // Lectura abierta a ventas: el formulario de productos necesita estas opciones.
+  // Crear, editar y desactivar siguen siendo solo admin (@Roles de la clase).
+  @Roles('admin', 'ventas')
   @Get()
   @ApiOperation({ summary: 'Listar categorías' })
   @ApiOkResponse({ description: 'Lista paginada de categorías' })
@@ -57,6 +60,7 @@ export class CategoriasController {
     );
   }
 
+  @Roles('admin', 'ventas')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una categoría por ID' })
   @ApiParam({ name: 'id', type: Number })
