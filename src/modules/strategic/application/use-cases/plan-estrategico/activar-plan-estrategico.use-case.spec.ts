@@ -9,11 +9,11 @@ import { PlanEstrategicoEntityConEstado } from '../../../domain/repositories/typ
 import { ActivarPlanEstrategicoUseCase } from './activar-plan-estrategico.use-case';
 
 describe('ActivarPlanEstrategicoUseCase', () => {
-  const findById = jest.fn();
+  const findActivoById = jest.fn();
   const updateEstado = jest.fn();
   const findByCodigo = jest.fn();
   const planRepository = {
-    findById,
+    findActivoById,
     updateEstado,
   } as unknown as jest.Mocked<PlanEstrategicoRepository>;
   const estadoRepository = {
@@ -61,7 +61,7 @@ describe('ActivarPlanEstrategicoUseCase', () => {
   it('activa correctamente un plan en borrador', async () => {
     const planBorrador = createPlan('BORRADOR');
     const planActivo = createPlan('ACTIVO');
-    findById.mockResolvedValue(planBorrador);
+    findActivoById.mockResolvedValue(planBorrador);
     findByCodigo.mockResolvedValue(estadoActivo);
     updateEstado.mockResolvedValue(planActivo);
 
@@ -71,7 +71,7 @@ describe('ActivarPlanEstrategicoUseCase', () => {
   });
 
   it('lanza 404 si el plan no existe', async () => {
-    findById.mockResolvedValue(null);
+    findActivoById.mockResolvedValue(null);
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceNotFoundError,
@@ -80,7 +80,7 @@ describe('ActivarPlanEstrategicoUseCase', () => {
   });
 
   it('lanza 409 si el plan no está en borrador', async () => {
-    findById.mockResolvedValue(createPlan('ACTIVO'));
+    findActivoById.mockResolvedValue(createPlan('ACTIVO'));
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceConflictError,
@@ -89,7 +89,7 @@ describe('ActivarPlanEstrategicoUseCase', () => {
   });
 
   it('traduce P2002 a un conflicto con mensaje amigable', async () => {
-    findById.mockResolvedValue(createPlan('BORRADOR'));
+    findActivoById.mockResolvedValue(createPlan('BORRADOR'));
     findByCodigo.mockResolvedValue(estadoActivo);
     updateEstado.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('msg', {
