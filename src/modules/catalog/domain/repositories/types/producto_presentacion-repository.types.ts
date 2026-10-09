@@ -1,3 +1,5 @@
+import { ProductoPresentacionEntity, PromocionEntity } from '../../entities';
+import { UnidadMedidaPresentacion } from '../../enums';
 import { PaginationParams } from './pagination.types';
 
 export interface CreateProductoPresentacionParams {
@@ -26,8 +28,42 @@ export interface UpdateProductoPresentacionParams {
 }
 
 export interface ListProductoPresentacionesParams extends PaginationParams {
+  // Busca en el SKU, el slug y el nombre del producto.
   search?: string;
 
   //filtros
   estado?: boolean;
+  categoria_id?: number;
+  presentacion_id?: number;
+  // true: solo con stock disponible; false: agotadas (sin stock).
+  con_stock?: boolean;
+
+  // Día (medianoche UTC) con el que se decide qué promoción está vigente.
+  fecha_referencia: Date;
+}
+
+// Una fila del catálogo: la presentación de un producto con los datos que el
+// listado necesita mostrar junto a ella.
+export interface ProductoPresentacionCatalogo extends ProductoPresentacionEntity {
+  visible_portal_b: boolean;
+  producto: {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    destacado: boolean;
+    estado: boolean;
+    categoria: { id: number; nombre: string };
+  };
+  presentacion: {
+    id: number;
+    cantidad: number;
+    unidad_medida: UnidadMedidaPresentacion;
+    descripcion: string | null;
+  };
+  producto_terminado: {
+    stock_actual: number;
+    stock_minimo: number;
+    stock_maximo: number | null;
+  } | null;
+  promocion_vigente: PromocionEntity | null;
 }

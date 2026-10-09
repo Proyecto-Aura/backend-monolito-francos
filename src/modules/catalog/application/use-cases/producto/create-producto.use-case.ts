@@ -3,6 +3,7 @@ import { CreateProductoWithPresentacionesDto } from '../../dto/producto-dtos/cre
 import { ProductoRepository } from '../../../domain/repositories/producto.repository';
 import { CategoriaRepository } from '../../../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../../../domain/repositories/presentacion.repository';
+import { ProductoPresentacionRepository } from '../../../domain/repositories/producto_presentacion.repository';
 import { ProductoWithPresentaciones } from '../../../domain/repositories/types/producto-repository.types';
 import {
   ResourceConflictError,
@@ -12,6 +13,7 @@ import {
   createProductoPresentacionSlug,
   validateWholesalePrice,
 } from '../../utils/producto-presentacion.utils';
+import { resolverSlugUnico } from '../../utils/slug-unico.utils';
 
 @Injectable()
 export class CreateProductoUseCase {
@@ -19,6 +21,7 @@ export class CreateProductoUseCase {
     private readonly productoRepository: ProductoRepository,
     private readonly categoriaRepository: CategoriaRepository,
     private readonly presentacionRepository: PresentacionRepository,
+    private readonly productoPresentacionRepository: ProductoPresentacionRepository,
   ) {}
 
   async execute(
@@ -66,8 +69,8 @@ export class CreateProductoUseCase {
       ]),
     );
 
-    const producto_presentaciones = dto.producto_presentaciones.map(
-      (productoPresentacion) => {
+    const producto_presentaciones = await Promise.all(
+      dto.producto_presentaciones.map(async (productoPresentacion) => {
         const presentacion = presentacionesPorId.get(
           productoPresentacion.presentacion_id,
         );
@@ -96,10 +99,13 @@ export class CreateProductoUseCase {
           umbral_mayorista: productoPresentacion.umbral_mayorista ?? null,
           presentacion_id: presentacion.id,
           imagen_url: productoPresentacion.imagen_url ?? null,
-          slug: createProductoPresentacionSlug(nombre, presentacion),
+          slug: await resolverSlugUnico(
+            createProductoPresentacionSlug(nombre, presentacion),
+            (slug) => this.productoPresentacionRepository.existsBySlug(slug),
+          ),
           estado: productoPresentacion.estado ?? true,
         };
-      },
+      }),
     );
 
     /* -------Inserción final a la BD--------------------------- */

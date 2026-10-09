@@ -1,5 +1,7 @@
 import { ProductoPresentacionEntity } from '../../domain/entities';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
+import { ProductoPresentacionCatalogo } from '../../domain/repositories/types/producto_presentacion-repository.types';
+import { formatFechaDia } from '../../application/utils/promocion.utils';
 
 export class ProductoPresentacionPresenter {
   static toHttp(producto_presentacion: ProductoPresentacionEntity) {
@@ -19,9 +21,34 @@ export class ProductoPresentacionPresenter {
     };
   }
 
-  static paginatedToHttp(result: PaginatedResult<ProductoPresentacionEntity>) {
+  // Fila del listado del catálogo: la presentación con su producto, categoría,
+  // stock, visibilidad y la promoción que está vigente hoy.
+  static catalogoToHttp(fila: ProductoPresentacionCatalogo) {
+    const promocion = fila.promocion_vigente;
+
     return {
-      data: result.data.map((producto) => this.toHttp(producto)),
+      ...this.toHttp(fila),
+      visible_portal_b: fila.visible_portal_b,
+      producto: fila.producto,
+      presentacion: fila.presentacion,
+      producto_terminado: fila.producto_terminado,
+      promocion_vigente: promocion
+        ? {
+            id: promocion.id,
+            nombre: promocion.nombre,
+            valor: promocion.valor,
+            fecha_inicio: formatFechaDia(promocion.fecha_inicio),
+            fecha_fin: formatFechaDia(promocion.fecha_fin),
+          }
+        : null,
+    };
+  }
+
+  static paginatedToHttp(
+    result: PaginatedResult<ProductoPresentacionCatalogo>,
+  ) {
+    return {
+      data: result.data.map((fila) => this.catalogoToHttp(fila)),
       meta: {
         total: result.total,
         page: result.page,

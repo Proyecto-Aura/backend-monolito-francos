@@ -2,7 +2,9 @@ import { PromocionEntity } from '../entities';
 import { PaginatedResult } from './types/pagination.types';
 import {
   CreatePromocionParams,
+  ExistsPromocionOverlapParams,
   ListPromocionesParams,
+  UpdatePromocionParams,
 } from './types/promocion-repository.types';
 
 export abstract class PromocionRepository {
@@ -12,10 +14,13 @@ export abstract class PromocionRepository {
     params: ListPromocionesParams,
   ): Promise<PaginatedResult<PromocionEntity>>;
   abstract existsByName(nombre: string, excludeId?: number): Promise<boolean>;
-  // se podria agregar buscar productos por tipo
+  // Una presentación no puede tener dos promociones activas con fechas que se cruzan.
+  abstract existsOverlap(
+    params: ExistsPromocionOverlapParams,
+  ): Promise<boolean>;
   abstract update(
     id: number,
-    params: CreatePromocionParams,
+    params: UpdatePromocionParams,
   ): Promise<PromocionEntity>;
   abstract setStatus(id: number, estado: boolean): Promise<PromocionEntity>;
 }

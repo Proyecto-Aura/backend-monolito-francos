@@ -20,18 +20,26 @@ import { GetProductoPresentacionUseCase } from '../application/use-cases/product
 import { ListProductoPresentacionesUseCase } from '../application/use-cases/producto_presentacion/list-producto_presentacion.use-case';
 import { UpdateProductoPresentacionUseCase } from '../application/use-cases/producto_presentacion/update-producto_presentacion.use-case';
 import { ChangeProductoPresentacionStatusUseCase } from '../application/use-cases/producto_presentacion/change-producto_presentacion-status.use-case';
+import { CreatePromocionUseCase } from '../application/use-cases/promocion/create-promocion.use-case';
+import { GetPromocionByIdUseCase } from '../application/use-cases/promocion/get-promocion-by-id.use-case';
+import { ListPromocionesUseCase } from '../application/use-cases/promocion/list-promociones.use-case';
+import { UpdatePromocionUseCase } from '../application/use-cases/promocion/update-promocion.use-case';
+import { ChangePromocionStatusUseCase } from '../application/use-cases/promocion/change-promocion-status.use-case';
 import { CategoriaRepository } from '../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../domain/repositories/presentacion.repository';
 import { ProductoRepository } from '../domain/repositories/producto.repository';
 import { ProductoPresentacionRepository } from '../domain/repositories/producto_presentacion.repository';
+import { PromocionRepository } from '../domain/repositories/promocion.repository';
 import { PrismaCategoriaRepository } from '../infrastructure/repositories/prisma-categoria.repository';
 import { PrismaPresentacionRepository } from '../infrastructure/repositories/prisma-presentacion.repository';
 import { PrismaProductoRepository } from '../infrastructure/repositories/prisma-producto.repository';
 import { PrismaProductoPresentacionRepository } from '../infrastructure/repositories/prisma-producto_presentacion.repository';
+import { PrismaPromocionRepository } from '../infrastructure/repositories/prisma-promocion.repository';
 import { CategoriasController } from './controllers/categorias.controller';
 import { PresentacionesController } from './controllers/presentaciones.controller';
 import { ProductoPresentacionesController } from './controllers/producto-presentaciones.controller';
 import { ProductosController } from './controllers/productos.controller';
+import { PromocionesController } from './controllers/promociones.controller';
 import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception.filter';
 
 @Module({
@@ -40,6 +48,7 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     PresentacionesController,
     ProductosController,
     ProductoPresentacionesController,
+    PromocionesController,
   ],
   providers: [
     CreateCategoriaUseCase,
@@ -69,6 +78,12 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
       provide: ProductoPresentacionRepository,
       useClass: PrismaProductoPresentacionRepository,
     },
+    CreatePromocionUseCase,
+    GetPromocionByIdUseCase,
+    ListPromocionesUseCase,
+    UpdatePromocionUseCase,
+    ChangePromocionStatusUseCase,
+    { provide: PromocionRepository, useClass: PrismaPromocionRepository },
     {
       provide: APP_FILTER,
       useClass: CatalogDomainExceptionFilter,
