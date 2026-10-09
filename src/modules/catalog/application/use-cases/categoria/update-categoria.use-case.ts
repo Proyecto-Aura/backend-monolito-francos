@@ -6,6 +6,7 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/catalog-domain.errors';
+import { normalizarTexto } from '../../utils/texto.utils';
 
 @Injectable()
 export class UpdateCategoriaUseCase {
@@ -17,11 +18,15 @@ export class UpdateCategoriaUseCase {
       throw new ResourceNotFoundError('Categoría no encontrada');
     }
 
-    if (dto.nombre && dto.nombre !== categoria.nombre) {
-      const exists = await this.categoriaRepository.existsByName(
-        dto.nombre,
-        id,
-      );
+    const nombre =
+      dto.nombre !== undefined ? normalizarTexto(dto.nombre) : undefined;
+    const descripcion =
+      dto.descripcion !== undefined
+        ? normalizarTexto(dto.descripcion)
+        : undefined;
+
+    if (nombre && nombre.toLowerCase() !== categoria.nombre.toLowerCase()) {
+      const exists = await this.categoriaRepository.existsByName(nombre, id);
       if (exists) {
         throw new ResourceConflictError(
           'Ya existe una categoria con ese nombre',
@@ -29,9 +34,6 @@ export class UpdateCategoriaUseCase {
       }
     }
 
-    return this.categoriaRepository.update(id, {
-      nombre: dto.nombre,
-      descripcion: dto.descripcion,
-    });
+    return this.categoriaRepository.update(id, { nombre, descripcion });
   }
 }
