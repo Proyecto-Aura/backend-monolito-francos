@@ -56,7 +56,7 @@ export class PrismaCategoriaRepository implements CategoriaRepository {
   async existsByName(nombre: string, excludeId?: number): Promise<boolean> {
     const categoria = await this.prisma.categoria.findFirst({
       where: {
-        nombre,
+        nombre: { equals: nombre, mode: 'insensitive' },
         ...(excludeId === undefined ? {} : { id: { not: excludeId } }),
       },
       select: { id: true },
