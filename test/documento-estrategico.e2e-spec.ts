@@ -1,14 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  DeleteObjectCommand,
-  HeadObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
-import { envs } from '../src/config/envs';
+import {
+  S3Service,
+  type StorageBucket,
+} from '../src/infrastructure/storage/s3.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -45,6 +43,35 @@ interface ErrorHttp {
   message: string;
 }
 
+// Doble en memoria de S3Service: en CI no hay MinIO ni credenciales reales
+// (decisión del equipo de CI/CD), así que este archivo es el único que
+// reemplaza el servicio completo en vez de pegarle a un bucket de verdad.
+class FakeS3Service {
+  private readonly objetos = new Map<string, Buffer>();
+
+  private clave(bucket: StorageBucket, key: string): string {
+    return `${bucket}:${key}`;
+  }
+
+  upload(bucket: StorageBucket, key: string, body: Buffer): Promise<void> {
+    this.objetos.set(this.clave(bucket, key), body);
+    return Promise.resolve();
+  }
+
+  delete(bucket: StorageBucket, key: string): Promise<void> {
+    this.objetos.delete(this.clave(bucket, key));
+    return Promise.resolve();
+  }
+
+  getPresignedUrl(bucket: StorageBucket, key: string): Promise<string> {
+    return Promise.resolve(`https://fake-s3.test/${bucket}/${key}`);
+  }
+
+  existe(bucket: StorageBucket, key: string): boolean {
+    return this.objetos.has(this.clave(bucket, key));
+  }
+}
+
 describe('Documento estratégico (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
@@ -58,22 +85,7 @@ describe('Documento estratégico (e2e)', () => {
   let planBId: number;
   let documentoAId: number;
   let documentoPlanBId: number;
-  const rutasArchivo = new Set<string>();
-
-  const s3Client = new S3Client({
-    region: envs.s3Region,
-    ...(envs.s3Endpoint && {
-      endpoint: envs.s3Endpoint,
-      forcePathStyle: envs.s3ForcePathStyle,
-    }),
-    ...(envs.s3AccessKeyId &&
-      envs.s3SecretAccessKey && {
-        credentials: {
-          accessKeyId: envs.s3AccessKeyId,
-          secretAccessKey: envs.s3SecretAccessKey,
-        },
-      }),
-  });
+  const fakeS3Service = new FakeS3Service();
 
   const login = async (credentials: typeof ADMIN_CREDENTIALS) => {
     const response = await request(app.getHttpServer())
@@ -143,32 +155,12 @@ describe('Documento estratégico (e2e)', () => {
     });
   };
 
-  const deleteS3Object = async (key: string) => {
-    try {
-      await s3Client.send(
-        new DeleteObjectCommand({ Bucket: envs.s3BucketDocs, Key: key }),
-      );
-    } catch {
-      // El endpoint DELETE puede haber eliminado ya el objeto.
-    }
-  };
-
   const collectAndDeleteTestData = async () => {
     const plans = await prisma.planEstrategico.findMany({
       where: { nombre: { startsWith: PLAN_PREFIX } },
       select: { id: true },
     });
     const planIds = plans.map(({ id }) => id);
-
-    if (planIds.length > 0) {
-      const documents = await prisma.documentoEstrategico.findMany({
-        where: { plan_estrategico_id: { in: planIds } },
-        select: { ruta_archivo: true },
-      });
-      documents.forEach(({ ruta_archivo }) => rutasArchivo.add(ruta_archivo));
-    }
-
-    await Promise.all([...rutasArchivo].map(deleteS3Object));
 
     if (planIds.length > 0) {
       await prisma.$transaction([
@@ -203,7 +195,7 @@ describe('Documento estratégico (e2e)', () => {
     contentType = 'application/pdf',
     buffer = PDF_BUFFER,
   ) => {
-    const response = await request(app.getHttpServer())
+    return request(app.getHttpServer())
       .post('/api/v1/documentos-estrategicos')
       .set('Authorization', `Bearer ${token}`)
       .field('plan_estrategico_id', String(planId))
@@ -212,23 +204,15 @@ describe('Documento estratégico (e2e)', () => {
         filename,
         contentType,
       });
-
-    if (response.status === 201) {
-      const documento = response.body as DocumentoHttp;
-      const persisted = await prisma.documentoEstrategico.findUniqueOrThrow({
-        where: { id: documento.id },
-        select: { ruta_archivo: true },
-      });
-      rutasArchivo.add(persisted.ruta_archivo);
-    }
-
-    return response;
   };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(S3Service)
+      .useValue(fakeS3Service)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -372,14 +356,7 @@ describe('Documento estratégico (e2e)', () => {
       where: { id: documento.id },
     });
     expect(persisted?.ruta_archivo).toBeTruthy();
-    await expect(
-      s3Client.send(
-        new HeadObjectCommand({
-          Bucket: envs.s3BucketDocs,
-          Key: persisted?.ruta_archivo,
-        }),
-      ),
-    ).resolves.toBeDefined();
+    expect(fakeS3Service.existe('docs', persisted!.ruta_archivo)).toBe(true);
     documentoAId = documento.id;
   });
 
@@ -487,7 +464,7 @@ describe('Documento estratégico (e2e)', () => {
       .expect(400);
   });
 
-  it('elimina físicamente un documento y su objeto de MinIO', async () => {
+  it('elimina físicamente un documento y su objeto del storage', async () => {
     const persisted = await prisma.documentoEstrategico.findUniqueOrThrow({
       where: { id: documentoAId },
       select: { ruta_archivo: true },
@@ -503,14 +480,7 @@ describe('Documento estratégico (e2e)', () => {
         where: { id: documentoAId },
       }),
     ).resolves.toBeNull();
-    await expect(
-      s3Client.send(
-        new HeadObjectCommand({
-          Bucket: envs.s3BucketDocs,
-          Key: persisted.ruta_archivo,
-        }),
-      ),
-    ).rejects.toBeDefined();
+    expect(fakeS3Service.existe('docs', persisted.ruta_archivo)).toBe(false);
   });
 
   it('rechaza 409 al eliminar un documento cuyo plan está Activo', async () => {

@@ -1,4 +1,10 @@
-import { S3Service } from '../../../../../infrastructure/storage/s3.service';
+// El use-case real importa S3Service, que importa config/envs - sin este mock,
+// la validacion de Joi de envs.ts corre al importarse y explota en CI (no hay .env).
+jest.mock('../../../../../config/envs', () => ({
+  envs: {},
+}));
+
+import type { S3Service } from '../../../../../infrastructure/storage/s3.service';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
