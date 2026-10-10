@@ -25,8 +25,5 @@ export abstract class DocumentoEstrategicoRepository {
     tipoModuloId: number,
     nombre: string,
   ): Promise<boolean>;
-  abstract setEstado(
-    id: number,
-    estado: boolean,
-  ): Promise<DocumentoEstrategicoEntity>;
+  abstract deleteById(id: number): Promise<void>;
 }

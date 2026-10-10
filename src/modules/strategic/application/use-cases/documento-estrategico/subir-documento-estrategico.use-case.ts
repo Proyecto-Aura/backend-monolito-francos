@@ -64,14 +64,19 @@ export class SubirDocumentoEstrategicoUseCase {
       archivo.mimetype,
     );
 
-    return this.documentoEstrategicoRepository.create(
-      {
-        plan_estrategico_id: plan.id,
-        nombre,
-        ruta_archivo: rutaArchivo,
-        nombre_original: archivo.originalname,
-      },
-      tipoModulo.id,
-    );
+    try {
+      return await this.documentoEstrategicoRepository.create(
+        {
+          plan_estrategico_id: plan.id,
+          nombre,
+          ruta_archivo: rutaArchivo,
+          nombre_original: archivo.originalname,
+        },
+        tipoModulo.id,
+      );
+    } catch (error) {
+      await this.s3Service.delete('docs', rutaArchivo);
+      throw error;
+    }
   }
 }

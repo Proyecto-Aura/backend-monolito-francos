@@ -26,11 +26,18 @@ export class S3Service implements OnModuleInit {
       ...(envs.s3Endpoint && {
         endpoint: envs.s3Endpoint,
         forcePathStyle: envs.s3ForcePathStyle,
-        credentials: {
-          accessKeyId: envs.s3AccessKeyId!,
-          secretAccessKey: envs.s3SecretAccessKey!,
-        },
       }),
+      // En AWS real NO se definen S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY: el
+      // backend corre con el rol IAM de la tarea, y el SDK lo usa automáticamente
+      // mientras no reciba `credentials`. Si alguien las define igual, el SDK
+      // las usa a ellas en vez del rol — evitarlo en el despliegue de AWS.
+      ...(envs.s3AccessKeyId &&
+        envs.s3SecretAccessKey && {
+          credentials: {
+            accessKeyId: envs.s3AccessKeyId,
+            secretAccessKey: envs.s3SecretAccessKey,
+          },
+        }),
     });
   }
 

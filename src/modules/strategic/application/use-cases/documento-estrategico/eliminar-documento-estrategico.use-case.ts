@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { S3Service } from '../../../../../infrastructure/storage/s3.service';
-import { DocumentoEstrategicoEntity } from '../../../domain/entities';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
@@ -18,7 +17,7 @@ export class EliminarDocumentoEstrategicoUseCase {
     private readonly s3Service: S3Service,
   ) {}
 
-  async execute(id: number): Promise<DocumentoEstrategicoEntity> {
+  async execute(id: number): Promise<void> {
     const documento =
       await this.documentoEstrategicoRepository.findActivoById(id);
     const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
@@ -44,7 +43,6 @@ export class EliminarDocumentoEstrategicoUseCase {
     }
 
     await this.s3Service.delete('docs', documento.ruta_archivo);
-
-    return this.documentoEstrategicoRepository.setEstado(id, false);
+    await this.documentoEstrategicoRepository.deleteById(id);
   }
 }

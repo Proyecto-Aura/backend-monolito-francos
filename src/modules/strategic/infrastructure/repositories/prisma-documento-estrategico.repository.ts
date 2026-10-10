@@ -106,14 +106,7 @@ export class PrismaDocumentoEstrategicoRepository implements DocumentoEstrategic
     return DocumentoEstrategicoMapper.toDomain(documento);
   }
 
-  async setEstado(
-    id: number,
-    estado: boolean,
-  ): Promise<DocumentoEstrategicoEntity> {
-    const documento = await this.prisma.documentoEstrategico.update({
-      where: { id },
-      data: { estado },
-    });
-    return DocumentoEstrategicoMapper.toDomain(documento);
+  async deleteById(id: number): Promise<void> {
+    await this.prisma.documentoEstrategico.delete({ where: { id } });
   }
 }

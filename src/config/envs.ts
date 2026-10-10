@@ -41,8 +41,16 @@ const envSchema = joi
     SMTP_FROM: joi.string().required(),
     S3_ENDPOINT: joi.string().optional(),
     S3_REGION: joi.string().default('us-east-1'),
-    S3_ACCESS_KEY_ID: joi.string().optional(),
-    S3_SECRET_ACCESS_KEY: joi.string().optional(),
+    S3_ACCESS_KEY_ID: joi.string().when('S3_ENDPOINT', {
+      is: joi.exist(),
+      then: joi.required(),
+      otherwise: joi.optional(),
+    }),
+    S3_SECRET_ACCESS_KEY: joi.string().when('S3_ENDPOINT', {
+      is: joi.exist(),
+      then: joi.required(),
+      otherwise: joi.optional(),
+    }),
     S3_FORCE_PATH_STYLE: joi.boolean().default(false),
     S3_BUCKET_DOCS: joi.string().required(),
     S3_BUCKET_MEDIA: joi.string().required(),

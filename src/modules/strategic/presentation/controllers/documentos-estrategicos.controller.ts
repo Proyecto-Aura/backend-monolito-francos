@@ -93,20 +93,24 @@ export class DocumentosEstrategicosController {
     return DocumentoEstrategicoPresenter.paginatedToHttp(result, urls);
   }
 
-  @Get('todos')
-  @Roles('admin')
-  @ApiOperation({
-    summary:
-      'Listar TODOS los documentos estratégicos de un plan, incluidos los eliminados lógicamente',
-  })
-  @ApiOkResponse({
-    description: 'Documentos estratégicos, incluidos los inactivos',
-  })
-  async findAllTodos(@Query() query: ListDocumentoEstrategicoQueryDto) {
-    const { result, urls } =
-      await this.listarTodosDocumentosEstrategicos.execute(query);
-    return DocumentoEstrategicoPresenter.paginatedToHttp(result, urls);
-  }
+  // GET /documentos-estrategicos/todos deshabilitado (no comentar por qué dentro
+  // del código es obvio): desde que `eliminar` hace borrado físico (Anexo 2),
+  // nunca existe una fila `estado: false` que listar aquí. Se deja comentado,
+  // no borrado, por si en el futuro se necesita reactivar.
+  // @Get('todos')
+  // @Roles('admin')
+  // @ApiOperation({
+  //   summary:
+  //     'Listar TODOS los documentos estratégicos de un plan, incluidos los eliminados lógicamente',
+  // })
+  // @ApiOkResponse({
+  //   description: 'Documentos estratégicos, incluidos los inactivos',
+  // })
+  // async findAllTodos(@Query() query: ListDocumentoEstrategicoQueryDto) {
+  //   const { result, urls } =
+  //     await this.listarTodosDocumentosEstrategicos.execute(query);
+  //   return DocumentoEstrategicoPresenter.paginatedToHttp(result, urls);
+  // }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un documento estratégico por ID' })
@@ -124,9 +128,7 @@ export class DocumentosEstrategicosController {
     description: 'Documento estratégico eliminado correctamente',
   })
   @ApiParam({ name: 'id', type: Number })
-  async eliminar(@Param('id', ParseIntPipe) id: number) {
-    return DocumentoEstrategicoPresenter.toHttp(
-      await this.eliminarDocumentoEstrategico.execute(id),
-    );
+  async eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.eliminarDocumentoEstrategico.execute(id);
   }
 }
