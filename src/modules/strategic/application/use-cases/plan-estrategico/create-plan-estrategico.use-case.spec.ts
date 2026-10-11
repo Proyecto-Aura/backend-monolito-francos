@@ -64,7 +64,20 @@ describe('CreatePlanEstrategicoUseCase', () => {
         anio_inicio: 2030,
         anio_fin: 2026,
       }),
-    ).rejects.toBeInstanceOf(ResourceConflictError);
+    ).rejects.toThrow('El año de fin debe ser posterior al año de inicio');
+
+    expect(existsByName).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('lanza 409 si el año de fin es igual al año de inicio', async () => {
+    await expect(
+      useCase.execute({
+        nombre: 'Plan Estratégico 2026',
+        anio_inicio: 2030,
+        anio_fin: 2030,
+      }),
+    ).rejects.toThrow('El año de fin debe ser posterior al año de inicio');
 
     expect(existsByName).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();

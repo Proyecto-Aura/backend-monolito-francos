@@ -47,6 +47,8 @@ export class PrismaProductoRepository implements ProductoRepository {
               ...p,
               producto_id: producto.id,
               sku: `FR-P${producto.id}-PR${p.presentacion_id}`,
+              // Cada presentación nace con su producto terminado (RF-A024).
+              producto_terminado: { create: {} },
             },
           }),
         ),

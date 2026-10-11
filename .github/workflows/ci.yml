@@ -11,7 +11,8 @@ on:
   push:
     branches:
       - develop
-      - main
+  # Permite que cd.yml lo llame como una pieza
+  workflow_call:
 
 permissions:
   contents: read
@@ -96,12 +97,15 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/francos_ci
       JWT_SECRET: ci-only-not-a-real-secret
-      FRONTEND_URL: http://localhost:4200
+      FRONTEND_STORE_URL: http://localhost:4200
+      FRONTEND_PORTAL_URL: http://localhost:4201
       SMTP_HOST: localhost
       SMTP_PORT: 1025
       SMTP_USER: ci
       SMTP_PASS: ci
       SMTP_FROM: ci@francos.test
+      S3_BUCKET_DOCS: francos-docs-ci
+      S3_BUCKET_MEDIA: francos-media-ci
     steps:
       - name: Descargar código
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -147,15 +151,18 @@ jobs:
           docker run -d --name smoke -p 3000:3000 \
             -e DATABASE_URL=postgresql://ci:ci@localhost:5432/francos_ci \
             -e JWT_SECRET=ci-only-not-a-real-secret \
-            -e FRONTEND_URL=http://localhost:4200 \
+            -e FRONTEND_STORE_URL=http://localhost:4200 \
+            -e FRONTEND_PORTAL_URL=http://localhost:4201 \
             -e SMTP_HOST=localhost \
             -e SMTP_USER=ci \
             -e SMTP_PASS=ci \
             -e SMTP_FROM=ci@francos.test \
+            -e S3_BUCKET_DOCS=francos-docs-ci \
+            -e S3_BUCKET_MEDIA=francos-media-ci \
             francos-backend:ci
 
           for _ in $(seq 1 30); do
-            if curl -fsS http://localhost:3000/api/docs > /dev/null; then
+            if curl -fsS http://localhost:3000/api/v1/health/live > /dev/null; then
               echo "La aplicación responde"
               estado=$(docker inspect -f '{{.State.Health.Status}}' smoke)
               echo "Estado del HEALTHCHECK: $estado"

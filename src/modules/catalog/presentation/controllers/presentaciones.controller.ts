@@ -50,6 +50,9 @@ export class PresentacionesController {
     );
   }
 
+  // Lectura abierta a ventas: el formulario de productos necesita estas opciones.
+  // Crear, editar y desactivar siguen siendo solo admin (@Roles de la clase).
+  @Roles('admin', 'ventas')
   @Get()
   @ApiOperation({ summary: 'Listar presentaciones' })
   @ApiOkResponse({ description: 'Lista paginada de presentaciones' })
@@ -59,6 +62,7 @@ export class PresentacionesController {
     );
   }
 
+  @Roles('admin', 'ventas')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una presentación por ID' })
   @ApiParam({ name: 'id', type: Number })

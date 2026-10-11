@@ -331,14 +331,18 @@ model ProductoPresentacion {
   umbral_mayorista Int?
   producto_id      Int
   presentacion_id  Int
-  imagen_url       String?  @db.Text
+  // Solo la key dentro de francos-media (productos/<uuid>.<ext>); la URL se arma al responder.
+  imagen_key       String?  @db.VarChar(255)
   slug             String?  @unique(map: "uq_producto_presentacion_slug") @db.VarChar(100)
   estado           Boolean  @default(true)
+  // Nace oculta del catálogo del cliente (RF-A025) hasta que se active a mano.
+  visible_portal_b Boolean  @default(false)
   created_at       DateTime @default(now()) @db.Timestamptz(6)
   updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   promociones        Promocion[] @relation("PromocionProducto")
   promociones_regalo   Promocion[] @relation("PromocionRegalo")
+  producto_terminado ProductoTerminado?
 
   producto Producto @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_producto")
 
@@ -377,6 +381,24 @@ model Promocion {
  * #########################################################
  */
 
+// Existencias de una presentación de producto, siempre contadas en unidades. Se
+// crea sola con cada presentación (RF-A024) y su stock solo cambia con movimientos
+// de inventario. No tiene `estado` propio: no se activa ni desactiva directamente,
+// sigue al de la presentación.
+model ProductoTerminado {
+  id                       Int      @id(map: "pk_producto_terminado") @default(autoincrement())
+  producto_presentacion_id Int      @unique(map: "uq_producto_terminado_producto_presentacion")
+  stock_actual             Decimal  @default(0) @db.Decimal(10, 2)
+  stock_minimo             Decimal  @default(1) @db.Decimal(10, 2)
+  stock_maximo             Decimal? @db.Decimal(10, 2)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_terminado_producto_presentacion")
+
+  @@map("producto_terminado")
+}
+
 model EstadoPlanEstrategico {
   id         Int      @id(map: "pk_estado_plan_estrategico") @default(autoincrement())
   codigo     String   @unique(map: "uq_estado_plan_codigo") @db.VarChar(20)
@@ -405,5 +427,110 @@ model PlanEstrategico {
 
   estado_plan EstadoPlanEstrategico @relation(fields: [estado_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_plan_estrategico_estado")
 
+  objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
+
   @@map("plan_estrategico")
+}
+
+model PerspectivaBsc {
+  id          Int      @id(map: "pk_perspectiva_bsc") @default(autoincrement())
+  nombre      String   @unique(map: "uq_perspectiva_nombre") @db.VarChar(100)
+  descripcion String?  @db.Text
+  orden       Int      @db.SmallInt
+  estado      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos ObjetivoEstrategico[]
+
+  @@map("perspectiva_bsc")
+}
+
+model TipoModulo {
+  id         Int      @id(map: "pk_tipo_modulo") @default(autoincrement())
+  codigo     String   @unique(map: "uq_tipo_modulo_codigo") @db.VarChar(10)
+  nombre     String   @db.VarChar(100)
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
+
+  @@map("tipo_modulo")
+}
+
+model EstadoObjetivo {
+  id         Int      @id(map: "pk_estado_objetivo") @default(autoincrement())
+  codigo     String   @unique(map: "uq_estado_objetivo_codigo") @db.VarChar(20)
+  nombre     String   @db.VarChar(100)
+  orden      Int      @unique(map: "uq_estado_objetivo_orden") @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos ObjetivoEstrategico[]
+
+  @@map("estado_objetivo")
+}
+
+model ObjetivoEstrategico {
+  id                  Int      @id(map: "pk_objetivo_estrategico") @default(autoincrement())
+  codigo              String   @db.VarChar(20)
+  plan_estrategico_id Int
+  perspectiva_bsc_id  Int
+  tipo_modulo_id      Int
+  oe_negocio_id       Int?
+  estado_objetivo_id  Int      @default(1)
+  responsable         String   @db.VarChar(200)
+  nombre              String   @db.VarChar(200)
+  descripcion         String?  @db.Text
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_plan_estrategico")
+  perspectiva_bsc  PerspectivaBsc  @relation(fields: [perspectiva_bsc_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_perspectiva_bsc")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_tipo_modulo")
+  estado_objetivo  EstadoObjetivo  @relation(fields: [estado_objetivo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_estado_objetivo")
+
+  oe_negocio      ObjetivoEstrategico?  @relation("AlineamientoTiNegocio", fields: [oe_negocio_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_negocio")
+  oe_alineados_ti ObjetivoEstrategico[] @relation("AlineamientoTiNegocio")
+
+  relaciones_como_origen  RelacionOe[] @relation("RelacionOrigen")
+  relaciones_como_destino RelacionOe[] @relation("RelacionDestino")
+
+  @@map("objetivo_estrategico")
+}
+
+model RelacionOe {
+  id         Int      @id(map: "pk_relacion_oe") @default(autoincrement())
+  origen_id  Int
+  destino_id Int
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  origen  ObjetivoEstrategico @relation("RelacionOrigen", fields: [origen_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_origen")
+  destino ObjetivoEstrategico @relation("RelacionDestino", fields: [destino_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_destino")
+
+  @@map("relacion_oe")
+}
+
+model DocumentoEstrategico {
+  id                  Int      @id(map: "pk_documento_estrategico") @default(autoincrement())
+  plan_estrategico_id Int
+  tipo_modulo_id      Int
+  nombre              String   @db.VarChar(200)
+  ruta_archivo        String   @db.VarChar(500)
+  nombre_original     String?  @db.VarChar(255)
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_plan_estrategico")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_tipo_modulo")
+
+  @@map("documento_estrategico")
 }

@@ -20,7 +20,6 @@ export class CreateProductoWithPresentacionesDto extends CreateProductoDto {
         precio_mayorista: 7.5,
         umbral_mayorista: 12,
         presentacion_id: 1,
-        imagen_url: 'https://example.com/arroz-superior-1kg.jpg',
         estado: true,
       },
     ],

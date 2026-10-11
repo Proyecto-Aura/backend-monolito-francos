@@ -4,7 +4,9 @@ import { PromocionRepository } from '../../domain/repositories/promocion.reposit
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import {
   CreatePromocionParams,
+  ExistsPromocionOverlapParams,
   ListPromocionesParams,
+  UpdatePromocionParams,
 } from '../../domain/repositories/types/promocion-repository.types';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { PromocionMapper } from '../mappers/promocion.mapper';
@@ -68,9 +70,27 @@ export class PrismaPromocionRepository implements PromocionRepository {
     });
     return promocion !== null;
   }
+  async existsOverlap(params: ExistsPromocionOverlapParams): Promise<boolean> {
+    const promocion = await this.prisma.promocion.findFirst({
+      where: {
+        producto_presentacion_id: params.producto_presentacion_id,
+        estado: true,
+        // Dos rangos se cruzan si cada uno empieza antes de que termine el otro.
+        fecha_inicio: { lte: params.fecha_fin },
+        fecha_fin: { gte: params.fecha_inicio },
+        ...(params.excludeId === undefined
+          ? {}
+          : { id: { not: params.excludeId } }),
+      },
+      select: { id: true },
+    });
+
+    return promocion !== null;
+  }
+
   async update(
     id: number,
-    params: CreatePromocionParams,
+    params: UpdatePromocionParams,
   ): Promise<PromocionEntity> {
     const promocion = await this.prisma.promocion.update({
       where: { id },

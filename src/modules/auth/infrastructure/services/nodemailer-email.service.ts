@@ -5,6 +5,7 @@ import { EmailService } from '../../domain/services/email.service';
 import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
+  FrontendDestino,
 } from '../../domain/services/types/email-service.types';
 
 @Injectable()
@@ -25,7 +26,7 @@ export class NodemailerEmailService implements EmailService {
     params: SendVerificationEmailParams,
   ): Promise<void> {
     // Link que el usuario abrirá desde el correo (lo maneja el frontend).
-    const url = `${envs.frontendUrl}/verify-email?token=${params.verificationToken}`;
+    const url = `${this.getFrontendUrl(params.frontend)}/verify-email?token=${params.verificationToken}`;
 
     await this.transporter.sendMail({
       from: envs.smtpFrom,
@@ -45,5 +46,11 @@ export class NodemailerEmailService implements EmailService {
       subject: "Tus credenciales de acceso — Franco's",
       html: `<p>Hola ${params.nombre}, tu usuario es <b>${params.username}</b> y tu contraseña temporal es <b>${params.contrasenaDefault}</b>. Deberás cambiarla al iniciar sesión.</p>`,
     });
+  }
+
+  private getFrontendUrl(frontend: FrontendDestino): string {
+    return frontend === 'tienda'
+      ? envs.frontendStoreUrl
+      : envs.frontendPortalUrl;
   }
 }

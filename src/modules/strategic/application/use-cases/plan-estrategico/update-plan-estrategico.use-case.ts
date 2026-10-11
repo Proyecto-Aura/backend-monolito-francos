@@ -17,7 +17,7 @@ export class UpdatePlanEstrategicoUseCase {
     id: number,
     dto: UpdatePlanEstrategicoDto,
   ): Promise<PlanEstrategicoEntityConEstado> {
-    const plan = await this.planEstrategicoRepository.findById(id);
+    const plan = await this.planEstrategicoRepository.findActivoById(id);
 
     if (!plan) {
       throw new ResourceNotFoundError('Plan estratégico no encontrado');
@@ -32,9 +32,9 @@ export class UpdatePlanEstrategicoUseCase {
     const anioInicio = dto.anio_inicio ?? plan.anio_inicio;
     const anioFin = dto.anio_fin ?? plan.anio_fin;
 
-    if (anioFin < anioInicio) {
+    if (anioFin <= anioInicio) {
       throw new ResourceConflictError(
-        'El año de fin no puede ser anterior al año de inicio',
+        'El año de fin debe ser posterior al año de inicio',
       );
     }
 

@@ -4,9 +4,9 @@ import { PlanEstrategicoEntityConEstado } from '../../../domain/repositories/typ
 import { GetPlanEstrategicoByIdUseCase } from './get-plan-estrategico-by-id.use-case';
 
 describe('GetPlanEstrategicoByIdUseCase', () => {
-  const findById = jest.fn();
+  const findActivoById = jest.fn();
   const repository = {
-    findById,
+    findActivoById,
   } as unknown as jest.Mocked<PlanEstrategicoRepository>;
   const useCase = new GetPlanEstrategicoByIdUseCase(repository);
 
@@ -35,14 +35,14 @@ describe('GetPlanEstrategicoByIdUseCase', () => {
   });
 
   it('devuelve el plan encontrado', async () => {
-    findById.mockResolvedValue(plan);
+    findActivoById.mockResolvedValue(plan);
 
     await expect(useCase.execute(1)).resolves.toBe(plan);
-    expect(findById).toHaveBeenCalledWith(1);
+    expect(findActivoById).toHaveBeenCalledWith(1);
   });
 
   it('lanza 404 si el plan no existe', async () => {
-    findById.mockResolvedValue(null);
+    findActivoById.mockResolvedValue(null);
 
     await expect(useCase.execute(1)).rejects.toBeInstanceOf(
       ResourceNotFoundError,

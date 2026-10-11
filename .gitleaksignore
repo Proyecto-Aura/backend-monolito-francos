@@ -1,0 +1,11 @@
+# Falso positivo: contraseña hardcodeada de un usuario de prueba desechable
+# en el e2e de objetivo_estrategico (mismo patrón que VentasE2e123 en
+# plan-estrategico.e2e-spec.ts, que no dispara la regla por ser más corta).
+# No es un secreto real.
+a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:generic-api-key:21
+
+# Falso positivo: contrasena hardcodeada del usuario de prueba "inventario" en los e2e de
+# catalogo y promociones (HU-A-007). Es un usuario desechable que el propio test crea y
+# borra; no es un secreto real. Mismo caso que el de objetivo_estrategico de arriba.
+4c13f2bfa366dc91850c51d4fb9e725def809118:test/promociones.e2e-spec.ts:generic-api-key:24
+4c13f2bfa366dc91850c51d4fb9e725def809118:test/catalogo.e2e-spec.ts:generic-api-key:25

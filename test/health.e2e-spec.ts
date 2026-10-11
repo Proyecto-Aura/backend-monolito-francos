@@ -29,7 +29,18 @@ describe('Health (e2e)', () => {
       .expect({ status: 'ok' });
   });
 
+  it('GET /api/v1/health/live sin token devuelve 200', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/health/live')
+      .expect(200)
+      .expect({ status: 'ok' });
+  });
+
   it('HEAD /api/v1/health sin token devuelve 200 para el healthcheck de Docker', async () => {
     await request(app.getHttpServer()).head('/api/v1/health').expect(200);
+  });
+
+  it('HEAD /api/v1/health/live sin token devuelve 200', async () => {
+    await request(app.getHttpServer()).head('/api/v1/health/live').expect(200);
   });
 });

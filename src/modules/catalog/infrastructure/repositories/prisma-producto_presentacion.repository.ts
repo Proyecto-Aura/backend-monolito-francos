@@ -5,10 +5,14 @@ import { PaginatedResult } from '../../domain/repositories/types/pagination.type
 import {
   CreateProductoPresentacionParams,
   ListProductoPresentacionesParams,
+  ProductoPresentacionCatalogo,
   UpdateProductoPresentacionParams,
 } from '../../domain/repositories/types/producto_presentacion-repository.types';
 import { Injectable } from '@nestjs/common';
-import { ProductoPresentacionMapper } from '../mappers/producto_presentacion.mapper';
+import {
+  PRODUCTO_PRESENTACION_CATALOGO_INCLUDE,
+  ProductoPresentacionMapper,
+} from '../mappers/producto_presentacion.mapper';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -18,9 +22,11 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
   async create(
     params: CreateProductoPresentacionParams,
   ): Promise<ProductoPresentacionEntity> {
+    // Escritura anidada: la presentación y su producto terminado (stock 0,
+    // mínimo 1) se crean juntos o no se crea ninguno.
     const producto_presentacion = await this.prisma.productoPresentacion.create(
       {
-        data: params,
+        data: { ...params, producto_terminado: { create: {} } },
       },
     );
 
@@ -35,38 +41,84 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
   }
   async findMany(
     params: ListProductoPresentacionesParams,
-  ): Promise<PaginatedResult<ProductoPresentacionEntity>> {
+  ): Promise<PaginatedResult<ProductoPresentacionCatalogo>> {
     const where: Prisma.ProductoPresentacionWhereInput = {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
-      ...(params.search
-        ? {
-            OR: [
-              { sku: { contains: params.search, mode: 'insensitive' } },
-              { slug: { contains: params.search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
+      ...(params.presentacion_id === undefined
+        ? {}
+        : { presentacion_id: params.presentacion_id }),
+      ...(params.categoria_id === undefined
+        ? {}
+        : { producto: { categoria_id: params.categoria_id } }),
+      // Cada condición con OR va en su propio AND para que no se pisen entre sí.
+      AND: [
+        ...(params.search
+          ? [
+              {
+                OR: [
+                  { sku: { contains: params.search, mode: 'insensitive' } },
+                  { slug: { contains: params.search, mode: 'insensitive' } },
+                  {
+                    producto: {
+                      nombre: { contains: params.search, mode: 'insensitive' },
+                    },
+                  },
+                ],
+              } satisfies Prisma.ProductoPresentacionWhereInput,
+            ]
+          : []),
+        ...(params.con_stock === undefined
+          ? []
+          : [
+              params.con_stock
+                ? { producto_terminado: { is: { stock_actual: { gt: 0 } } } }
+                : {
+                    // Agotada: sin stock, o sin producto terminado todavía.
+                    OR: [
+                      { producto_terminado: { is: null } },
+                      {
+                        producto_terminado: {
+                          is: { stock_actual: { lte: 0 } },
+                        },
+                      },
+                    ],
+                  },
+            ]),
+      ],
     };
 
     const [producto_presentaciones, total] = await this.prisma.$transaction([
       this.prisma.productoPresentacion.findMany({
         where,
+        include: PRODUCTO_PRESENTACION_CATALOGO_INCLUDE(
+          params.fecha_referencia,
+        ),
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        orderBy: { created_at: 'asc' },
+        orderBy: [{ producto: { nombre: 'asc' } }, { id: 'asc' }],
       }),
       this.prisma.productoPresentacion.count({ where }),
     ]);
 
     return {
       data: producto_presentaciones.map((pp) =>
-        ProductoPresentacionMapper.toDomain(pp),
+        ProductoPresentacionMapper.toCatalogo(pp),
       ),
       total,
       page: params.page,
       limit: params.limit,
     };
   }
+  async existsBySlug(slug: string): Promise<boolean> {
+    const productoPresentacion =
+      await this.prisma.productoPresentacion.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+
+    return productoPresentacion !== null;
+  }
+
   async existsBySku(sku: string, excludeId?: number): Promise<boolean> {
     const producto_presentacion =
       await this.prisma.productoPresentacion.findFirst({
