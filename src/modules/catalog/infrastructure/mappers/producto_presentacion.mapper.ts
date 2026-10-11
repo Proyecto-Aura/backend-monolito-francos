@@ -44,7 +44,7 @@ export class ProductoPresentacionMapper {
       producto_presentacion.umbral_mayorista,
       producto_presentacion.producto_id,
       producto_presentacion.presentacion_id,
-      producto_presentacion.imagen_url,
+      producto_presentacion.imagen_key,
       producto_presentacion.slug,
       producto_presentacion.estado,
       producto_presentacion.created_at,

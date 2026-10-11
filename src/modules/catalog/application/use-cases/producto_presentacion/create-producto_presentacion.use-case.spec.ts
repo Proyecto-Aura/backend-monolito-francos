@@ -89,7 +89,7 @@ describe('CreateProductoPresentacionUseCase', () => {
         umbral_mayorista: 6,
         producto_id: 5,
         presentacion_id: 2,
-        imagen_url: null,
+        imagen_key: null,
         slug: 'chifles-clasicos-200-gr-p2',
         estado: true,
       });

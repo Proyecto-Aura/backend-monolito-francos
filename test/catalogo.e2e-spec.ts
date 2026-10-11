@@ -4,9 +4,12 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { envs } from '../src/config/envs';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
+import { S3Service } from '../src/infrastructure/storage/s3.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 import { fechaHoy } from '../src/modules/catalog/application/utils/promocion.utils';
+import { FakeS3Service } from './fake-s3.service';
 
 const ADMIN_CREDENTIALS = { identificador: 'admin', password: 'admin123' };
 
@@ -35,6 +38,7 @@ const PRESENTACION_DESCRIPCION = 'E2E OFT0-345';
 const PRODUCTO_NOMBRE = 'E2E Producto OFT0-345';
 
 describe('Catálogo (e2e)', () => {
+  const fakeS3Service = new FakeS3Service();
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
@@ -154,7 +158,10 @@ describe('Catálogo (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(S3Service)
+      .useValue(fakeS3Service)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -557,6 +564,127 @@ describe('Catálogo (e2e)', () => {
         .set('Authorization', `Bearer ${ventasToken}`)
         .expect(200);
       expect(reactivado.body).toMatchObject({ estado: true });
+    });
+  });
+
+  describe('imagen de la presentación (POST /producto-presentaciones/:id/imagen)', () => {
+    let productoPresentacionId: number;
+    // Nest valida el tipo por los primeros bytes del archivo (no por el
+    // Content-Type), así que cada tipo necesita su firma real.
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const JPG = Buffer.from([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+      0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+    ]);
+    const GIF = Buffer.from([
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00,
+      0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x3b,
+    ]);
+    const PDF = Buffer.from('%PDF-1.4 %%EOF');
+
+    const subir = (
+      id: number,
+      archivo: Buffer,
+      contentType: string,
+      token = ventasToken,
+    ) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/producto-presentaciones/${id}/imagen`)
+        .set('Authorization', `Bearer ${token}`)
+        .attach('imagen', archivo, { filename: 'foto', contentType });
+
+    beforeAll(async () => {
+      const presentacion = await prisma.productoPresentacion.findFirstOrThrow({
+        where: { producto_id: productoId },
+        orderBy: { id: 'asc' },
+      });
+      productoPresentacionId = presentacion.id;
+    });
+
+    it('sube la imagen, guarda solo la key y responde con la URL armada', async () => {
+      const response = await subir(
+        productoPresentacionId,
+        PNG,
+        'image/png',
+      ).expect(201);
+
+      const guardada = await prisma.productoPresentacion.findUniqueOrThrow({
+        where: { id: productoPresentacionId },
+      });
+      const key = guardada.imagen_key as string;
+      expect(key).toMatch(/^productos\/[0-9a-f-]{36}\.png$/);
+      expect((response.body as { imagen_url: string }).imagen_url).toBe(
+        `${envs.mediaBaseUrl}/${key}`,
+      );
+      expect(fakeS3Service.objeto('media', key)).toMatchObject({
+        contentType: 'image/png',
+        cacheControl: 'public, max-age=31536000, immutable',
+      });
+    });
+
+    it('al reemplazarla usa otra key y deja la anterior sin borrar', async () => {
+      const antes = await prisma.productoPresentacion.findUniqueOrThrow({
+        where: { id: productoPresentacionId },
+      });
+
+      await subir(productoPresentacionId, JPG, 'image/jpeg').expect(201);
+
+      const despues = await prisma.productoPresentacion.findUniqueOrThrow({
+        where: { id: productoPresentacionId },
+      });
+      expect(despues.imagen_key).not.toBe(antes.imagen_key);
+      expect(despues.imagen_key).toMatch(/\.jpg$/);
+      expect(fakeS3Service.existe('media', antes.imagen_key as string)).toBe(
+        true,
+      );
+    });
+
+    it('rechaza tipos que no son jpg, png o webp (400)', async () => {
+      await subir(productoPresentacionId, GIF, 'image/gif').expect(400);
+      await subir(productoPresentacionId, PDF, 'application/pdf').expect(400);
+    });
+
+    it('rechaza una imagen de más de 2 MB (413)', async () => {
+      await subir(
+        productoPresentacionId,
+        Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024)]),
+        'image/png',
+      ).expect(413);
+    });
+
+    it('sin archivo devuelve 400, sin token 401 y con rol inventario 403', async () => {
+      await request(app.getHttpServer())
+        .post(
+          `/api/v1/producto-presentaciones/${productoPresentacionId}/imagen`,
+        )
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .expect(400);
+      await request(app.getHttpServer())
+        .post(
+          `/api/v1/producto-presentaciones/${productoPresentacionId}/imagen`,
+        )
+        .expect(401);
+      await subir(
+        productoPresentacionId,
+        PNG,
+        'image/png',
+        inventarioToken,
+      ).expect(403);
+    });
+
+    it('devuelve 404 si la presentación no existe', async () => {
+      await subir(999999, PNG, 'image/png').expect(404);
+    });
+
+    it('ya no acepta imagen_url al crear ni al editar (400)', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/producto-presentaciones/${productoPresentacionId}`)
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .send({ imagen_url: 'https://example.com/a.jpg' })
+        .expect(400);
     });
   });
 

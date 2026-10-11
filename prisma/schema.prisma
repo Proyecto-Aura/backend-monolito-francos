@@ -328,7 +328,8 @@ model ProductoPresentacion {
   umbral_mayorista Int?
   producto_id      Int
   presentacion_id  Int
-  imagen_url       String?  @db.Text
+  // Solo la key dentro de francos-media (productos/<uuid>.<ext>); la URL se arma al responder.
+  imagen_key       String?  @db.VarChar(255)
   slug             String?  @unique(map: "uq_producto_presentacion_slug") @db.VarChar(100)
   estado           Boolean  @default(true)
   // Nace oculta del catálogo del cliente (RF-A025) hasta que se active a mano.

@@ -39,7 +39,6 @@ export class UpdateProductoPresentacionUseCase {
       precio_unitario: dto.precio_unitario,
       precio_mayorista: dto.precio_mayorista,
       umbral_mayorista: dto.umbral_mayorista,
-      imagen_url: dto.imagen_url,
     });
   }
 }

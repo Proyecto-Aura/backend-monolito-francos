@@ -20,6 +20,7 @@ import { GetProductoPresentacionUseCase } from '../application/use-cases/product
 import { ListProductoPresentacionesUseCase } from '../application/use-cases/producto_presentacion/list-producto_presentacion.use-case';
 import { UpdateProductoPresentacionUseCase } from '../application/use-cases/producto_presentacion/update-producto_presentacion.use-case';
 import { ChangeProductoPresentacionStatusUseCase } from '../application/use-cases/producto_presentacion/change-producto_presentacion-status.use-case';
+import { SubirImagenProductoPresentacionUseCase } from '../application/use-cases/producto_presentacion/subir-imagen-producto_presentacion.use-case';
 import { CreatePromocionUseCase } from '../application/use-cases/promocion/create-promocion.use-case';
 import { GetPromocionByIdUseCase } from '../application/use-cases/promocion/get-promocion-by-id.use-case';
 import { ListPromocionesUseCase } from '../application/use-cases/promocion/list-promociones.use-case';
@@ -74,6 +75,7 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     ListProductoPresentacionesUseCase,
     UpdateProductoPresentacionUseCase,
     ChangeProductoPresentacionStatusUseCase,
+    SubirImagenProductoPresentacionUseCase,
     {
       provide: ProductoPresentacionRepository,
       useClass: PrismaProductoPresentacionRepository,

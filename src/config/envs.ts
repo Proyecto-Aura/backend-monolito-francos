@@ -22,6 +22,7 @@ interface EnvVars {
   S3_FORCE_PATH_STYLE: boolean;
   S3_BUCKET_DOCS: string;
   S3_BUCKET_MEDIA: string;
+  MEDIA_BASE_URL: string;
 }
 
 const envSchema = joi
@@ -54,6 +55,7 @@ const envSchema = joi
     S3_FORCE_PATH_STYLE: joi.boolean().default(false),
     S3_BUCKET_DOCS: joi.string().required(),
     S3_BUCKET_MEDIA: joi.string().required(),
+    MEDIA_BASE_URL: joi.string().default('/media'),
   })
   .and('S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY')
   .unknown(true);
@@ -87,4 +89,5 @@ export const envs = {
   s3ForcePathStyle: envVars.S3_FORCE_PATH_STYLE,
   s3BucketDocs: envVars.S3_BUCKET_DOCS,
   s3BucketMedia: envVars.S3_BUCKET_MEDIA,
+  mediaBaseUrl: envVars.MEDIA_BASE_URL,
 };

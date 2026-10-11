@@ -98,7 +98,7 @@ export class CreateProductoUseCase {
           precio_mayorista: productoPresentacion.precio_mayorista ?? null,
           umbral_mayorista: productoPresentacion.umbral_mayorista ?? null,
           presentacion_id: presentacion.id,
-          imagen_url: productoPresentacion.imagen_url ?? null,
+          imagen_key: null,
           slug: await resolverSlugUnico(
             createProductoPresentacionSlug(nombre, presentacion),
             (slug) => this.productoPresentacionRepository.existsBySlug(slug),

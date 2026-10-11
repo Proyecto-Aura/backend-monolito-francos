@@ -2,6 +2,7 @@ import { ProductoPresentacionEntity } from '../../domain/entities';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import { ProductoPresentacionCatalogo } from '../../domain/repositories/types/producto_presentacion-repository.types';
 import { formatFechaDia } from '../../application/utils/promocion.utils';
+import { envs } from '../../../../config/envs';
 
 export class ProductoPresentacionPresenter {
   static toHttp(producto_presentacion: ProductoPresentacionEntity) {
@@ -13,7 +14,9 @@ export class ProductoPresentacionPresenter {
       umbral_mayorista: producto_presentacion.umbral_mayorista,
       producto_id: producto_presentacion.producto_id,
       presentacion_id: producto_presentacion.presentacion_id,
-      imagen_url: producto_presentacion.imagen_url,
+      imagen_url: producto_presentacion.imagen_key
+        ? `${envs.mediaBaseUrl}/${producto_presentacion.imagen_key}`
+        : null,
       slug: producto_presentacion.slug,
       estado: producto_presentacion.estado,
       created_at: producto_presentacion.created_at,

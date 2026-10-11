@@ -61,6 +61,7 @@ export class S3Service implements OnModuleInit {
     key: string,
     body: Buffer,
     contentType: string,
+    cacheControl?: string,
   ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
@@ -68,6 +69,7 @@ export class S3Service implements OnModuleInit {
         Key: key,
         Body: body,
         ContentType: contentType,
+        ...(cacheControl && { CacheControl: cacheControl }),
       }),
     );
   }

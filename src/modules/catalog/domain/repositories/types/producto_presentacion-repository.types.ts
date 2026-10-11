@@ -9,7 +9,7 @@ export interface CreateProductoPresentacionParams {
   umbral_mayorista: number | null;
   producto_id: number;
   presentacion_id: number;
-  imagen_url: string | null;
+  imagen_key: string | null;
   slug: string | null;
   estado: boolean;
 }
@@ -24,7 +24,7 @@ export interface UpdateProductoPresentacionParams {
   precio_unitario?: number;
   precio_mayorista?: number | null;
   umbral_mayorista?: number | null;
-  imagen_url?: string | null;
+  imagen_key?: string | null;
 }
 
 export interface ListProductoPresentacionesParams extends PaginationParams {

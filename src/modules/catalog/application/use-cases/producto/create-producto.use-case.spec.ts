@@ -108,7 +108,7 @@ describe('CreateProductoUseCase', () => {
             precio_unitario: 10,
             precio_mayorista: null,
             umbral_mayorista: null,
-            imagen_url: null,
+            imagen_key: null,
             slug: 'chifles-clasicos-100-gr-p1',
             estado: true,
           },

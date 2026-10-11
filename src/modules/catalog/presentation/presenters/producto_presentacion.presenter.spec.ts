@@ -1,3 +1,9 @@
+// El presenter importa config/envs; sin este mock la validación de Joi corre al
+// importarse y explota en CI (no hay .env).
+jest.mock('../../../../config/envs', () => ({
+  envs: { mediaBaseUrl: '/media' },
+}));
+
 import {
   ProductoPresentacionEntity,
   PromocionEntity,
@@ -21,7 +27,7 @@ describe('ProductoPresentacionPresenter (catálogo)', () => {
         6,
         1,
         2,
-        'https://cdn.test/chifles.jpg',
+        'productos/chifles.jpg',
         'chifles-clasicos-200-gr-p2',
         true,
         fecha,
@@ -53,6 +59,17 @@ describe('ProductoPresentacionPresenter (catálogo)', () => {
       overrides,
     );
 
+  it('arma la URL de la imagen con la base de media y la key, y devuelve null si no hay imagen', () => {
+    const sinImagen = makeFila({ imagen_key: null });
+
+    expect(ProductoPresentacionPresenter.toHttp(makeFila()).imagen_url).toBe(
+      '/media/productos/chifles.jpg',
+    );
+    expect(
+      ProductoPresentacionPresenter.toHttp(sinImagen).imagen_url,
+    ).toBeNull();
+  });
+
   it('incluye producto, categoría, presentación, stock y visibilidad junto con la presentación del producto', () => {
     expect(ProductoPresentacionPresenter.catalogoToHttp(makeFila())).toEqual({
       id: 10,
@@ -62,7 +79,7 @@ describe('ProductoPresentacionPresenter (catálogo)', () => {
       umbral_mayorista: 6,
       producto_id: 1,
       presentacion_id: 2,
-      imagen_url: 'https://cdn.test/chifles.jpg',
+      imagen_url: '/media/productos/chifles.jpg',
       slug: 'chifles-clasicos-200-gr-p2',
       estado: true,
       visible_portal_b: false,
