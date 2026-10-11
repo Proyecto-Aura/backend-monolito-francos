@@ -1,6 +1,7 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { IS_AUTHENTICATED_ONLY_KEY } from '../decorators/authenticated.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RolesGuard } from './roles.guard';
 
@@ -20,10 +21,15 @@ describe('RolesGuard', () => {
       }),
     }) as unknown as ExecutionContext;
 
-  const mockMetadata = (isPublic: boolean, requiredRoles?: string[]): void => {
+  const mockMetadata = (
+    isPublic: boolean,
+    requiredRoles?: string[],
+    authenticatedOnly?: boolean,
+  ): void => {
     getAllAndOverride.mockImplementation((key: string) => {
       if (key === IS_PUBLIC_KEY) return isPublic;
       if (key === ROLES_KEY) return requiredRoles;
+      if (key === IS_AUTHENTICATED_ONLY_KEY) return authenticatedOnly;
       return undefined;
     });
   };
@@ -61,5 +67,17 @@ describe('RolesGuard', () => {
 
     expect(() => guard.canActivate(createContext())).not.toThrow();
     expect(guard.canActivate(createContext())).toBe(false);
+  });
+
+  it('permite el acceso con @Authenticated() sin importar el rol', () => {
+    mockMetadata(false, undefined, true);
+
+    expect(guard.canActivate(createContext(['ventas']))).toBe(true);
+  });
+
+  it('@Authenticated() no exime de estar logueado (lo exige JwtAuthGuard antes)', () => {
+    mockMetadata(false, undefined, true);
+
+    expect(guard.canActivate(createContext())).toBe(true);
   });
 });

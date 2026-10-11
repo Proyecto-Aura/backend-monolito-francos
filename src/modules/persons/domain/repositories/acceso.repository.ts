@@ -14,4 +14,10 @@ export abstract class AccesoRepository {
   abstract findByRouteId(rutaId: number): Promise<AccesoEntity[]>;
 
   abstract setStatus(id: number, estado: boolean): Promise<AccesoEntity>;
+
+  /**
+   * IDs de ruta activos a los que tiene acceso cualquiera de los roles dados (por nombre).
+   * Se busca por nombre, no por id, porque el JWT solo trae nombres de rol.
+   */
+  abstract findActiveRutaIdsByRoleNames(roleNames: string[]): Promise<number[]>;
 }

@@ -190,6 +190,9 @@ model Rol {
 model Ruta {
   id         Int      @id(map: "pk_ruta") @default(autoincrement())
   nombre     String   @unique(map: "uq_ruta_nombre") @db.VarChar(100)
+  etiqueta   String   @db.VarChar(150)
+  icono      String   @db.VarChar(50)
+  descripcion String? @db.VarChar(255)
   estado     Boolean  @default(true)
   parent_id  Int?
   created_at DateTime @default(now()) @db.Timestamptz(6)

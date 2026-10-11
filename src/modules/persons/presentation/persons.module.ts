@@ -11,6 +11,7 @@ import { ChangeRutaStatusUseCase } from '../application/use-cases/rutas/change-r
 import { CreateRutaUseCase } from '../application/use-cases/rutas/create-ruta.use-case';
 import { GetRutaByIdUseCase } from '../application/use-cases/rutas/get-ruta-by-id.use-case';
 import { GetRutasTreeUseCase } from '../application/use-cases/rutas/get-rutas-tree.use-case';
+import { GetMiMenuUseCase } from '../application/use-cases/rutas/get-mi-menu.use-case';
 import { ListRutasUseCase } from '../application/use-cases/rutas/list-rutas.use-case';
 import { MoveRutaUseCase } from '../application/use-cases/rutas/move-ruta.use-case';
 import { UpdateRutaUseCase } from '../application/use-cases/rutas/update-ruta.use-case';
@@ -88,6 +89,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     GetRutaByIdUseCase,
     ListRutasUseCase,
     GetRutasTreeUseCase,
+    GetMiMenuUseCase,
     UpdateRutaUseCase,
     MoveRutaUseCase,
     ChangeRutaStatusUseCase,

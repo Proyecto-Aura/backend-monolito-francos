@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { IS_AUTHENTICATED_ONLY_KEY } from '../decorators/authenticated.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import type { AuthenticatedUser } from '../strategies/jwt.strategy';
 
@@ -19,6 +20,15 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (isPublic) {
+      return true;
+    }
+
+    const authenticatedOnly = this.reflector.getAllAndOverride<boolean>(
+      IS_AUTHENTICATED_ONLY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (authenticatedOnly) {
       return true;
     }
 
