@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
   Res,
@@ -10,6 +11,7 @@ import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -23,10 +25,14 @@ import { RegisterEmpleadoUseCase } from '../../application/use-cases/register-em
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
+import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
 import { envs } from '../../../../config/envs';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
+import { Authenticated } from '../decorators/authenticated.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../strategies/jwt.strategy';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
@@ -41,7 +47,20 @@ export class AuthController {
     private readonly login: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly getMeUseCase: GetMeUseCase,
   ) {}
+
+  @Get('me')
+  @Authenticated()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Datos del usuario autenticado (nombre completo y roles)',
+  })
+  @ApiOkResponse({ description: 'Datos del usuario' })
+  async me(@CurrentUser() user: AuthenticatedUser) {
+    const resultado = await this.getMeUseCase.execute(user.userId, user.roles);
+    return AuthPresenter.meToHttp(resultado);
+  }
 
   @Post('register')
   @Public()
