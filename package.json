@@ -39,7 +39,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "joi": "^18.2.3",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.0.9",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.22.0",
