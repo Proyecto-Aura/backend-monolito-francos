@@ -2,11 +2,12 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsPositive,
   IsString,
+  Max,
   MaxLength,
 } from 'class-validator';
 import { UnidadMedidaPresentacion } from '../../../domain/enums';
@@ -16,8 +17,9 @@ export class CreatePresentacionDto {
   @ApiProperty({ example: 1, minimum: 1 })
   @IsNotEmpty()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @IsPositive()
+  @Max(1_000_000)
   cantidad!: number;
 
   @ApiProperty({ enum: UnidadMedidaPresentacion, example: 'kg' })
