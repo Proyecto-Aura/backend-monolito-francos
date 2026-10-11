@@ -3,11 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
-import {
-  S3Service,
-  type StorageBucket,
-} from '../src/infrastructure/storage/s3.service';
+import { S3Service } from '../src/infrastructure/storage/s3.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { FakeS3Service } from './fake-s3.service';
 import request from 'supertest';
 import { App } from 'supertest/types';
 
@@ -41,35 +39,6 @@ interface DocumentoHttp {
 
 interface ErrorHttp {
   message: string;
-}
-
-// Doble en memoria de S3Service: en CI no hay MinIO ni credenciales reales
-// (decisión del equipo de CI/CD), así que este archivo es el único que
-// reemplaza el servicio completo en vez de pegarle a un bucket de verdad.
-class FakeS3Service {
-  private readonly objetos = new Map<string, Buffer>();
-
-  private clave(bucket: StorageBucket, key: string): string {
-    return `${bucket}:${key}`;
-  }
-
-  upload(bucket: StorageBucket, key: string, body: Buffer): Promise<void> {
-    this.objetos.set(this.clave(bucket, key), body);
-    return Promise.resolve();
-  }
-
-  delete(bucket: StorageBucket, key: string): Promise<void> {
-    this.objetos.delete(this.clave(bucket, key));
-    return Promise.resolve();
-  }
-
-  getPresignedUrl(bucket: StorageBucket, key: string): Promise<string> {
-    return Promise.resolve(`https://fake-s3.test/${bucket}/${key}`);
-  }
-
-  existe(bucket: StorageBucket, key: string): boolean {
-    return this.objetos.has(this.clave(bucket, key));
-  }
 }
 
 describe('Documento estratégico (e2e)', () => {
