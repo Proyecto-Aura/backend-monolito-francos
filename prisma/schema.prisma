@@ -403,6 +403,7 @@ model PlanEstrategico {
   estado_plan EstadoPlanEstrategico @relation(fields: [estado_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_plan_estrategico_estado")
 
   objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
 
   @@map("plan_estrategico")
 }
@@ -430,6 +431,7 @@ model TipoModulo {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
 
   @@map("tipo_modulo")
 }
@@ -489,4 +491,21 @@ model RelacionOe {
   destino ObjetivoEstrategico @relation("RelacionDestino", fields: [destino_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_destino")
 
   @@map("relacion_oe")
+}
+
+model DocumentoEstrategico {
+  id                  Int      @id(map: "pk_documento_estrategico") @default(autoincrement())
+  plan_estrategico_id Int
+  tipo_modulo_id      Int
+  nombre              String   @db.VarChar(200)
+  ruta_archivo        String   @db.VarChar(500)
+  nombre_original     String?  @db.VarChar(255)
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_plan_estrategico")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_tipo_modulo")
+
+  @@map("documento_estrategico")
 }
