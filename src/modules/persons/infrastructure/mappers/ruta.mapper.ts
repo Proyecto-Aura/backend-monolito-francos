@@ -6,6 +6,9 @@ export class RutaMapper {
     return new RutaEntity(
       ruta.id,
       ruta.nombre,
+      ruta.etiqueta,
+      ruta.icono,
+      ruta.descripcion,
       ruta.estado,
       ruta.parent_id,
       ruta.created_at,
