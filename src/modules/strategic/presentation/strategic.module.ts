@@ -24,6 +24,8 @@ import { ListarDocumentosEstrategicosUseCase } from '../application/use-cases/do
 import { ListarTodosDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos.use-case';
 import { ObtenerDocumentoEstrategicoByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-by-id.use-case';
 import { SubirDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico.use-case';
+import { CreateKpiUseCase } from '../application/use-cases/kpi/create-kpi.use-case';
+import { ListKpisPorObjetivoUseCase } from '../application/use-cases/kpi/list-kpis-por-objetivo.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -31,6 +33,9 @@ import { ObjetivoEstrategicoRepository } from '../domain/repositories/objetivo-e
 import { PerspectivaBscRepository } from '../domain/repositories/perspectiva-bsc.repository';
 import { PlanEstrategicoRepository } from '../domain/repositories/plan-estrategico.repository';
 import { TipoModuloRepository } from '../domain/repositories/tipo-modulo.repository';
+import { FrecuenciaMedicionRepository } from '../domain/repositories/frecuencia-medicion.repository';
+import { KpiRepository } from '../domain/repositories/kpi.repository';
+import { UnidadMedidaKpiRepository } from '../domain/repositories/unidad-medida-kpi.repository';
 import { PrismaEstadoPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-estado-plan-estrategico.repository';
 import { PrismaEstadoObjetivoRepository } from '../infrastructure/repositories/prisma-estado-objetivo.repository';
 import { PrismaObjetivoEstrategicoRepository } from '../infrastructure/repositories/prisma-objetivo-estrategico.repository';
@@ -38,7 +43,11 @@ import { PrismaPerspectivaBscRepository } from '../infrastructure/repositories/p
 import { PrismaPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-plan-estrategico.repository';
 import { PrismaTipoModuloRepository } from '../infrastructure/repositories/prisma-tipo-modulo.repository';
 import { PrismaDocumentoEstrategicoRepository } from '../infrastructure/repositories/prisma-documento-estrategico.repository';
+import { PrismaFrecuenciaMedicionRepository } from '../infrastructure/repositories/prisma-frecuencia-medicion.repository';
+import { PrismaKpiRepository } from '../infrastructure/repositories/prisma-kpi.repository';
+import { PrismaUnidadMedidaKpiRepository } from '../infrastructure/repositories/prisma-unidad-medida-kpi.repository';
 import { DocumentosEstrategicosController } from './controllers/documentos-estrategicos.controller';
+import { KpisController } from './controllers/kpis.controller';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
 import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
@@ -50,6 +59,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ObjetivosEstrategicosController,
     PerspectivasBscController,
     DocumentosEstrategicosController,
+    KpisController,
   ],
   providers: [
     CreatePlanEstrategicoUseCase,
@@ -76,6 +86,8 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ListarTodosDocumentosEstrategicosUseCase,
     ObtenerDocumentoEstrategicoByIdUseCase,
     EliminarDocumentoEstrategicoUseCase,
+    CreateKpiUseCase,
+    ListKpisPorObjetivoUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,
@@ -103,6 +115,18 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     {
       provide: DocumentoEstrategicoRepository,
       useClass: PrismaDocumentoEstrategicoRepository,
+    },
+    {
+      provide: KpiRepository,
+      useClass: PrismaKpiRepository,
+    },
+    {
+      provide: UnidadMedidaKpiRepository,
+      useClass: PrismaUnidadMedidaKpiRepository,
+    },
+    {
+      provide: FrecuenciaMedicionRepository,
+      useClass: PrismaFrecuenciaMedicionRepository,
     },
     {
       provide: APP_FILTER,

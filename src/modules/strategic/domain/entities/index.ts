@@ -6,3 +6,8 @@ export * from './objetivo-estrategico.entity';
 export * from './relacion-oe.entity';
 export * from './estado-objetivo.entity';
 export * from './documento-estrategico.entity';
+export * from './kpi.entity';
+export * from './semaforo-config.entity';
+export * from './kpi-meta-anual.entity';
+export * from './unidad-medida-kpi.entity';
+export * from './frecuencia-medicion.entity';
