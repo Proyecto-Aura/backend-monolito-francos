@@ -20,7 +20,7 @@ export class PrismaPlanEstrategicoRepository implements PlanEstrategicoRepositor
   ): Promise<PlanEstrategicoEntityConEstado> {
     return this.prisma.$transaction(async (tx) => {
       const [{ nextval }] = await tx.$queryRaw<{ nextval: bigint }[]>`
-        SELECT nextval(pg_get_serial_sequence('plan_estrategico', 'id')) AS nextval
+        SELECT nextval(pg_get_serial_sequence('strategic.plan_estrategico', 'id')) AS nextval
       `;
       const id = Number(nextval);
       const codigo = `PE-${String(id).padStart(4, '0')}`;
