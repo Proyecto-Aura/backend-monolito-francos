@@ -5,6 +5,7 @@ import { EmailService } from '../../domain/services/email.service';
 import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
+  SendPasswordResetEmailParams,
   FrontendDestino,
 } from '../../domain/services/types/email-service.types';
 
@@ -45,6 +46,33 @@ export class NodemailerEmailService implements EmailService {
       to: params.to,
       subject: "Tus credenciales de acceso — Franco's",
       html: `<p>Hola ${params.nombre}, tu usuario es <b>${params.username}</b> y tu contraseña temporal es <b>${params.contrasenaDefault}</b>. Deberás cambiarla al iniciar sesión.</p>`,
+    });
+  }
+
+  async sendPasswordResetEmail(
+    params: SendPasswordResetEmailParams,
+  ): Promise<void> {
+    const url = `${this.getFrontendUrl(params.frontend)}/reset-password?token=${params.resetToken}`;
+    const nombre = this.escapeHtml(params.nombre);
+
+    await this.transporter.sendMail({
+      from: envs.smtpFrom,
+      to: params.to,
+      subject: "Restablece tu contraseña — Franco's",
+      html: `<p>Hola ${nombre}, recibimos una solicitud para restablecer tu contraseña.</p><p>Usa este enlace: <a href="${url}">${url}</a></p><p>El enlace vence en 1 hora.</p><p>Si no solicitaste este cambio, puedes ignorar este correo.</p>`,
+    });
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>'"]/g, (character) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      };
+      return entities[character];
     });
   }
 

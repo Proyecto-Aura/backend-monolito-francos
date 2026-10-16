@@ -18,3 +18,7 @@ export class ResourceConflictError extends AuthDomainError {
 export class InvalidCredentialsError extends AuthDomainError {
   readonly statusCode = 401;
 }
+
+export class InvalidResetTokenError extends AuthDomainError {
+  readonly statusCode = 400;
+}
