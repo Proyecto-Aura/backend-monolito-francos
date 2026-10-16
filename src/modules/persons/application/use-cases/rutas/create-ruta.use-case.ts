@@ -30,6 +30,9 @@ export class CreateRutaUseCase {
 
     return this.rutaRepository.create({
       nombre: dto.nombre,
+      etiqueta: dto.etiqueta,
+      icono: dto.icono,
+      descripcion: dto.descripcion ?? null,
       estado: dto.estado ?? true,
       parent_id: dto.parent_id ?? null,
     });

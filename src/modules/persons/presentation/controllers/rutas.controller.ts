@@ -23,6 +23,7 @@ import { MoveRutaDto } from '../../application/dto/ruta-dtos/move-ruta.dto';
 import { UpdateRutaDto } from '../../application/dto/ruta-dtos/update-ruta.dto';
 import { ChangeRutaStatusUseCase } from '../../application/use-cases/rutas/change-ruta-status.use-case';
 import { CreateRutaUseCase } from '../../application/use-cases/rutas/create-ruta.use-case';
+import { GetMiMenuUseCase } from '../../application/use-cases/rutas/get-mi-menu.use-case';
 import { GetRutaByIdUseCase } from '../../application/use-cases/rutas/get-ruta-by-id.use-case';
 import { GetRutasTreeUseCase } from '../../application/use-cases/rutas/get-rutas-tree.use-case';
 import { ListRutasUseCase } from '../../application/use-cases/rutas/list-rutas.use-case';
@@ -30,10 +31,12 @@ import { MoveRutaUseCase } from '../../application/use-cases/rutas/move-ruta.use
 import { UpdateRutaUseCase } from '../../application/use-cases/rutas/update-ruta.use-case';
 import { RutaPresenter } from '../presenters/ruta.presenter';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
+import { Authenticated } from '../../../auth/presentation/decorators/authenticated.decorator';
+import { CurrentUser } from '../../../auth/presentation/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../../../auth/presentation/strategies/jwt.strategy';
 
 @ApiTags('Rutas')
 @ApiBearerAuth()
-@Roles('admin')
 @Controller('rutas')
 export class RutasController {
   constructor(
@@ -41,12 +44,14 @@ export class RutasController {
     private readonly getRutaById: GetRutaByIdUseCase,
     private readonly listRutas: ListRutasUseCase,
     private readonly getRutasTree: GetRutasTreeUseCase,
+    private readonly getMiMenu: GetMiMenuUseCase,
     private readonly updateRuta: UpdateRutaUseCase,
     private readonly moveRuta: MoveRutaUseCase,
     private readonly changeRutaStatus: ChangeRutaStatusUseCase,
   ) {}
 
   @Post()
+  @Roles('admin')
   @ApiOperation({ summary: 'Crear una ruta raíz o hija' })
   @ApiCreatedResponse({ description: 'Ruta creada correctamente' })
   async create(@Body() dto: CreateRutaDto) {
@@ -54,6 +59,7 @@ export class RutasController {
   }
 
   @Get()
+  @Authenticated()
   @ApiOperation({ summary: 'Listar rutas' })
   @ApiOkResponse({ description: 'Lista paginada de rutas' })
   async findAll(@Query() query: ListRutasQueryDto) {
@@ -61,12 +67,24 @@ export class RutasController {
   }
 
   @Get('tree')
+  @Authenticated()
   @ApiOperation({ summary: 'Obtener el árbol de rutas activas' })
   async tree() {
     return RutaPresenter.treeToHttp(await this.getRutasTree.execute());
   }
 
+  @Get('mi-menu')
+  @Authenticated()
+  @ApiOperation({
+    summary:
+      'Obtener el árbol de rutas filtrado por los roles del usuario autenticado',
+  })
+  async miMenu(@CurrentUser() user: AuthenticatedUser) {
+    return RutaPresenter.treeToHttp(await this.getMiMenu.execute(user.roles));
+  }
+
   @Get(':id')
+  @Authenticated()
   @ApiOperation({ summary: 'Obtener una ruta por ID' })
   @ApiParam({ name: 'id', type: Number })
   async findOne(@Param('id', ParseIntPipe) id: number) {
@@ -74,6 +92,7 @@ export class RutasController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Actualizar el nombre de una ruta' })
   @ApiParam({ name: 'id', type: Number })
   async update(
@@ -84,6 +103,7 @@ export class RutasController {
   }
 
   @Patch(':id/parent')
+  @Roles('admin')
   @ApiOperation({ summary: 'Mover una ruta dentro del árbol' })
   @ApiParam({ name: 'id', type: Number })
   async move(@Param('id', ParseIntPipe) id: number, @Body() dto: MoveRutaDto) {
@@ -91,6 +111,7 @@ export class RutasController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Desactivar una ruta sin hijos activos' })
   @ApiParam({ name: 'id', type: Number })
   async deactivate(@Param('id', ParseIntPipe) id: number) {
@@ -98,6 +119,7 @@ export class RutasController {
   }
 
   @Patch(':id/activate')
+  @Roles('admin')
   @ApiOperation({ summary: 'Reactivar una ruta' })
   @ApiParam({ name: 'id', type: Number })
   async activate(@Param('id', ParseIntPipe) id: number) {

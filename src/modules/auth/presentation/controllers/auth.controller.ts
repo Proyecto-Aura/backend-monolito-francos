@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  Get,
   Post,
   Req,
   Res,
@@ -30,10 +31,14 @@ import { ForgotPasswordDto } from '../../application/dto/forgot-password.dto';
 import { ResetPasswordDto } from '../../application/dto/reset-password.dto';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
 import { envs } from '../../../../config/envs';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
+import { Authenticated } from '../decorators/authenticated.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../strategies/jwt.strategy';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
@@ -53,7 +58,20 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetPassword: ResetPasswordUseCase,
+    private readonly getMeUseCase: GetMeUseCase,
   ) {}
+
+  @Get('me')
+  @Authenticated()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Datos del usuario autenticado (nombre completo y roles)',
+  })
+  @ApiOkResponse({ description: 'Datos del usuario' })
+  async me(@CurrentUser() user: AuthenticatedUser) {
+    const resultado = await this.getMeUseCase.execute(user.userId, user.roles);
+    return AuthPresenter.meToHttp(resultado);
+  }
 
   @Post('register')
   @Public()

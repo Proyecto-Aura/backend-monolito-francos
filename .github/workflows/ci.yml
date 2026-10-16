@@ -11,7 +11,8 @@ on:
   push:
     branches:
       - develop
-      - main
+  # Permite que cd.yml lo llame como una pieza
+  workflow_call:
 
 permissions:
   contents: read
@@ -103,6 +104,8 @@ jobs:
       SMTP_USER: ci
       SMTP_PASS: ci
       SMTP_FROM: ci@francos.test
+      S3_BUCKET_DOCS: francos-docs-ci
+      S3_BUCKET_MEDIA: francos-media-ci
     steps:
       - name: Descargar código
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -154,6 +157,8 @@ jobs:
             -e SMTP_USER=ci \
             -e SMTP_PASS=ci \
             -e SMTP_FROM=ci@francos.test \
+            -e S3_BUCKET_DOCS=francos-docs-ci \
+            -e S3_BUCKET_MEDIA=francos-media-ci \
             francos-backend:ci
 
           for _ in $(seq 1 30); do

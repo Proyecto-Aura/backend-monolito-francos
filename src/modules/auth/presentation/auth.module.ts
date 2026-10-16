@@ -12,6 +12,7 @@ import { RefreshTokenUseCase } from '../application/use-cases/refresh-token.use-
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { RequestPasswordResetUseCase } from '../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
+import { GetMeUseCase } from '../application/use-cases/get-me.use-case';
 import { RegistroRepository } from '../domain/repositories/registro.repository';
 import { PrismaRegistroRepository } from '../infrastructure/repositories/prisma-registro.repository';
 import { RefreshTokenRepository } from '../domain/repositories/refresh-token.repository';
@@ -49,6 +50,7 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     LogoutUseCase,
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
+    GetMeUseCase,
     JwtStrategy,
     {
       provide: APP_GUARD,

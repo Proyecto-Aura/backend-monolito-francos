@@ -6,6 +6,7 @@ import {
   ResourceNotFoundError,
 } from '../../../domain/errors/catalog-domain.errors';
 import { PresentacionRepository } from '../../../domain/repositories/presentacion.repository';
+import { normalizarTexto } from '../../utils/texto.utils';
 
 @Injectable()
 export class UpdatePresentacionUseCase {
@@ -45,7 +46,10 @@ export class UpdatePresentacionUseCase {
     return this.presentacionRepository.update(id, {
       cantidad: dto.cantidad,
       unidad_medida: dto.unidad_medida,
-      descripcion: dto.descripcion,
+      descripcion:
+        dto.descripcion === undefined
+          ? undefined
+          : normalizarTexto(dto.descripcion) || null,
     });
   }
 }

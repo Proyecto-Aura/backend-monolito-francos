@@ -56,4 +56,17 @@ export class PrismaAccesoRepository implements AccesoRepository {
 
     return AccesoMapper.toDomain(acceso);
   }
+
+  async findActiveRutaIdsByRoleNames(roleNames: string[]): Promise<number[]> {
+    const accesos = await this.prisma.acceso.findMany({
+      where: {
+        estado: true,
+        rol: { estado: true, nombre: { in: roleNames } },
+      },
+      select: { ruta_id: true },
+      distinct: ['ruta_id'],
+    });
+
+    return accesos.map((acceso) => acceso.ruta_id);
+  }
 }

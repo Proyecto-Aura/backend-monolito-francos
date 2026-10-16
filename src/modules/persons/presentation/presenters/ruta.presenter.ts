@@ -5,6 +5,9 @@ import { RutaTreeNode } from '../../domain/repositories/types/ruta-repository.ty
 export interface RutaTreeResponse {
   id: number;
   nombre: string;
+  etiqueta: string;
+  icono: string;
+  descripcion: string | null;
   estado: boolean;
   parent_id: number | null;
   created_at: Date;
@@ -17,6 +20,9 @@ export class RutaPresenter {
     return {
       id: ruta.id,
       nombre: ruta.nombre,
+      etiqueta: ruta.etiqueta,
+      icono: ruta.icono,
+      descripcion: ruta.descripcion,
       estado: ruta.estado,
       parent_id: ruta.parent_id,
       created_at: ruta.created_at,
@@ -40,6 +46,9 @@ export class RutaPresenter {
     return nodes.map((node): RutaTreeResponse => ({
       id: node.id,
       nombre: node.nombre,
+      etiqueta: node.etiqueta,
+      icono: node.icono,
+      descripcion: node.descripcion,
       estado: node.estado,
       parent_id: node.parent_id,
       created_at: node.created_at,

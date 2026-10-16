@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "persons", "commerce", "strategic"]
 }
 
 /**
@@ -19,6 +20,7 @@ enum TipoDocumento {
   ruc
 
   @@map("tipo_documento_enum")
+  @@schema("persons")
 }
 
 enum TipoCliente {
@@ -26,6 +28,7 @@ enum TipoCliente {
   empresa
 
   @@map("tipo_cliente_enum")
+  @@schema("persons")
 }
 
 enum CategoriaCliente {
@@ -33,6 +36,7 @@ enum CategoriaCliente {
   mayorista
 
   @@map("categoria_cliente_enum")
+  @@schema("persons")
 }
 
 enum ReferenciaTipo {
@@ -42,6 +46,7 @@ enum ReferenciaTipo {
   promocion
 
   @@map("referencia_tipo_enum")
+  @@schema("persons")
 }
 
 enum AreaEmpleado {
@@ -51,6 +56,7 @@ enum AreaEmpleado {
   administracion
 
   @@map("area_empleado_enum")
+  @@schema("persons")
 }
 
 enum TipoEventoNotificacion {
@@ -65,6 +71,7 @@ enum TipoEventoNotificacion {
   mantenimiento
 
   @@map("tipo_evento_notificacion_enum")
+  @@schema("persons")
 }
 
 enum UnidadMedidaPresentacion {
@@ -72,6 +79,7 @@ enum UnidadMedidaPresentacion {
   gr
 
   @@map("unidad_medida_presentacion_enum")
+  @@schema("commerce")
 }
 
 enum TipoPromocion {
@@ -80,6 +88,7 @@ enum TipoPromocion {
   nxm
   regalo
   @@map("tipo_promocion")
+  @@schema("commerce")
 }
 
 /**
@@ -106,6 +115,7 @@ model Persona {
   user             User?
 
   @@map("persona")
+  @@schema("persons")
 }
 
 model Empleado {
@@ -121,6 +131,7 @@ model Empleado {
   persona       Persona   @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_persona")
 
   @@map("empleado")
+  @@schema("persons")
 }
 
 model Cliente {
@@ -135,6 +146,7 @@ model Cliente {
   persona           Persona          @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cliente_persona")
 
   @@map("cliente")
+  @@schema("persons")
 }
 
 model User {
@@ -158,6 +170,7 @@ model User {
   refresh_tokens     RefreshToken[]
 
   @@map("user")
+  @@schema("persons")
 }
 
 // modelo para token expiracion 7d
@@ -172,6 +185,7 @@ model RefreshToken {
 
   @@index([user_id], map: "idx_refresh_token_user")
   @@map("refresh_token")
+  @@schema("persons")
 }
 
 model Rol {
@@ -185,11 +199,15 @@ model Rol {
   usuario_roles UsuarioRol[]
 
   @@map("rol")
+  @@schema("persons")
 }
 
 model Ruta {
   id         Int      @id(map: "pk_ruta") @default(autoincrement())
   nombre     String   @unique(map: "uq_ruta_nombre") @db.VarChar(100)
+  etiqueta   String   @db.VarChar(150)
+  icono      String   @db.VarChar(50)
+  descripcion String? @db.VarChar(255)
   estado     Boolean  @default(true)
   parent_id  Int?
   created_at DateTime @default(now()) @db.Timestamptz(6)
@@ -199,6 +217,7 @@ model Ruta {
   accesos    Acceso[]
 
   @@map("ruta")
+  @@schema("persons")
 }
 
 model Acceso {
@@ -213,6 +232,7 @@ model Acceso {
 
   @@unique([rol_id, ruta_id], map: "uq_acceso_rol_ruta")
   @@map("acceso")
+  @@schema("persons")
 }
 
 model UsuarioRol {
@@ -226,6 +246,7 @@ model UsuarioRol {
 
   @@unique([user_id, rol_id], map: "uq_usuario_rol")
   @@map("usuario_rol")
+  @@schema("persons")
 }
 
 model Notificacion {
@@ -239,6 +260,7 @@ model Notificacion {
   notificacion_users NotificacionUser[]
 
   @@map("notificacion")
+  @@schema("persons")
 }
 
 model NotificacionUser {
@@ -253,6 +275,7 @@ model NotificacionUser {
 
   @@id([notificacion_id, user_id], map: "pk_notificacion_user")
   @@map("notificacion_user")
+  @@schema("persons")
 }
 
 model Empresa {
@@ -268,6 +291,7 @@ model Empresa {
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@map("empresa")
+  @@schema("persons")
 }
 
 /**
@@ -287,6 +311,7 @@ model Categoria {
   productos Producto[]
 
   @@map("categoria")
+  @@schema("commerce")
 }
 
 model Producto {
@@ -304,6 +329,7 @@ model Producto {
   producto_presentaciones ProductoPresentacion[]
 
   @@map("producto")
+  @@schema("commerce")
 }
 
 model Presentacion {
@@ -318,6 +344,7 @@ model Presentacion {
   producto_presentaciones ProductoPresentacion[]
 
   @@map("presentacion")
+  @@schema("commerce")
 }
 
 model ProductoPresentacion {
@@ -328,14 +355,18 @@ model ProductoPresentacion {
   umbral_mayorista Int?
   producto_id      Int
   presentacion_id  Int
-  imagen_url       String?  @db.Text
+  // Solo la key dentro de francos-media (productos/<uuid>.<ext>); la URL se arma al responder.
+  imagen_key       String?  @db.VarChar(255)
   slug             String?  @unique(map: "uq_producto_presentacion_slug") @db.VarChar(100)
   estado           Boolean  @default(true)
+  // Nace oculta del catálogo del cliente (RF-A025) hasta que se active a mano.
+  visible_portal_b Boolean  @default(false)
   created_at       DateTime @default(now()) @db.Timestamptz(6)
   updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   promociones        Promocion[] @relation("PromocionProducto")
   promociones_regalo   Promocion[] @relation("PromocionRegalo")
+  producto_terminado ProductoTerminado?
 
   producto Producto @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_producto")
 
@@ -343,6 +374,7 @@ model ProductoPresentacion {
 
   @@unique([producto_id, presentacion_id], map: "uq_producto_presentacion_producto_presentacion")
   @@map("producto_presentacion")
+  @@schema("commerce")
 }
 
 model Promocion {
@@ -366,6 +398,7 @@ model Promocion {
   producto_presentacion_regalo ProductoPresentacion? @relation("PromocionRegalo", fields: [producto_presentacion_regalo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_regalo")
 
   @@map("promocion")
+  @@schema("commerce")
 }
 
 /**
@@ -373,6 +406,25 @@ model Promocion {
  * ##   BLOQUE 3: TABLAS relacionadas a estrategia        ##
  * #########################################################
  */
+
+// Existencias de una presentación de producto, siempre contadas en unidades. Se
+// crea sola con cada presentación (RF-A024) y su stock solo cambia con movimientos
+// de inventario. No tiene `estado` propio: no se activa ni desactiva directamente,
+// sigue al de la presentación.
+model ProductoTerminado {
+  id                       Int      @id(map: "pk_producto_terminado") @default(autoincrement())
+  producto_presentacion_id Int      @unique(map: "uq_producto_terminado_producto_presentacion")
+  stock_actual             Decimal  @default(0) @db.Decimal(10, 2)
+  stock_minimo             Decimal  @default(1) @db.Decimal(10, 2)
+  stock_maximo             Decimal? @db.Decimal(10, 2)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_terminado_producto_presentacion")
+
+  @@map("producto_terminado")
+  @@schema("commerce")
+}
 
 model EstadoPlanEstrategico {
   id         Int      @id(map: "pk_estado_plan_estrategico") @default(autoincrement())
@@ -386,6 +438,7 @@ model EstadoPlanEstrategico {
   planes_estrategicos PlanEstrategico[]
 
   @@map("estado_plan_estrategico")
+  @@schema("strategic")
 }
 
 model PlanEstrategico {
@@ -403,8 +456,10 @@ model PlanEstrategico {
   estado_plan EstadoPlanEstrategico @relation(fields: [estado_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_plan_estrategico_estado")
 
   objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
 
   @@map("plan_estrategico")
+  @@schema("strategic")
 }
 
 model PerspectivaBsc {
@@ -419,6 +474,7 @@ model PerspectivaBsc {
   objetivos_estrategicos ObjetivoEstrategico[]
 
   @@map("perspectiva_bsc")
+  @@schema("strategic")
 }
 
 model TipoModulo {
@@ -430,8 +486,10 @@ model TipoModulo {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   objetivos_estrategicos ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
 
   @@map("tipo_modulo")
+  @@schema("strategic")
 }
 
 model EstadoObjetivo {
@@ -446,6 +504,7 @@ model EstadoObjetivo {
   objetivos_estrategicos ObjetivoEstrategico[]
 
   @@map("estado_objetivo")
+  @@schema("strategic")
 }
 
 model ObjetivoEstrategico {
@@ -475,6 +534,7 @@ model ObjetivoEstrategico {
   relaciones_como_destino RelacionOe[] @relation("RelacionDestino")
 
   @@map("objetivo_estrategico")
+  @@schema("strategic")
 }
 
 model RelacionOe {
@@ -489,4 +549,23 @@ model RelacionOe {
   destino ObjetivoEstrategico @relation("RelacionDestino", fields: [destino_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_destino")
 
   @@map("relacion_oe")
+  @@schema("strategic")
+}
+
+model DocumentoEstrategico {
+  id                  Int      @id(map: "pk_documento_estrategico") @default(autoincrement())
+  plan_estrategico_id Int
+  tipo_modulo_id      Int
+  nombre              String   @db.VarChar(200)
+  ruta_archivo        String   @db.VarChar(500)
+  nombre_original     String?  @db.VarChar(255)
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_plan_estrategico")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_tipo_modulo")
+
+  @@map("documento_estrategico")
+  @@schema("strategic")
 }

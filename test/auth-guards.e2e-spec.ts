@@ -118,6 +118,7 @@ describe('Auth guards (e2e)', () => {
 
   afterAll(async () => {
     await deleteVentasUser();
+    await prisma.ruta.deleteMany({ where: { nombre: 'e2e-ruta-admin-test' } });
     await prisma.refreshToken.deleteMany({
       where: {
         user_id: adminUserId,
@@ -154,6 +155,98 @@ describe('Auth guards (e2e)', () => {
       .get('/api/v1/productos')
       .set('Authorization', `Bearer ${ventasToken}`)
       .expect(200);
+  });
+
+  it('GET /api/v1/auth/me sin token devuelve 401', async () => {
+    await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
+  });
+
+  it('GET /api/v1/auth/me con rol ventas devuelve 200 con nombre y roles', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      nombre_completo: 'Usuario Ventas E2E',
+      nombres: 'Usuario',
+      apellido_paterno: 'Ventas',
+      apellido_materno: 'E2E',
+      username: VENTAS_CREDENTIALS.identificador,
+      roles: ['ventas'],
+    });
+  });
+
+  it('GET /api/v1/rutas/tree sin token devuelve 401', async () => {
+    await request(app.getHttpServer()).get('/api/v1/rutas/tree').expect(401);
+  });
+
+  it('GET /api/v1/rutas/tree con rol ventas devuelve 200 (ya no es admin-only)', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/rutas/tree')
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .expect(200);
+  });
+
+  it('GET /api/v1/rutas/mi-menu sin token devuelve 401', async () => {
+    await request(app.getHttpServer()).get('/api/v1/rutas/mi-menu').expect(401);
+  });
+
+  it('GET /api/v1/rutas/mi-menu con rol ventas devuelve 200, filtrado por sus accesos', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/rutas/mi-menu')
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+  });
+
+  it('GET /api/v1/rutas (listar) con rol ventas devuelve 200', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/rutas')
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .expect(200);
+  });
+
+  it('GET /api/v1/rutas/:id con rol ventas devuelve 200', async () => {
+    const ruta = await prisma.ruta.findFirstOrThrow({
+      select: { id: true },
+    });
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/rutas/${ruta.id}`)
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .expect(200);
+  });
+
+  it('POST /api/v1/rutas con rol ventas devuelve 403 (sigue siendo admin-only)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/rutas')
+      .set('Authorization', `Bearer ${ventasToken}`)
+      .send({
+        nombre: 'e2e-ruta-ventas-test',
+        etiqueta: 'Prueba',
+        icono: 'box',
+      })
+      .expect(403);
+  });
+
+  it('POST /api/v1/rutas con rol admin devuelve 201', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/rutas')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        nombre: 'e2e-ruta-admin-test',
+        etiqueta: 'Prueba E2E',
+        icono: 'box',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      nombre: 'e2e-ruta-admin-test',
+      etiqueta: 'Prueba E2E',
+      icono: 'box',
+    });
   });
 
   it('Swagger muestra candado solo en las rutas protegidas de auth', () => {

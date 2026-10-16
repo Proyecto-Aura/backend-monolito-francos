@@ -6,8 +6,6 @@ import {
   IsNumber,
   IsOptional,
   IsPositive,
-  IsString,
-  IsUrl,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -47,14 +45,6 @@ export class CreateProductoPresentacionDto {
   @IsInt()
   @IsPositive()
   presentacion_id!: number;
-
-  @ApiPropertyOptional({
-    example: 'https://example.com/arroz-superior-1kg.jpg',
-  })
-  @IsOptional()
-  @IsString()
-  @IsUrl()
-  imagen_url?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()

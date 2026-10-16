@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -7,11 +8,10 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../common/pagination-query-dto';
 
 export class ListPromocionQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ example: '2x1', maxLength: 150 })
+  @ApiPropertyOptional({ example: 'octubre', maxLength: 150 })
   @IsOptional()
   @IsString()
   @MaxLength(150)
@@ -25,7 +25,11 @@ export class ListPromocionQueryDto extends PaginationQueryDto {
   @IsBoolean()
   estado?: boolean;
 
-  @ApiPropertyOptional({ example: 1, minimum: 1 })
+  @ApiPropertyOptional({
+    example: 10,
+    minimum: 1,
+    description: 'Solo las promociones de esta presentación del producto',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
