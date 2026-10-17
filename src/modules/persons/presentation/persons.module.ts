@@ -64,6 +64,15 @@ import { UserRepository } from '../domain/repositories/user.repository';
 import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
 import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
 import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
+import { CreateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/create-usuario-interno.use-case';
+import { ListUsuariosInternosUseCase } from '../application/use-cases/usuarios-internos/list-usuarios-internos.use-case';
+import { GetUsuarioInternoByIdUseCase } from '../application/use-cases/usuarios-internos/get-usuario-interno-by-id.use-case';
+import { UpdateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/update-usuario-interno.use-case';
+import { ChangeUsuarioInternoStatusUseCase } from '../application/use-cases/usuarios-internos/change-usuario-interno-status.use-case';
+import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios-internos/set-usuario-interno-roles.use-case';
+import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
+import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
+import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
 
 @Module({
   controllers: [
@@ -74,6 +83,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     EmpresasController,
     EmpleadosController,
     ClientesController,
+    UsuariosInternosController,
   ],
   providers: [
     CreateRolUseCase,
@@ -136,6 +146,16 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
+    CreateUsuarioInternoUseCase,
+    ListUsuariosInternosUseCase,
+    GetUsuarioInternoByIdUseCase,
+    UpdateUsuarioInternoUseCase,
+    ChangeUsuarioInternoStatusUseCase,
+    SetUsuarioInternoRolesUseCase,
+    {
+      provide: UsuarioInternoRepository,
+      useClass: PrismaUsuarioInternoRepository,
+    },
     {
       provide: APP_FILTER,
       useClass: PersonsDomainExceptionFilter,
