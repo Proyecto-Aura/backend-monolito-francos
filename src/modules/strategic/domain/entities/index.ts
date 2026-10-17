@@ -11,3 +11,4 @@ export * from './semaforo-config.entity';
 export * from './kpi-meta-anual.entity';
 export * from './unidad-medida-kpi.entity';
 export * from './frecuencia-medicion.entity';
+export * from './periodo.entity';

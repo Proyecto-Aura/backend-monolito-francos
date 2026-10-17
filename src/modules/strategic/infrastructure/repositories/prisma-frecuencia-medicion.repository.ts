@@ -15,4 +15,15 @@ export class PrismaFrecuenciaMedicionRepository implements FrecuenciaMedicionRep
 
     return frecuencia ? FrecuenciaMedicionMapper.toDomain(frecuencia) : null;
   }
+
+  async findAll(): Promise<FrecuenciaMedicionEntity[]> {
+    const frecuencias = await this.prisma.frecuenciaMedicion.findMany({
+      where: { estado: true },
+      orderBy: { orden: 'asc' },
+    });
+
+    return frecuencias.map((frecuencia) =>
+      FrecuenciaMedicionMapper.toDomain(frecuencia),
+    );
+  }
 }

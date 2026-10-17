@@ -15,4 +15,13 @@ export class PrismaUnidadMedidaKpiRepository implements UnidadMedidaKpiRepositor
 
     return unidad ? UnidadMedidaKpiMapper.toDomain(unidad) : null;
   }
+
+  async findAll(): Promise<UnidadMedidaKpiEntity[]> {
+    const unidades = await this.prisma.unidadMedidaKpi.findMany({
+      where: { estado: true },
+      orderBy: { id: 'asc' },
+    });
+
+    return unidades.map((unidad) => UnidadMedidaKpiMapper.toDomain(unidad));
+  }
 }
