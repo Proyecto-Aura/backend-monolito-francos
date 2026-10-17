@@ -25,6 +25,15 @@ export interface CreateKpiParams {
   metas_por_anio: SemaforoAnualInput[];
 }
 
+export interface UpdateKpiParams {
+  objetivo_estrategico_id?: number;
+  nombre?: string;
+  formula?: string;
+  frecuencia_id?: number;
+  unidad_medida_id?: number;
+  metas_por_anio?: SemaforoAnualInput[];
+}
+
 export interface KpiObjetivoResumen {
   id: number;
   nombre: string;

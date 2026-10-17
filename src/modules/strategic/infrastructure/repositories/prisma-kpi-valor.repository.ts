@@ -11,6 +11,15 @@ import { KpiValorMapper } from '../mappers/kpi-valor.mapper';
 export class PrismaKpiValorRepository implements KpiValorRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async existsActivosByKpi(kpiId: number): Promise<boolean> {
+    const valor = await this.prisma.kpiValor.findFirst({
+      where: { kpi_id: kpiId, estado: true },
+      select: { id: true },
+    });
+
+    return valor !== null;
+  }
+
   async upsert(
     params: UpsertKpiValorParams,
   ): Promise<KpiValorEntityEnriquecido> {

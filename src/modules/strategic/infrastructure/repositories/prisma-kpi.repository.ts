@@ -11,6 +11,8 @@ import {
   KpiEntityEnriquecido,
   KpiResumenPlanEntidad,
   ListKpisPorObjetivoParams,
+  SemaforoAnualInput,
+  UpdateKpiParams,
 } from '../../domain/repositories/types/kpi-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import { KpiValorMapper } from '../mappers/kpi-valor.mapper';
@@ -49,6 +51,47 @@ const KPI_INCLUDE_RESUMEN_PLAN = {
 export class PrismaKpiRepository implements KpiRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async crearMetasYSemaforos(
+    tx: Prisma.TransactionClient,
+    kpiId: number,
+    metasPorAnio: SemaforoAnualInput[],
+  ) {
+    for (const fila of metasPorAnio) {
+      await tx.kpiMetaAnual.create({
+        data: { kpi_id: kpiId, anio: fila.anio, meta: fila.meta },
+      });
+
+      await tx.semaforoConfig.createMany({
+        data: [
+          {
+            kpi_id: kpiId,
+            anio: fila.anio,
+            color: 'VERDE',
+            color_hex: KPI_SEMAFORO_COLORES.VERDE,
+            operador: fila.operador_verde,
+            valor_referencia: fila.meta,
+          },
+          {
+            kpi_id: kpiId,
+            anio: fila.anio,
+            color: 'AMARILLO',
+            color_hex: KPI_SEMAFORO_COLORES.AMARILLO,
+            operador: fila.operador_amarillo,
+            valor_referencia: fila.valor_amarillo,
+          },
+          {
+            kpi_id: kpiId,
+            anio: fila.anio,
+            color: 'ROJO',
+            color_hex: KPI_SEMAFORO_COLORES.ROJO,
+            operador: complementoOperador(fila.operador_amarillo),
+            valor_referencia: fila.valor_amarillo,
+          },
+        ],
+      });
+    }
+  }
+
   async findById(id: number): Promise<KpiEntityEnriquecido | null> {
     const kpi = await this.prisma.kpi.findUnique({
       where: { id },
@@ -77,40 +120,7 @@ export class PrismaKpiRepository implements KpiRepository {
         },
       });
 
-      for (const fila of params.metas_por_anio) {
-        await tx.kpiMetaAnual.create({
-          data: { kpi_id: kpi.id, anio: fila.anio, meta: fila.meta },
-        });
-
-        await tx.semaforoConfig.createMany({
-          data: [
-            {
-              kpi_id: kpi.id,
-              anio: fila.anio,
-              color: 'VERDE',
-              color_hex: KPI_SEMAFORO_COLORES.VERDE,
-              operador: fila.operador_verde,
-              valor_referencia: fila.meta,
-            },
-            {
-              kpi_id: kpi.id,
-              anio: fila.anio,
-              color: 'AMARILLO',
-              color_hex: KPI_SEMAFORO_COLORES.AMARILLO,
-              operador: fila.operador_amarillo,
-              valor_referencia: fila.valor_amarillo,
-            },
-            {
-              kpi_id: kpi.id,
-              anio: fila.anio,
-              color: 'ROJO',
-              color_hex: KPI_SEMAFORO_COLORES.ROJO,
-              operador: complementoOperador(fila.operador_amarillo),
-              valor_referencia: fila.valor_amarillo,
-            },
-          ],
-        });
-      }
+      await this.crearMetasYSemaforos(tx, kpi.id, params.metas_por_anio);
 
       const conRelaciones = await tx.kpi.findUniqueOrThrow({
         where: { id: kpi.id },
@@ -124,17 +134,95 @@ export class PrismaKpiRepository implements KpiRepository {
   async existsByNombre(
     objetivoEstrategicoId: number,
     nombre: string,
+    excludeId?: number,
   ): Promise<boolean> {
     const kpi = await this.prisma.kpi.findFirst({
       where: {
         objetivo_estrategico_id: objetivoEstrategicoId,
         nombre: { equals: nombre, mode: 'insensitive' },
         estado: true,
+        ...(excludeId === undefined ? {} : { id: { not: excludeId } }),
       },
       select: { id: true },
     });
 
     return kpi !== null;
+  }
+
+  async update(
+    id: number,
+    params: UpdateKpiParams,
+  ): Promise<KpiEntityEnriquecido> {
+    return this.prisma.$transaction(async (tx) => {
+      const { metas_por_anio, ...data } = params;
+
+      await tx.kpi.update({ where: { id }, data });
+
+      if (metas_por_anio !== undefined) {
+        for (const fila of metas_por_anio) {
+          await tx.kpiMetaAnual.updateMany({
+            where: { kpi_id: id, anio: fila.anio, estado: true },
+            data: { meta: fila.meta },
+          });
+
+          await tx.semaforoConfig.updateMany({
+            where: {
+              kpi_id: id,
+              anio: fila.anio,
+              color: 'VERDE',
+              estado: true,
+            },
+            data: {
+              operador: fila.operador_verde,
+              valor_referencia: fila.meta,
+            },
+          });
+
+          await tx.semaforoConfig.updateMany({
+            where: {
+              kpi_id: id,
+              anio: fila.anio,
+              color: 'AMARILLO',
+              estado: true,
+            },
+            data: {
+              operador: fila.operador_amarillo,
+              valor_referencia: fila.valor_amarillo,
+            },
+          });
+
+          await tx.semaforoConfig.updateMany({
+            where: {
+              kpi_id: id,
+              anio: fila.anio,
+              color: 'ROJO',
+              estado: true,
+            },
+            data: {
+              operador: complementoOperador(fila.operador_amarillo),
+              valor_referencia: fila.valor_amarillo,
+            },
+          });
+        }
+      }
+
+      const actualizado = await tx.kpi.findUniqueOrThrow({
+        where: { id },
+        include: KPI_INCLUDE_ENRIQUECIDO,
+      });
+
+      return KpiMapper.toDomain(actualizado);
+    });
+  }
+
+  async setEstado(id: number, estado: boolean): Promise<KpiEntityEnriquecido> {
+    const kpi = await this.prisma.kpi.update({
+      where: { id },
+      data: { estado },
+      include: KPI_INCLUDE_ENRIQUECIDO,
+    });
+
+    return KpiMapper.toDomain(kpi);
   }
 
   async countByPlanYTipo(

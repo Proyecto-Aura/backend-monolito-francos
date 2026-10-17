@@ -3,6 +3,7 @@ import {
   KpiEntityEnriquecido,
   KpiResumenPlanEntidad,
   ListKpisPorObjetivoParams,
+  UpdateKpiParams,
 } from './types/kpi-repository.types';
 import { PaginatedResult } from './types/pagination.types';
 
@@ -16,7 +17,16 @@ export abstract class KpiRepository {
   abstract existsByNombre(
     objetivoEstrategicoId: number,
     nombre: string,
+    excludeId?: number,
   ): Promise<boolean>;
+  abstract update(
+    id: number,
+    params: UpdateKpiParams,
+  ): Promise<KpiEntityEnriquecido>;
+  abstract setEstado(
+    id: number,
+    estado: boolean,
+  ): Promise<KpiEntityEnriquecido>;
   abstract countByPlanYTipo(
     planId: number,
     tipoModuloId: number,

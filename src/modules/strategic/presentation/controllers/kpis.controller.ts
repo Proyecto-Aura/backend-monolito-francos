@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -18,11 +20,14 @@ import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import { RegistrarKpiValorDto } from '../../application/dto/kpi-valor-dtos/registrar-kpi-valor.dto';
 import { CreateKpiDto } from '../../application/dto/kpi-dtos/create-kpi.dto';
 import { ListKpiQueryDto } from '../../application/dto/kpi-dtos/list-kpi-query.dto';
+import { UpdateKpiDto } from '../../application/dto/kpi-dtos/update-kpi.dto';
 import { CreateKpiUseCase } from '../../application/use-cases/kpi/create-kpi.use-case';
+import { EliminarKpiUseCase } from '../../application/use-cases/kpi/eliminar-kpi.use-case';
 import { ListarHistorialKpiValoresUseCase } from '../../application/use-cases/kpi/listar-historial-kpi-valores.use-case';
 import { ListKpisPorObjetivoUseCase } from '../../application/use-cases/kpi/list-kpis-por-objetivo.use-case';
 import { ObtenerUltimoKpiValorUseCase } from '../../application/use-cases/kpi/obtener-ultimo-kpi-valor.use-case';
 import { RegistrarKpiValorUseCase } from '../../application/use-cases/kpi/registrar-kpi-valor.use-case';
+import { UpdateKpiUseCase } from '../../application/use-cases/kpi/update-kpi.use-case';
 import { KpiValorPresenter } from '../presenters/kpi-valor.presenter';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 
@@ -37,6 +42,8 @@ export class KpisController {
     private readonly registrarKpiValor: RegistrarKpiValorUseCase,
     private readonly listarHistorialKpiValores: ListarHistorialKpiValoresUseCase,
     private readonly obtenerUltimoKpiValor: ObtenerUltimoKpiValorUseCase,
+    private readonly updateKpi: UpdateKpiUseCase,
+    private readonly eliminarKpi: EliminarKpiUseCase,
   ) {}
 
   @Get()
@@ -55,6 +62,23 @@ export class KpisController {
   @ApiCreatedResponse({ description: 'KPI creado correctamente' })
   async create(@Body() dto: CreateKpiDto) {
     return KpiPresenter.toHttp(await this.createKpi.execute(dto));
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Editar un KPI (solo con el plan en Borrador)' })
+  @ApiOkResponse({ description: 'KPI actualizado correctamente' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateKpiDto,
+  ) {
+    return KpiPresenter.toHttp(await this.updateKpi.execute(id, dto));
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar lógicamente un KPI' })
+  @ApiOkResponse({ description: 'KPI eliminado correctamente' })
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return KpiPresenter.toHttp(await this.eliminarKpi.execute(id));
   }
 
   @Post(':id/valores')
