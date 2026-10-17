@@ -38,3 +38,44 @@ export function complementoOperador(
 
   return complementos[operador];
 }
+
+export function calcularColorSemaforo(
+  valor: number,
+  semaforosDelAnio: {
+    color: string;
+    operador: string;
+    valor_referencia: number;
+  }[],
+): string {
+  const cumple = (operador: string, referencia: number) => {
+    switch (operador) {
+      case '>=':
+        return valor >= referencia;
+      case '>':
+        return valor > referencia;
+      case '<=':
+        return valor <= referencia;
+      case '<':
+        return valor < referencia;
+      case '=':
+        return valor === referencia;
+      default:
+        return false;
+    }
+  };
+
+  const verde = semaforosDelAnio.find((semaforo) => semaforo.color === 'VERDE');
+  const amarillo = semaforosDelAnio.find(
+    (semaforo) => semaforo.color === 'AMARILLO',
+  );
+
+  if (verde && cumple(verde.operador, verde.valor_referencia)) {
+    return 'VERDE';
+  }
+
+  if (amarillo && cumple(amarillo.operador, amarillo.valor_referencia)) {
+    return 'AMARILLO';
+  }
+
+  return 'ROJO';
+}

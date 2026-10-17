@@ -9,9 +9,11 @@ import { KpiRepository } from '../../domain/repositories/kpi.repository';
 import {
   CreateKpiParams,
   KpiEntityEnriquecido,
+  KpiResumenPlanEntidad,
   ListKpisPorObjetivoParams,
 } from '../../domain/repositories/types/kpi-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
+import { KpiValorMapper } from '../mappers/kpi-valor.mapper';
 import { KpiMapper } from '../mappers/kpi.mapper';
 
 const KPI_INCLUDE_ENRIQUECIDO = {
@@ -28,9 +30,33 @@ const KPI_INCLUDE_ENRIQUECIDO = {
   },
 } satisfies Prisma.KpiInclude;
 
+const KPI_INCLUDE_RESUMEN_PLAN = {
+  frecuencia: true,
+  unidad_medida: true,
+  metas_anuales: true,
+  semaforos: true,
+  objetivo_estrategico: {
+    select: {
+      id: true,
+      nombre: true,
+      responsable: true,
+      perspectiva_bsc: { select: { id: true, nombre: true } },
+    },
+  },
+} satisfies Prisma.KpiInclude;
+
 @Injectable()
 export class PrismaKpiRepository implements KpiRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: number): Promise<KpiEntityEnriquecido | null> {
+    const kpi = await this.prisma.kpi.findUnique({
+      where: { id },
+      include: KPI_INCLUDE_ENRIQUECIDO,
+    });
+
+    return kpi ? KpiMapper.toDomain(kpi) : null;
+  }
 
   async create(
     params: CreateKpiParams,
@@ -153,5 +179,51 @@ export class PrismaKpiRepository implements KpiRepository {
       page: params.page,
       limit: params.limit,
     };
+  }
+
+  async findResumenPorPlan(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<KpiResumenPlanEntidad[]> {
+    const kpis = await this.prisma.kpi.findMany({
+      where: {
+        estado: true,
+        objetivo_estrategico: {
+          plan_estrategico_id: planId,
+          tipo_modulo_id: tipoModuloId,
+          estado: true,
+        },
+      },
+      include: KPI_INCLUDE_RESUMEN_PLAN,
+      orderBy: { codigo: 'asc' },
+    });
+
+    if (kpis.length === 0) {
+      return [];
+    }
+
+    const ultimosValores = await this.prisma.kpiValor.findMany({
+      where: { kpi_id: { in: kpis.map((kpi) => kpi.id) }, estado: true },
+      include: { periodo: true },
+      orderBy: [{ anio: 'desc' }, { periodo: { numero: 'desc' } }],
+      distinct: ['kpi_id'],
+    });
+
+    const ultimoPorKpi = new Map(
+      ultimosValores.map((valor) => [
+        valor.kpi_id,
+        KpiValorMapper.toDomain(valor),
+      ]),
+    );
+
+    return kpis.map((kpi) => {
+      const entidad = KpiMapper.toDomain(kpi) as KpiResumenPlanEntidad;
+      entidad.objetivo_estrategico = {
+        ...entidad.objetivo_estrategico,
+        responsable: kpi.objetivo_estrategico.responsable,
+      };
+      entidad.ultimo_valor = ultimoPorKpi.get(kpi.id) ?? null;
+      return entidad;
+    });
   }
 }

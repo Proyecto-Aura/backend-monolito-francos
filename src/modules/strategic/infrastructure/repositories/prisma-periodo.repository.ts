@@ -8,6 +8,11 @@ import { PeriodoMapper } from '../mappers/periodo.mapper';
 export class PrismaPeriodoRepository implements PeriodoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: number): Promise<PeriodoEntity | null> {
+    const periodo = await this.prisma.periodo.findUnique({ where: { id } });
+    return periodo ? PeriodoMapper.toDomain(periodo) : null;
+  }
+
   async findByFrecuencia(frecuencia_id: number): Promise<PeriodoEntity[]> {
     const periodos = await this.prisma.periodo.findMany({
       where: { frecuencia_id, estado: true },

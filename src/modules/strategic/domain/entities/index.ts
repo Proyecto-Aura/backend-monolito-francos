@@ -12,3 +12,4 @@ export * from './kpi-meta-anual.entity';
 export * from './unidad-medida-kpi.entity';
 export * from './frecuencia-medicion.entity';
 export * from './periodo.entity';
+export * from './kpi-valor.entity';

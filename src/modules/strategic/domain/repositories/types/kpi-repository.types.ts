@@ -5,6 +5,7 @@ import {
   SemaforoConfigEntity,
   UnidadMedidaKpiEntity,
 } from '../../entities';
+import { KpiValorEntityEnriquecido } from './kpi-valor-repository.types';
 import { PaginationParams } from './pagination.types';
 
 export interface SemaforoAnualInput {
@@ -44,4 +45,13 @@ export interface KpiEntityEnriquecido extends KpiEntity {
   metas_anuales: KpiMetaAnualEntity[];
   semaforos: SemaforoConfigEntity[];
   objetivo_estrategico: KpiObjetivoResumen;
+}
+
+export interface KpiObjetivoResumenConResponsable extends KpiObjetivoResumen {
+  responsable: string;
+}
+
+export interface KpiResumenPlanEntidad extends KpiEntityEnriquecido {
+  objetivo_estrategico: KpiObjetivoResumenConResponsable;
+  ultimo_valor: KpiValorEntityEnriquecido | null;
 }

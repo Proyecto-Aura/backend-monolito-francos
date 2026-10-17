@@ -1,6 +1,10 @@
 import { SemaforoConfigEntity } from '../../domain/entities';
-import { KpiEntityEnriquecido } from '../../domain/repositories/types/kpi-repository.types';
+import {
+  KpiEntityEnriquecido,
+  KpiResumenPlanEntidad,
+} from '../../domain/repositories/types/kpi-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
+import { KpiValorPresenter } from './kpi-valor.presenter';
 
 export class KpiPresenter {
   static toHttp(kpi: KpiEntityEnriquecido) {
@@ -69,6 +73,23 @@ export class KpiPresenter {
         total_pages: Math.ceil(result.total / result.limit),
       },
     };
+  }
+
+  static resumenPorPlanToHttp(kpis: KpiResumenPlanEntidad[]) {
+    return kpis.map((kpi) => {
+      const base = this.toHttp(kpi);
+
+      return {
+        ...base,
+        objetivo: {
+          ...base.objetivo,
+          responsable: kpi.objetivo_estrategico.responsable,
+        },
+        ultimo_valor: kpi.ultimo_valor
+          ? KpiValorPresenter.toHttp(kpi.ultimo_valor)
+          : null,
+      };
+    });
   }
 
   private static semaforoToHttp(semaforo?: SemaforoConfigEntity) {
