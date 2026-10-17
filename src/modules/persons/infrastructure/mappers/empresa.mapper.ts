@@ -12,6 +12,7 @@ export class EmpresaMapper {
       empresa.email,
       empresa.logo_url,
       empresa.estado,
+      empresa.es_emisora,
       empresa.created_at,
       empresa.updated_at,
     );

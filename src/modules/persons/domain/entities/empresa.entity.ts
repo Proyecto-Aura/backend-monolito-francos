@@ -8,6 +8,7 @@ export class EmpresaEntity {
     public email: string | null,
     public logo_url: string | null,
     public estado: boolean,
+    public es_emisora: boolean,
     public readonly created_at: Date,
     public updated_at: Date,
   ) {}

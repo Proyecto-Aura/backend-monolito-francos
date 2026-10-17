@@ -37,9 +37,12 @@ import { CreateEmpresaUseCase } from '../application/use-cases/empresas/create-e
 import { GetEmpresaByIdUseCase } from '../application/use-cases/empresas/get-empresa-by-id.use-case';
 import { ListEmpresasUseCase } from '../application/use-cases/empresas/list-empresas.use-case';
 import { UpdateEmpresaUseCase } from '../application/use-cases/empresas/update-empresa.use-case';
+import { GetEmpresaEmisoraUseCase } from '../application/use-cases/empresas/get-empresa-emisora.use-case';
+import { UpsertEmpresaEmisoraUseCase } from '../application/use-cases/empresas/upsert-empresa-emisora.use-case';
 import { EmpresaRepository } from '../domain/repositories/empresa.repository';
 import { PrismaEmpresaRepository } from '../infrastructure/repositories/prisma-empresa.repository';
 import { EmpresasController } from './controllers/empresas.controller';
+import { EmpresaEmisoraController } from './controllers/empresa-emisora.controller';
 import {
   ChangeEmpleadoStatusUseCase,
   CreateEmpleadoUseCase,
@@ -72,6 +75,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     AccesosController,
     PersonasController,
     EmpresasController,
+    EmpresaEmisoraController,
     EmpleadosController,
     ClientesController,
   ],
@@ -119,6 +123,8 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     ListEmpresasUseCase,
     UpdateEmpresaUseCase,
     ChangeEmpresaStatusUseCase,
+    GetEmpresaEmisoraUseCase,
+    UpsertEmpresaEmisoraUseCase,
     {
       provide: EmpresaRepository,
       useClass: PrismaEmpresaRepository,
@@ -148,6 +154,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     RolRepository,
     UserRepository,
     UsuarioRolRepository,
+    EmpresaRepository,
   ],
 })
 export class PersonsModule {}

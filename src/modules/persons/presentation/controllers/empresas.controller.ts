@@ -30,7 +30,7 @@ import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Empresas')
 @ApiBearerAuth()
-@Roles('admin', 'ventas')
+@Roles('admin')
 @Controller('empresas')
 export class EmpresasController {
   constructor(
