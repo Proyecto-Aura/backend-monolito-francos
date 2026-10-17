@@ -91,6 +91,14 @@ enum TipoPromocion {
   @@schema("commerce")
 }
 
+enum TipoComprobante {
+  boleta
+  factura
+
+  @@map("tipo_comprobante")
+  @@schema("commerce")
+}
+
 /**
  * #######################################################################
  * ##   BLOQUE 1: TABLAS relacionadas a persona, seguridad y empresa    ##
@@ -398,6 +406,26 @@ model Promocion {
   producto_presentacion_regalo ProductoPresentacion? @relation("PromocionRegalo", fields: [producto_presentacion_regalo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_regalo")
 
   @@map("promocion")
+  @@schema("commerce")
+}
+
+// Serie de comprobantes (HU-A-044, RN23). `correlativo_actual` es el último número
+// emitido: nace en `correlativo_inicio - 1` y solo avanza con una reserva atómica.
+// A lo sumo una serie activa por tipo (índice parcial `uq_serie_activa_por_tipo`) y
+// los CHECK de rango se añaden a mano en la migración: Prisma no los modela.
+model SerieComprobante {
+  id                 Int             @id(map: "pk_serie_comprobante") @default(autoincrement())
+  tipo               TipoComprobante
+  serie              String          @unique(map: "uq_serie_comprobante_serie") @db.VarChar(4)
+  correlativo_inicio Int
+  correlativo_fin    Int
+  correlativo_actual Int
+  umbral_alerta      Int             @default(100)
+  estado             Boolean         @default(true)
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("serie_comprobante")
   @@schema("commerce")
 }
 
