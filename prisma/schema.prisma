@@ -641,6 +641,7 @@ model ObjetivoEstrategico {
 
   relaciones_como_origen  RelacionOe[] @relation("RelacionOrigen")
   relaciones_como_destino RelacionOe[] @relation("RelacionDestino")
+  kpis                    Kpi[]
 
   @@map("objetivo_estrategico")
   @@schema("strategic")
@@ -676,5 +677,129 @@ model DocumentoEstrategico {
   tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_tipo_modulo")
 
   @@map("documento_estrategico")
+  @@schema("strategic")
+}
+
+model UnidadMedidaKpi {
+  id         Int      @id(map: "pk_unidad_medida_kpi") @default(autoincrement())
+  nombre     String   @unique @db.VarChar(100)
+  simbolo    String   @db.VarChar(10)
+  decimales  Int      @default(2) @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpis Kpi[]
+
+  @@map("unidad_medida_kpi")
+  @@schema("strategic")
+}
+
+model FrecuenciaMedicion {
+  id                Int      @id(map: "pk_frecuencia_medicion") @default(autoincrement())
+  nombre            String   @unique @db.VarChar(100)
+  periodos_por_anio Int      @db.SmallInt
+  orden             Int      @db.SmallInt
+  estado            Boolean  @default(true)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  periodos Periodo[]
+  kpis     Kpi[]
+
+  @@map("frecuencia_medicion")
+  @@schema("strategic")
+}
+
+model Periodo {
+  id            Int      @id(map: "pk_periodo") @default(autoincrement())
+  frecuencia_id Int
+  numero        Int      @db.SmallInt
+  codigo        String   @unique @db.VarChar(5)
+  nombre        String   @db.VarChar(50)
+  mes_fin       Int      @db.SmallInt
+  estado        Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  frecuencia  FrecuenciaMedicion @relation(fields: [frecuencia_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_periodo_frecuencia")
+  kpi_valores KpiValor[]
+
+  @@map("periodo")
+  @@schema("strategic")
+}
+
+model Kpi {
+  id                      Int      @id(map: "pk_kpi") @default(autoincrement())
+  codigo                  String   @db.VarChar(20)
+  objetivo_estrategico_id Int
+  frecuencia_id           Int
+  unidad_medida_id        Int
+  nombre                  String   @db.VarChar(200)
+  formula                 String   @db.Text
+  estado                  Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivo_estrategico ObjetivoEstrategico @relation(fields: [objetivo_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_objetivo")
+  frecuencia           FrecuenciaMedicion  @relation(fields: [frecuencia_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_frecuencia")
+  unidad_medida        UnidadMedidaKpi     @relation(fields: [unidad_medida_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_unidad")
+
+  semaforos     SemaforoConfig[]
+  metas_anuales KpiMetaAnual[]
+  valores       KpiValor[]
+
+  @@map("kpi")
+  @@schema("strategic")
+}
+
+model SemaforoConfig {
+  id               Int      @id(map: "pk_semaforo_config") @default(autoincrement())
+  kpi_id           Int
+  anio             Int      @db.SmallInt
+  color            String   @db.VarChar(10)
+  color_hex        String   @db.VarChar(7)
+  operador         String   @db.VarChar(2)
+  valor_referencia Decimal  @db.Decimal(12, 2)
+  estado           Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_semaforo_kpi")
+
+  @@map("semaforo_config")
+  @@schema("strategic")
+}
+
+model KpiMetaAnual {
+  id         Int      @id(map: "pk_kpi_meta_anual") @default(autoincrement())
+  kpi_id     Int
+  anio       Int      @db.SmallInt
+  meta       Decimal  @db.Decimal(12, 2)
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_meta_anual_kpi")
+
+  @@map("kpi_meta_anual")
+  @@schema("strategic")
+}
+
+model KpiValor {
+  id             Int      @id(map: "pk_kpi_valor") @default(autoincrement())
+  kpi_id         Int
+  anio           Int      @db.SmallInt
+  periodo_id     Int
+  valor          Decimal  @db.Decimal(12, 2)
+  semaforo_color String   @db.VarChar(10)
+  estado         Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi     Kpi     @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_valor_kpi")
+  periodo Periodo @relation(fields: [periodo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_valor_periodo")
+
+  @@map("kpi_valor")
   @@schema("strategic")
 }
