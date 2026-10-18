@@ -38,6 +38,10 @@ export abstract class KpiRepository {
     planId: number,
     tipoModuloId: number,
   ): Promise<KpiResumenPlanEntidad[]>;
+  abstract findParaTableroControl(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<KpiEntityEnriquecido[]>;
   abstract existeKpiIncompletoEnPlan(
     planId: number,
     anioInicio: number,

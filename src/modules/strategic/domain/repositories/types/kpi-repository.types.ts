@@ -36,7 +36,9 @@ export interface UpdateKpiParams {
 
 export interface KpiObjetivoResumen {
   id: number;
+  codigo: string;
   nombre: string;
+  responsable: string;
   perspectiva_bsc: {
     id: number;
     nombre: string;
@@ -53,12 +55,11 @@ export interface KpiEntityEnriquecido extends KpiEntity {
   unidad_medida: UnidadMedidaKpiEntity;
   metas_anuales: KpiMetaAnualEntity[];
   semaforos: SemaforoConfigEntity[];
+  valores_anuales: KpiValorEntityEnriquecido[];
   objetivo_estrategico: KpiObjetivoResumen;
 }
 
-export interface KpiObjetivoResumenConResponsable extends KpiObjetivoResumen {
-  responsable: string;
-}
+export type KpiObjetivoResumenConResponsable = KpiObjetivoResumen;
 
 export interface KpiResumenPlanEntidad extends KpiEntityEnriquecido {
   objetivo_estrategico: KpiObjetivoResumenConResponsable;

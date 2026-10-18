@@ -26,7 +26,9 @@ const KPI_INCLUDE_ENRIQUECIDO = {
   objetivo_estrategico: {
     select: {
       id: true,
+      codigo: true,
       nombre: true,
+      responsable: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -40,6 +42,7 @@ const KPI_INCLUDE_RESUMEN_PLAN = {
   objetivo_estrategico: {
     select: {
       id: true,
+      codigo: true,
       nombre: true,
       responsable: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
@@ -329,6 +332,47 @@ export class PrismaKpiRepository implements KpiRepository {
         responsable: kpi.objetivo_estrategico.responsable,
       };
       entidad.ultimo_valor = ultimoPorKpi.get(kpi.id) ?? null;
+      return entidad;
+    });
+  }
+
+  async findParaTableroControl(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<KpiEntityEnriquecido[]> {
+    const kpis = await this.prisma.kpi.findMany({
+      where: {
+        estado: true,
+        objetivo_estrategico: {
+          plan_estrategico_id: planId,
+          tipo_modulo_id: tipoModuloId,
+          estado: true,
+        },
+      },
+      include: KPI_INCLUDE_RESUMEN_PLAN,
+      orderBy: { codigo: 'asc' },
+    });
+
+    if (kpis.length === 0) {
+      return [];
+    }
+
+    const valoresPorAnio = await this.prisma.kpiValor.findMany({
+      where: { kpi_id: { in: kpis.map((kpi) => kpi.id) }, estado: true },
+      include: { periodo: true },
+      orderBy: [
+        { kpi_id: 'asc' },
+        { anio: 'asc' },
+        { periodo: { numero: 'desc' } },
+      ],
+      distinct: ['kpi_id', 'anio'],
+    });
+
+    return kpis.map((kpi) => {
+      const entidad = KpiMapper.toDomain(kpi);
+      entidad.valores_anuales = valoresPorAnio
+        .filter((valor) => valor.kpi_id === kpi.id)
+        .map((valor) => KpiValorMapper.toDomain(valor));
       return entidad;
     });
   }
