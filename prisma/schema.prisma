@@ -66,6 +66,7 @@ enum TipoEventoNotificacion {
   pedido_entregado
   reembolso_aprobado
   reembolso_rechazado
+  reembolso_procesado
   ticket_respondido
   promocion
   mantenimiento
@@ -128,6 +129,18 @@ enum MetodoPago {
   culqi
 
   @@map("metodo_pago_enum")
+  @@schema("commerce")
+}
+
+// RN de reembolso: nace en `pendiente`; ventas lo aprueba o lo rechaza (sin
+// vuelta atrás), y solo tras aprobarse pasa a `reembolsado` al devolverse el dinero.
+enum EstadoReembolso {
+  pendiente
+  aprobado
+  rechazado
+  reembolsado
+
+  @@map("estado_reembolso_enum")
   @@schema("commerce")
 }
 
@@ -210,6 +223,7 @@ model User {
   notificacion_users                  NotificacionUser[]
   refresh_tokens                      RefreshToken[]
   pedidos                             Pedido[]
+  reembolsos_resueltos                Reembolso[]
 
   @@map("user")
   @@schema("persons")
@@ -507,9 +521,38 @@ model Pago {
   fecha_pago       DateTime   @db.Timestamptz(6)
   created_at       DateTime   @default(now()) @db.Timestamptz(6)
 
-  pedido Pedido @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
+  pedido    Pedido     @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
+  reembolso Reembolso?
 
   @@map("pago")
+  @@schema("commerce")
+}
+
+// Solicitud de reembolso de un pedido pagado (HU-A-011). La registra el cliente
+// desde su portal (HU-B-014); `pago_id` único = una sola solicitud por pedido.
+// La evidencia es un archivo del bucket de documentos; aquí va su llave.
+model Reembolso {
+  id               Int             @id(map: "pk_reembolso") @default(autoincrement())
+  codigo           String          @unique(map: "uq_reembolso_codigo") @db.VarChar(20)
+  pago_id          Int             @unique(map: "uq_reembolso_pago")
+  monto            Decimal         @db.Decimal(10, 2)
+  motivo_cliente   String          @db.Text
+  evidencia_key    String?         @db.VarChar(255)
+  estado           EstadoReembolso @default(pendiente)
+  motivo_rechazo   String?         @db.Text
+  // Operador de ventas que la aprobó o la rechazó.
+  resuelto_por     String?         @db.Uuid
+  fecha_solicitud  DateTime        @default(now()) @db.Timestamptz(6)
+  fecha_resolucion DateTime?       @db.Timestamptz(6)
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  pago              Pago  @relation(fields: [pago_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reembolso_pago")
+  resuelto_por_user User? @relation(fields: [resuelto_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reembolso_resuelto_por")
+
+  @@index([estado], map: "idx_reembolso_estado")
+  @@index([fecha_solicitud], map: "idx_reembolso_fecha_solicitud")
+  @@map("reembolso")
   @@schema("commerce")
 }
 
