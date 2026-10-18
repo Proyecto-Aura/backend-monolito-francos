@@ -16,6 +16,7 @@ import { seedUsuarioPruebaInventario } from './seeds/usuario-prueba-inventario.s
 import { seedUnidadMedidaKpi } from './seeds/unidad-medida-kpi.seed';
 import { seedFrecuenciaMedicion } from './seeds/frecuencia-medicion.seed';
 import { seedPeriodo } from './seeds/periodo.seed';
+import { seedEstadoIniciativa } from './seeds/estado-iniciativa.seed';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -31,6 +32,7 @@ async function main() {
   await seedUnidadMedidaKpi(prisma);
   await seedFrecuenciaMedicion(prisma);
   await seedPeriodo(prisma);
+  await seedEstadoIniciativa(prisma);
   await seedPresentaciones(prisma);
   await seedProductoTerminado(prisma);
   await seedRutas(prisma);
