@@ -258,9 +258,7 @@ describe('Iniciativa (e2e)', () => {
     );
     planPrincipalId = planPrincipal.id;
     planPrincipalCodigo = planPrincipal.codigo;
-    planSecundarioId = (
-      await createPlan(PLAN_SECUNDARIO_NAME, 2052, 2053)
-    ).id;
+    planSecundarioId = (await createPlan(PLAN_SECUNDARIO_NAME, 2052, 2053)).id;
     objetivoAId = await createObjetivo(
       planPrincipalId,
       `${TEST_PREFIX} Objetivo A`,
@@ -448,10 +446,7 @@ describe('Iniciativa (e2e)', () => {
 
     const body = response.body as { data: IniciativaHttp[] };
     expect(body.data.map(({ id }) => id)).toEqual(
-      expect.arrayContaining([
-        iniciativaReasignarId,
-        iniciativaDeleteBlockId,
-      ]),
+      expect.arrayContaining([iniciativaReasignarId, iniciativaDeleteBlockId]),
     );
   });
 
