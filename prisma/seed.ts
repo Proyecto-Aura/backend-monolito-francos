@@ -17,6 +17,7 @@ import { seedUnidadMedidaKpi } from './seeds/unidad-medida-kpi.seed';
 import { seedFrecuenciaMedicion } from './seeds/frecuencia-medicion.seed';
 import { seedPeriodo } from './seeds/periodo.seed';
 import { seedEstadoIniciativa } from './seeds/estado-iniciativa.seed';
+import { seedDemoReembolsos } from './seeds/demo-reembolsos.seed';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -38,6 +39,8 @@ async function main() {
   await seedRutas(prisma);
   await seedAccesos(prisma);
   await seedUsuarioPruebaInventario(prisma);
+  // Solo con SEED_DEMO=true (desarrollo).
+  await seedDemoReembolsos(prisma);
 }
 
 main()
