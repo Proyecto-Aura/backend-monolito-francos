@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
+import { ActualizarEstadoPedidoUseCase } from '../application/use-cases/pedido/actualizar-estado-pedido.use-case';
 import { CompletarPedidoUseCase } from '../application/use-cases/pedido/completar-pedido.use-case';
 import { CreatePedidoUseCase } from '../application/use-cases/pedido/create-pedido.use-case';
 import { GetPedidoByIdUseCase } from '../application/use-cases/pedido/get-pedido-by-id.use-case';
@@ -17,6 +18,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     CreatePedidoUseCase,
     ListPedidosUseCase,
     GetPedidoByIdUseCase,
+    ActualizarEstadoPedidoUseCase,
     CompletarPedidoUseCase,
     { provide: PedidoRepository, useClass: PrismaPedidoRepository },
     { provide: PasarelaPagoService, useClass: CulqiPasarelaPagoService },

@@ -664,4 +664,79 @@ describe('Pedidos (e2e)', () => {
         .expect(404);
     });
   });
+
+  describe('actualizar estado (HU-A-010, RF-A038)', () => {
+    const cambiarEstado = (
+      id: number,
+      estado: string,
+      token: string | null = ventasToken,
+    ) => {
+      const req = request(app.getHttpServer())
+        .patch(`/api/v1/pedidos/${id}/estado`)
+        .send({ estado });
+      return token ? req.set('Authorization', `Bearer ${token}`) : req;
+    };
+
+    it('sin token devuelve 401', async () => {
+      await cambiarEstado(
+        pedidoEfectivoId,
+        'en_espera_inventario',
+        null,
+      ).expect(401);
+    });
+
+    it('con rol inventario devuelve 403', async () => {
+      await cambiarEstado(
+        pedidoEfectivoId,
+        'en_espera_inventario',
+        inventarioToken,
+      ).expect(403);
+    });
+
+    it('con un estado que no existe devuelve 400', async () => {
+      await cambiarEstado(pedidoEfectivoId, 'completado').expect(400);
+    });
+
+    it('no deja a ventas saltar a otro estado (RN6): 409', async () => {
+      await cambiarEstado(pedidoEfectivoId, 'entregado').expect(409);
+    });
+
+    it('con rol ventas pasa el pedido confirmado a en espera de inventario y lo guarda', async () => {
+      const response = await cambiarEstado(
+        pedidoEfectivoId,
+        'en_espera_inventario',
+      ).expect(200);
+      const body = response.body as unknown as PedidoDetalleBody;
+
+      expect(body).toMatchObject({
+        id: pedidoEfectivoId,
+        estado: 'en_espera_inventario',
+      });
+      await expect(
+        prisma.pedido.findUniqueOrThrow({
+          where: { id: pedidoEfectivoId },
+          select: { estado: true },
+        }),
+      ).resolves.toEqual({ estado: 'en_espera_inventario' });
+    });
+
+    it('aparece al filtrar por en espera de inventario', async () => {
+      const response = await listar({
+        estado: 'en_espera_inventario',
+        limit: 100,
+      }).expect(200);
+
+      expect(
+        (response.body as unknown as ListadoBody).data.map((p) => p.id),
+      ).toContain(pedidoEfectivoId);
+    });
+
+    it('no lo vuelve a enviar si ya está en espera de inventario: 409', async () => {
+      await cambiarEstado(pedidoEfectivoId, 'en_espera_inventario').expect(409);
+    });
+
+    it('con un pedido que no existe devuelve 404', async () => {
+      await cambiarEstado(999999999, 'en_espera_inventario').expect(404);
+    });
+  });
 });
