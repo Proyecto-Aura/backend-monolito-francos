@@ -35,6 +35,12 @@ import { UpdateKpiUseCase } from '../application/use-cases/kpi/update-kpi.use-ca
 import { ListFrecuenciasMedicionUseCase } from '../application/use-cases/frecuencia-medicion/list-frecuencias-medicion.use-case';
 import { ListPeriodosPorFrecuenciaUseCase } from '../application/use-cases/periodo/list-periodos-por-frecuencia.use-case';
 import { ListUnidadesMedidaKpiUseCase } from '../application/use-cases/unidad-medida-kpi/list-unidades-medida-kpi.use-case';
+import { ActualizarEstadoIniciativaUseCase } from '../application/use-cases/iniciativa/actualizar-estado-iniciativa.use-case';
+import { CreateIniciativaUseCase } from '../application/use-cases/iniciativa/create-iniciativa.use-case';
+import { EliminarIniciativaUseCase } from '../application/use-cases/iniciativa/eliminar-iniciativa.use-case';
+import { ListIniciativasPorObjetivoUseCase } from '../application/use-cases/iniciativa/list-iniciativas-por-objetivo.use-case';
+import { ObtenerIniciativasPorPlanUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
+import { UpdateIniciativaUseCase } from '../application/use-cases/iniciativa/update-iniciativa.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -47,6 +53,8 @@ import { KpiRepository } from '../domain/repositories/kpi.repository';
 import { KpiValorRepository } from '../domain/repositories/kpi-valor.repository';
 import { PeriodoRepository } from '../domain/repositories/periodo.repository';
 import { UnidadMedidaKpiRepository } from '../domain/repositories/unidad-medida-kpi.repository';
+import { EstadoIniciativaRepository } from '../domain/repositories/estado-iniciativa.repository';
+import { IniciativaRepository } from '../domain/repositories/iniciativa.repository';
 import { PrismaEstadoPlanEstrategicoRepository } from '../infrastructure/repositories/prisma-estado-plan-estrategico.repository';
 import { PrismaEstadoObjetivoRepository } from '../infrastructure/repositories/prisma-estado-objetivo.repository';
 import { PrismaObjetivoEstrategicoRepository } from '../infrastructure/repositories/prisma-objetivo-estrategico.repository';
@@ -59,6 +67,8 @@ import { PrismaKpiRepository } from '../infrastructure/repositories/prisma-kpi.r
 import { PrismaKpiValorRepository } from '../infrastructure/repositories/prisma-kpi-valor.repository';
 import { PrismaPeriodoRepository } from '../infrastructure/repositories/prisma-periodo.repository';
 import { PrismaUnidadMedidaKpiRepository } from '../infrastructure/repositories/prisma-unidad-medida-kpi.repository';
+import { PrismaEstadoIniciativaRepository } from '../infrastructure/repositories/prisma-estado-iniciativa.repository';
+import { PrismaIniciativaRepository } from '../infrastructure/repositories/prisma-iniciativa.repository';
 import { DocumentosEstrategicosController } from './controllers/documentos-estrategicos.controller';
 import { FrecuenciasMedicionController } from './controllers/frecuencias-medicion.controller';
 import { KpisController } from './controllers/kpis.controller';
@@ -67,6 +77,7 @@ import { PeriodosController } from './controllers/periodos.controller';
 import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
 import { UnidadesMedidaKpiController } from './controllers/unidades-medida-kpi.controller';
+import { IniciativasController } from './controllers/iniciativas.controller';
 import { StrategicDomainExceptionFilter } from './filters/strategic-domain-exception.filter';
 
 @Module({
@@ -79,6 +90,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     FrecuenciasMedicionController,
     UnidadesMedidaKpiController,
     PeriodosController,
+    IniciativasController,
   ],
   providers: [
     CreatePlanEstrategicoUseCase,
@@ -116,6 +128,12 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ListFrecuenciasMedicionUseCase,
     ListUnidadesMedidaKpiUseCase,
     ListPeriodosPorFrecuenciaUseCase,
+    CreateIniciativaUseCase,
+    UpdateIniciativaUseCase,
+    EliminarIniciativaUseCase,
+    ActualizarEstadoIniciativaUseCase,
+    ListIniciativasPorObjetivoUseCase,
+    ObtenerIniciativasPorPlanUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,
@@ -163,6 +181,14 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     {
       provide: PeriodoRepository,
       useClass: PrismaPeriodoRepository,
+    },
+    {
+      provide: EstadoIniciativaRepository,
+      useClass: PrismaEstadoIniciativaRepository,
+    },
+    {
+      provide: IniciativaRepository,
+      useClass: PrismaIniciativaRepository,
     },
     {
       provide: APP_FILTER,
