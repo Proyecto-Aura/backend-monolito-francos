@@ -5,6 +5,7 @@ import { CompletarPedidoUseCase } from '../application/use-cases/pedido/completa
 import { CreatePedidoUseCase } from '../application/use-cases/pedido/create-pedido.use-case';
 import { GetPedidoByIdUseCase } from '../application/use-cases/pedido/get-pedido-by-id.use-case';
 import { ListPedidosUseCase } from '../application/use-cases/pedido/list-pedidos.use-case';
+import { ResumirPedidoPortalUseCase } from '../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { AprobarReembolsoUseCase } from '../application/use-cases/reembolso/aprobar-reembolso.use-case';
 import { ConfirmarDevolucionReembolsoUseCase } from '../application/use-cases/reembolso/confirmar-devolucion-reembolso.use-case';
 import { GetReembolsoByIdUseCase } from '../application/use-cases/reembolso/get-reembolso-by-id.use-case';
@@ -19,17 +20,23 @@ import { PrismaPedidoRepository } from '../infrastructure/repositories/prisma-pe
 import { PrismaReembolsoRepository } from '../infrastructure/repositories/prisma-reembolso.repository';
 import { S3EvidenciaReembolsoService } from '../infrastructure/storage/s3-evidencia-reembolso.service';
 import { PedidosController } from './controllers/pedidos.controller';
+import { PortalPedidosController } from './controllers/portal-pedidos.controller';
 import { ReembolsosController } from './controllers/reembolsos.controller';
 import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.filter';
 
 @Module({
-  controllers: [PedidosController, ReembolsosController],
+  controllers: [
+    PedidosController,
+    ReembolsosController,
+    PortalPedidosController,
+  ],
   providers: [
     CreatePedidoUseCase,
     ListPedidosUseCase,
     GetPedidoByIdUseCase,
     ActualizarEstadoPedidoUseCase,
     CompletarPedidoUseCase,
+    ResumirPedidoPortalUseCase,
     ListReembolsosUseCase,
     GetReembolsoByIdUseCase,
     AprobarReembolsoUseCase,

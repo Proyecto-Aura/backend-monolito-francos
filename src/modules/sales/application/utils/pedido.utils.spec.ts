@@ -17,6 +17,7 @@ const presentacion = (
   precio_unitario: 5.5,
   precio_mayorista: 4.2,
   umbral_mayorista: 24,
+  visible_portal_b: true,
   ...overrides,
 });
 

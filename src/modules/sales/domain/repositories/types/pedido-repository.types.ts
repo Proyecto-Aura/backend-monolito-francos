@@ -15,6 +15,14 @@ export interface ClienteParaPedido {
   email: string | null;
 }
 
+// Lo que el resumen del carrito necesita del cliente que inició sesión: si está
+// activo y su dirección predeterminada del perfil (RF-B20).
+export interface ClienteParaResumen {
+  id: string;
+  estado: boolean;
+  direccion: string | null;
+}
+
 // Precios vigentes de una presentación al momento de registrar el pedido.
 export interface PresentacionParaPedido {
   id: number;
@@ -23,6 +31,8 @@ export interface PresentacionParaPedido {
   precio_unitario: number;
   precio_mayorista: number | null;
   umbral_mayorista: number | null;
+  // Si el cliente la ve en el catálogo del portal (RF-A025).
+  visible_portal_b: boolean;
 }
 
 export interface CreateDetallePedidoParams {
