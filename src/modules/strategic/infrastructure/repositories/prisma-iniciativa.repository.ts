@@ -16,6 +16,7 @@ const INICIATIVA_INCLUDE_ENRIQUECIDA = {
   objetivo_estrategico: {
     select: {
       id: true,
+      codigo: true,
       nombre: true,
       responsable: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
