@@ -27,6 +27,7 @@ export class CreateEmpresaUseCase {
       email: dto.email ?? null,
       logo_url: dto.logo_url ?? null,
       estado: dto.estado ?? true,
+      es_emisora: false,
     });
   }
 }

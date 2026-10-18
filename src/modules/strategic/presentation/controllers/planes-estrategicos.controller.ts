@@ -31,10 +31,12 @@ import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-
 import { ListTodosPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-todos-planes-estrategicos.use-case';
 import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 import { IniciativaPresenter } from '../presenters/iniciativa.presenter';
 import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
 import { PlanEstrategicoPresenter } from '../presenters/plan-estrategico.presenter';
+import { TableroControlPresenter } from '../presenters/tablero-control.presenter';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Planes Estratégicos')
@@ -54,6 +56,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerObjetivosPorPlan: ObtenerObjetivosPorPlanUseCase,
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
+    private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
   ) {}
 
   @Post()
@@ -133,6 +136,18 @@ export class PlanesEstrategicosController {
   async iniciativasDelPlan(@Param('id', ParseIntPipe) id: number) {
     return IniciativaPresenter.resumenPorPlanToHttp(
       await this.obtenerIniciativasPorPlan.execute(id),
+    );
+  }
+
+  @Get(':id/tablero-control')
+  @ApiOperation({ summary: 'Tablero de control (BSC) del plan' })
+  @ApiOkResponse({
+    description: 'Tablero de control agrupado por perspectiva',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async tableroControlDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return TableroControlPresenter.toHttp(
+      await this.obtenerTableroControl.execute(id),
     );
   }
 

@@ -41,6 +41,7 @@ import { EliminarIniciativaUseCase } from '../application/use-cases/iniciativa/e
 import { ListIniciativasPorObjetivoUseCase } from '../application/use-cases/iniciativa/list-iniciativas-por-objetivo.use-case';
 import { ObtenerIniciativasPorPlanUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
 import { UpdateIniciativaUseCase } from '../application/use-cases/iniciativa/update-iniciativa.use-case';
+import { ObtenerTableroControlUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -134,6 +135,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ActualizarEstadoIniciativaUseCase,
     ListIniciativasPorObjetivoUseCase,
     ObtenerIniciativasPorPlanUseCase,
+    ObtenerTableroControlUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,
