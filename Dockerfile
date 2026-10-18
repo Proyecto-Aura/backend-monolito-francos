@@ -45,6 +45,9 @@ COPY package.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
+# Prisma 7 lee la URL de la BD desde prisma.config.ts (no desde schema.prisma),
+# así que `prisma migrate deploy` dentro del contenedor lo necesita.
+COPY --from=build --chown=node:node /app/prisma.config.ts ./
 
 USER node
 
