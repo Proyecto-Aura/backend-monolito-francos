@@ -38,4 +38,9 @@ export abstract class KpiRepository {
     planId: number,
     tipoModuloId: number,
   ): Promise<KpiResumenPlanEntidad[]>;
+  abstract existeKpiIncompletoEnPlan(
+    planId: number,
+    anioInicio: number,
+    anioFin: number,
+  ): Promise<boolean>;
 }

@@ -159,7 +159,25 @@ export class PrismaKpiRepository implements KpiRepository {
       await tx.kpi.update({ where: { id }, data });
 
       if (metas_por_anio !== undefined) {
+        const existentes = await tx.kpiMetaAnual.findMany({
+          where: { kpi_id: id, estado: true },
+          select: { anio: true },
+        });
+        const aniosExistentes = new Set(existentes.map((meta) => meta.anio));
+
+        const filasNuevas = metas_por_anio.filter(
+          (fila) => !aniosExistentes.has(fila.anio),
+        );
+
+        if (filasNuevas.length > 0) {
+          await this.crearMetasYSemaforos(tx, id, filasNuevas);
+        }
+
         for (const fila of metas_por_anio) {
+          if (!aniosExistentes.has(fila.anio)) {
+            continue;
+          }
+
           await tx.kpiMetaAnual.updateMany({
             where: { kpi_id: id, anio: fila.anio, estado: true },
             data: { meta: fila.meta },
@@ -312,6 +330,52 @@ export class PrismaKpiRepository implements KpiRepository {
       };
       entidad.ultimo_valor = ultimoPorKpi.get(kpi.id) ?? null;
       return entidad;
+    });
+  }
+
+  async existeKpiIncompletoEnPlan(
+    planId: number,
+    anioInicio: number,
+    anioFin: number,
+  ): Promise<boolean> {
+    const kpis = await this.prisma.kpi.findMany({
+      where: {
+        estado: true,
+        objetivo_estrategico: { plan_estrategico_id: planId, estado: true },
+      },
+      select: {
+        id: true,
+        metas_anuales: { where: { estado: true }, select: { anio: true } },
+        semaforos: {
+          where: { estado: true },
+          select: { anio: true, color: true },
+        },
+      },
+    });
+
+    const aniosPlan = Array.from(
+      { length: anioFin - anioInicio + 1 },
+      (_, indice) => anioInicio + indice,
+    );
+
+    return kpis.some((kpi) => {
+      const aniosConMeta = new Set(kpi.metas_anuales.map((meta) => meta.anio));
+
+      if (!aniosPlan.every((anio) => aniosConMeta.has(anio))) {
+        return true;
+      }
+
+      const coloresPorAnio = new Map<number, Set<string>>();
+
+      for (const semaforo of kpi.semaforos) {
+        const colores = coloresPorAnio.get(semaforo.anio) ?? new Set<string>();
+        colores.add(semaforo.color);
+        coloresPorAnio.set(semaforo.anio, colores);
+      }
+
+      return aniosPlan.some(
+        (anio) => (coloresPorAnio.get(anio)?.size ?? 0) < 3,
+      );
     });
   }
 }
