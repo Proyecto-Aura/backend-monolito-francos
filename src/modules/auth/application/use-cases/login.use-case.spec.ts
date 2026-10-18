@@ -1,5 +1,10 @@
+// En CI los tests unitarios corren sin .env: envs se reemplaza por lo que usa el login.
+const DIAS_POR_DEFECTO = 7;
+jest.mock('../../../../config/envs', () => ({
+  envs: { jwtAccessExpiresIn: '40m', refreshTokenExpiresInDays: 7 },
+}));
+
 import { JwtService } from '@nestjs/jwt';
-import { envs } from '../../../../config/envs';
 import { UserEntity } from '../../../persons/domain/entities/user.entity';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
@@ -82,7 +87,7 @@ describe('LoginUseCase', () => {
   it('sin "recordar" el refresh token dura los días por defecto', async () => {
     await useCase.execute({ identificador: 'rosaquispe', password: PASSWORD });
 
-    expect(diasDelRefreshToken()).toBe(envs.refreshTokenExpiresInDays);
+    expect(diasDelRefreshToken()).toBe(DIAS_POR_DEFECTO);
   });
 
   it('con "recordar" el refresh token dura 30 días (HU-B-001)', async () => {
