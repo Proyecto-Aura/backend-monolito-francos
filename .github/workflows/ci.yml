@@ -210,9 +210,13 @@ jobs:
         continue-on-error: true
         run: pnpm audit --prod
 
+      # Solo el historial alcanzable desde el commit probado: en un PR es develop
+      # (o main) + los commits del PR; en un push, la rama empujada. Sin
+      # --log-opts, gitleaks usa `git log --all` y, como fetch-depth: 0 trae todas
+      # las ramas, un secreto en la rama de otro integrante haría fallar este PR.
       - name: Secretos filtrados
         if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
-            detect --source=/repo --no-banner --redact --verbose
+            detect --source=/repo --no-banner --redact --verbose --log-opts="HEAD"
