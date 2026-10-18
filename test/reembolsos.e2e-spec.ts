@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { EvidenciaReembolsoService } from '../src/modules/sales/domain/services/evidencia-reembolso.service';
 
 const ADMIN_CREDENTIALS = { identificador: 'admin', password: 'admin123' };
 
@@ -40,6 +41,14 @@ const PRESENTACION_DESCRIPCION = 'E2E Reembolsos OFT0-253';
 const PRODUCTO_NOMBRE = 'E2E Producto Reembolsos OFT0-253';
 const PREFIJO_PEDIDO = 'PED-E2E-R';
 const PREFIJO_SOLICITUD = 'SOL-E2E-R';
+
+// Doble del bucket de documentos: en CI no hay credenciales de S3 para firmar
+// el enlace, y el e2e no necesita un enlace real.
+class FakeEvidenciaReembolso implements EvidenciaReembolsoService {
+  urlDescarga(key: string): Promise<string> {
+    return Promise.resolve(`https://docs.e2e.test/${key}?firma=e2e`);
+  }
+}
 
 interface ReembolsoBody {
   id: number;
@@ -237,7 +246,10 @@ describe('Reembolsos (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(EvidenciaReembolsoService)
+      .useValue(new FakeEvidenciaReembolso())
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -457,7 +469,9 @@ describe('Reembolsos (e2e)', () => {
         fecha_resolucion: null,
       });
       expect(body.evidencia?.nombre).toBe('packs-rotos.jpg');
-      expect(body.evidencia?.url).toContain('packs-rotos.jpg');
+      expect(body.evidencia?.url).toBe(
+        `https://docs.e2e.test/reembolsos/${PREFIJO_SOLICITUD}1/packs-rotos.jpg?firma=e2e`,
+      );
     });
 
     it('sin evidencia la devuelve vacía', async () => {
