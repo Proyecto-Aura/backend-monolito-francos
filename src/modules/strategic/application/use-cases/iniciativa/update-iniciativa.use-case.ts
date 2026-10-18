@@ -49,6 +49,30 @@ export class UpdateIniciativaUseCase {
       );
     }
 
+    let objetivoDestino = objetivo;
+
+    if (
+      dto.objetivo_estrategico_id !== undefined &&
+      dto.objetivo_estrategico_id !== objetivo.id
+    ) {
+      const nuevoObjetivo =
+        await this.objetivoEstrategicoRepository.findActivoById(
+          dto.objetivo_estrategico_id,
+        );
+
+      if (!nuevoObjetivo) {
+        throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
+      }
+
+      if (nuevoObjetivo.plan_estrategico_id !== objetivo.plan_estrategico_id) {
+        throw new ResourceConflictError(
+          'No se puede reasignar la iniciativa a un objetivo estratégico de otro plan',
+        );
+      }
+
+      objetivoDestino = nuevoObjetivo;
+    }
+
     const fechaInicio =
       dto.fecha_inicio === undefined
         ? iniciativa.fecha_inicio
@@ -80,13 +104,16 @@ export class UpdateIniciativaUseCase {
         ? undefined
         : dto.nombre.trim().replace(/\s+/g, ' ');
 
+    const cambioDeObjetivo = objetivoDestino.id !== objetivo.id;
+
     if (
-      nombre !== undefined &&
-      nombre.toLowerCase() !== iniciativa.nombre.toLowerCase()
+      cambioDeObjetivo ||
+      (nombre !== undefined &&
+        nombre.toLowerCase() !== iniciativa.nombre.toLowerCase())
     ) {
       const existe = await this.iniciativaRepository.existsByNombre(
-        objetivo.id,
-        nombre,
+        objetivoDestino.id,
+        nombre ?? iniciativa.nombre,
         id,
       );
 
@@ -98,8 +125,10 @@ export class UpdateIniciativaUseCase {
     }
 
     return this.iniciativaRepository.update(id, {
+      objetivo_estrategico_id: dto.objetivo_estrategico_id,
       nombre,
       descripcion: dto.descripcion,
+      presupuesto: dto.presupuesto,
       responsable: dto.responsable,
       fecha_inicio:
         dto.fecha_inicio === undefined ? undefined : new Date(dto.fecha_inicio),

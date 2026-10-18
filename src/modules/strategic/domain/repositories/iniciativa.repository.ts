@@ -29,6 +29,7 @@ export abstract class IniciativaRepository {
   abstract updateEstadoIniciativa(
     id: number,
     estadoIniciativaId: number,
+    motivoCancelacion?: string,
   ): Promise<IniciativaEntityEnriquecido>;
   abstract countByPlanYTipo(
     planId: number,

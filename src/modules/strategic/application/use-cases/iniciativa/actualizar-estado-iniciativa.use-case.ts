@@ -73,6 +73,13 @@ export class ActualizarEstadoIniciativaUseCase {
       throw new ResourceNotFoundError('Estado de iniciativa no encontrado');
     }
 
-    return this.iniciativaRepository.updateEstadoIniciativa(id, nuevoEstado.id);
+    const motivoCancelacion =
+      dto.estado_codigo === 'CANCELADA' ? dto.motivo_cancelacion : undefined;
+
+    return this.iniciativaRepository.updateEstadoIniciativa(
+      id,
+      nuevoEstado.id,
+      motivoCancelacion,
+    );
   }
 }

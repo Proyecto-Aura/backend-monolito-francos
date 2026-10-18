@@ -4,9 +4,11 @@ import {
   IsDateString,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateIniciativaDto {
@@ -28,6 +30,12 @@ export class CreateIniciativaDto {
   @IsOptional()
   @IsString()
   descripcion?: string;
+
+  @ApiPropertyOptional({ type: Number, example: 15000, minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  presupuesto?: number;
 
   @ApiProperty({ example: 'Gerencia Comercial', maxLength: 200 })
   @IsString()

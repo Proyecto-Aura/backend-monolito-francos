@@ -106,10 +106,16 @@ export class PrismaIniciativaRepository implements IniciativaRepository {
   async updateEstadoIniciativa(
     id: number,
     estadoIniciativaId: number,
+    motivoCancelacion?: string,
   ): Promise<IniciativaEntityEnriquecido> {
     const iniciativa = await this.prisma.iniciativa.update({
       where: { id },
-      data: { estado_iniciativa_id: estadoIniciativaId },
+      data: {
+        estado_iniciativa_id: estadoIniciativaId,
+        ...(motivoCancelacion === undefined
+          ? {}
+          : { motivo_cancelacion: motivoCancelacion }),
+      },
       include: INICIATIVA_INCLUDE_ENRIQUECIDA,
     });
 

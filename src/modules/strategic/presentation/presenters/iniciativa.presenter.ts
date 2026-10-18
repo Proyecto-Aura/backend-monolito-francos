@@ -8,6 +8,8 @@ export class IniciativaPresenter {
       codigo: iniciativa.codigo,
       nombre: iniciativa.nombre,
       descripcion: iniciativa.descripcion,
+      presupuesto: iniciativa.presupuesto,
+      motivo_cancelacion: iniciativa.motivo_cancelacion,
       responsable: iniciativa.responsable,
       fecha_inicio: iniciativa.fecha_inicio,
       fecha_fin: iniciativa.fecha_fin,

@@ -1,6 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/swagger';
 import { CreateIniciativaDto } from './create-iniciativa.dto';
 
-export class UpdateIniciativaDto extends PartialType(
-  OmitType(CreateIniciativaDto, ['objetivo_estrategico_id'] as const),
-) {}
+export class UpdateIniciativaDto extends PartialType(CreateIniciativaDto) {}

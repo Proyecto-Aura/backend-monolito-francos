@@ -5,14 +5,17 @@ export interface CreateIniciativaParams {
   objetivo_estrategico_id: number;
   nombre: string;
   descripcion?: string;
+  presupuesto?: number;
   responsable: string;
   fecha_inicio: Date;
   fecha_fin: Date;
 }
 
 export interface UpdateIniciativaParams {
+  objetivo_estrategico_id?: number;
   nombre?: string;
   descripcion?: string;
+  presupuesto?: number;
   responsable?: string;
   fecha_inicio?: Date;
   fecha_fin?: Date;

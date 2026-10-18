@@ -30,6 +30,8 @@ export class IniciativaMapper {
         iniciativa.responsable,
         iniciativa.nombre,
         iniciativa.descripcion,
+        iniciativa.presupuesto?.toNumber() ?? null,
+        iniciativa.motivo_cancelacion,
         iniciativa.fecha_inicio,
         iniciativa.fecha_fin,
         iniciativa.estado,

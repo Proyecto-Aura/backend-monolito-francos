@@ -829,6 +829,8 @@ model Iniciativa {
   responsable             String   @db.VarChar(200)
   nombre                  String   @db.VarChar(200)
   descripcion             String?  @db.Text
+  presupuesto             Decimal? @db.Decimal(12, 2)
+  motivo_cancelacion      String?  @db.Text
   fecha_inicio            DateTime @db.Date
   fecha_fin               DateTime @db.Date
   estado                  Boolean  @default(true)

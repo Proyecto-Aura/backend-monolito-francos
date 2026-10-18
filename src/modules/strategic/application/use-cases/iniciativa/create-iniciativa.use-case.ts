@@ -93,6 +93,7 @@ export class CreateIniciativaUseCase {
         objetivo_estrategico_id: objetivo.id,
         nombre,
         descripcion: dto.descripcion,
+        presupuesto: dto.presupuesto,
         responsable: dto.responsable,
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,

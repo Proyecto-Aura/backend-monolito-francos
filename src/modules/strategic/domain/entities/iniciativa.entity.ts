@@ -7,6 +7,8 @@ export class IniciativaEntity {
     public responsable: string,
     public nombre: string,
     public descripcion: string | null,
+    public presupuesto: number | null,
+    public motivo_cancelacion: string | null,
     public fecha_inicio: Date,
     public fecha_fin: Date,
     public estado: boolean,
