@@ -583,6 +583,7 @@ model UnidadMedidaKpi {
   kpis Kpi[]
 
   @@map("unidad_medida_kpi")
+  @@schema("strategic")
 }
 
 model FrecuenciaMedicion {
@@ -598,6 +599,7 @@ model FrecuenciaMedicion {
   kpis     Kpi[]
 
   @@map("frecuencia_medicion")
+  @@schema("strategic")
 }
 
 model Periodo {
@@ -615,6 +617,7 @@ model Periodo {
   kpi_valores KpiValor[]
 
   @@map("periodo")
+  @@schema("strategic")
 }
 
 model Kpi {
@@ -638,6 +641,7 @@ model Kpi {
   valores       KpiValor[]
 
   @@map("kpi")
+  @@schema("strategic")
 }
 
 model SemaforoConfig {
@@ -655,6 +659,7 @@ model SemaforoConfig {
   kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_semaforo_kpi")
 
   @@map("semaforo_config")
+  @@schema("strategic")
 }
 
 model KpiMetaAnual {
@@ -669,6 +674,7 @@ model KpiMetaAnual {
   kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_meta_anual_kpi")
 
   @@map("kpi_meta_anual")
+  @@schema("strategic")
 }
 
 model KpiValor {
@@ -686,4 +692,5 @@ model KpiValor {
   periodo Periodo @relation(fields: [periodo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_valor_periodo")
 
   @@map("kpi_valor")
+  @@schema("strategic")
 }
