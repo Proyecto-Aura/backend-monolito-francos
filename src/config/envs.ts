@@ -23,6 +23,8 @@ interface EnvVars {
   S3_BUCKET_DOCS: string;
   S3_BUCKET_MEDIA: string;
   MEDIA_BASE_URL: string;
+  CATALOGO_PUBLICO_RATE_LIMIT: number;
+  CATALOGO_PUBLICO_RATE_TTL_MS: number;
   CULQI_SECRET_KEY?: string;
   CULQI_API_URL: string;
 }
@@ -58,6 +60,9 @@ const envSchema = joi
     S3_BUCKET_DOCS: joi.string().required(),
     S3_BUCKET_MEDIA: joi.string().required(),
     MEDIA_BASE_URL: joi.string().default('/media'),
+    // Rate limit del catálogo público (Portal B): peticiones por IP y ventana.
+    CATALOGO_PUBLICO_RATE_LIMIT: joi.number().integer().min(1).default(60),
+    CATALOGO_PUBLICO_RATE_TTL_MS: joi.number().integer().min(1).default(60000),
     // Opcional: sin la llave, los pedidos pagados con Culqi responden 503.
     // Solo modo de pruebas: una llave de producción (sk_live_) no deja arrancar.
     CULQI_SECRET_KEY: joi
@@ -104,6 +109,8 @@ export const envs = {
   s3BucketDocs: envVars.S3_BUCKET_DOCS,
   s3BucketMedia: envVars.S3_BUCKET_MEDIA,
   mediaBaseUrl: envVars.MEDIA_BASE_URL,
+  catalogoPublicoRateLimit: envVars.CATALOGO_PUBLICO_RATE_LIMIT,
+  catalogoPublicoRateTtlMs: envVars.CATALOGO_PUBLICO_RATE_TTL_MS,
   culqiSecretKey: envVars.CULQI_SECRET_KEY || undefined,
   culqiApiUrl: envVars.CULQI_API_URL,
 };
