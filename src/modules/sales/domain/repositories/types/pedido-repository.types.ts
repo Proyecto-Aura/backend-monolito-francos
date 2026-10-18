@@ -53,10 +53,18 @@ export interface CreatePedidoParams {
 
 export interface ListPedidosParams extends PaginationParams {
   estado?: EstadoPedido;
+  // Limita el listado a estos estados (despacho, RF-A094); `estado` afina dentro.
+  estados?: readonly EstadoPedido[];
   origen?: OrigenPedido;
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;
+}
+
+// Aviso in-app al cliente cuando su pedido sale a reparto (RF-A097).
+export interface NotificacionPedidoParams {
+  titulo: string;
+  mensaje: string;
 }
 
 // Fila del listado (RF-A030).
