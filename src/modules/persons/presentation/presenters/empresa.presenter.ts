@@ -12,6 +12,7 @@ export class EmpresaPresenter {
       email: empresa.email,
       logo_url: empresa.logo_url,
       estado: empresa.estado,
+      es_emisora: empresa.es_emisora,
       created_at: empresa.created_at,
       updated_at: empresa.updated_at,
     };
