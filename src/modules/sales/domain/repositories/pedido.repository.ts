@@ -3,6 +3,7 @@ import { EstadoPedido } from '../enums';
 import { PaginatedResult } from './types/pagination.types';
 import {
   ClienteParaPedido,
+  ClienteParaResumen,
   CreatePedidoParams,
   ListPedidosParams,
   PedidoDetalle,
@@ -14,6 +15,10 @@ export abstract class PedidoRepository {
   abstract findClienteParaPedido(
     clienteId: string,
   ): Promise<ClienteParaPedido | null>;
+  // Cliente vinculado al usuario del portal (User -> Persona -> Cliente).
+  abstract findClienteParaResumenPorUser(
+    userId: string,
+  ): Promise<ClienteParaResumen | null>;
   abstract findPresentacionesParaPedido(
     ids: number[],
   ): Promise<PresentacionParaPedido[]>;

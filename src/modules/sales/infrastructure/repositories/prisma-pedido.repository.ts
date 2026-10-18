@@ -9,6 +9,7 @@ import { PedidoRepository } from '../../domain/repositories/pedido.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import {
   ClienteParaPedido,
+  ClienteParaResumen,
   CreatePedidoParams,
   ListPedidosParams,
   PedidoDetalle,
@@ -72,6 +73,27 @@ export class PrismaPedidoRepository implements PedidoRepository {
       : null;
   }
 
+  async findClienteParaResumenPorUser(
+    userId: string,
+  ): Promise<ClienteParaResumen | null> {
+    const cliente = await this.prisma.cliente.findFirst({
+      where: { persona: { user: { id: userId } } },
+      select: {
+        id: true,
+        estado: true,
+        persona: { select: { direccion: true } },
+      },
+    });
+
+    return cliente
+      ? {
+          id: cliente.id,
+          estado: cliente.estado,
+          direccion: cliente.persona.direccion,
+        }
+      : null;
+  }
+
   async findPresentacionesParaPedido(
     ids: number[],
   ): Promise<PresentacionParaPedido[]> {
@@ -83,6 +105,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
         precio_unitario: true,
         precio_mayorista: true,
         umbral_mayorista: true,
+        visible_portal_b: true,
         producto: { select: { estado: true } },
       },
     });
@@ -94,6 +117,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
       precio_unitario: presentacion.precio_unitario.toNumber(),
       precio_mayorista: presentacion.precio_mayorista?.toNumber() ?? null,
       umbral_mayorista: presentacion.umbral_mayorista,
+      visible_portal_b: presentacion.visible_portal_b,
     }));
   }
 
