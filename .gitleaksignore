@@ -10,7 +10,9 @@ a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:g
 4c13f2bfa366dc91850c51d4fb9e725def809118:test/promociones.e2e-spec.ts:generic-api-key:24
 4c13f2bfa366dc91850c51d4fb9e725def809118:test/catalogo.e2e-spec.ts:generic-api-key:25
 
-# Falso positivo: 'sk_live_produccion' en el unitario de Culqi (HU-A-009) es un texto
-# inventado para comprobar que el backend rechaza llaves de producción. Coincide con el
+# Falso positivo: en el unitario de Culqi (HU-A-009) hay una llave de producción
+# inventada para comprobar que el backend rechaza ese tipo de llaves. Coincide con el
 # formato de la regla de Stripe, pero no es una llave real de Culqi ni de Stripe.
+# La segunda línea cubre la versión anterior de este comentario, que citaba esa llave.
 5a2364aaff580d21fb6d5c84d62a98710e528dc5:src/modules/sales/infrastructure/payment/culqi-pasarela-pago.service.spec.ts:stripe-access-token:122
+961dcde912230aa040e775577b7eb635b22ab690:.gitleaksignore:stripe-access-token:13
