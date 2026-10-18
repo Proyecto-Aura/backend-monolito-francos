@@ -13,6 +13,9 @@ import { seedProductoTerminado } from './seeds/producto-terminado.seed';
 import { seedRutas } from './seeds/rutas.seed';
 import { seedAccesos } from './seeds/accesos.seed';
 import { seedUsuarioPruebaInventario } from './seeds/usuario-prueba-inventario.seed';
+import { seedUnidadMedidaKpi } from './seeds/unidad-medida-kpi.seed';
+import { seedFrecuenciaMedicion } from './seeds/frecuencia-medicion.seed';
+import { seedPeriodo } from './seeds/periodo.seed';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -25,6 +28,9 @@ async function main() {
   await seedPerspectivaBsc(prisma);
   await seedTipoModulo(prisma);
   await seedEstadoObjetivo(prisma);
+  await seedUnidadMedidaKpi(prisma);
+  await seedFrecuenciaMedicion(prisma);
+  await seedPeriodo(prisma);
   await seedPresentaciones(prisma);
   await seedProductoTerminado(prisma);
   await seedRutas(prisma);

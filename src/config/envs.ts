@@ -23,6 +23,8 @@ interface EnvVars {
   S3_BUCKET_DOCS: string;
   S3_BUCKET_MEDIA: string;
   MEDIA_BASE_URL: string;
+  CULQI_SECRET_KEY?: string;
+  CULQI_API_URL: string;
 }
 
 const envSchema = joi
@@ -56,6 +58,18 @@ const envSchema = joi
     S3_BUCKET_DOCS: joi.string().required(),
     S3_BUCKET_MEDIA: joi.string().required(),
     MEDIA_BASE_URL: joi.string().default('/media'),
+    // Opcional: sin la llave, los pedidos pagados con Culqi responden 503.
+    // Solo modo de pruebas: una llave de producción (sk_live_) no deja arrancar.
+    CULQI_SECRET_KEY: joi
+      .string()
+      .allow('')
+      .pattern(/^sk_test_/)
+      .optional()
+      .messages({
+        'string.pattern.base':
+          'CULQI_SECRET_KEY debe ser una llave de pruebas de Culqi (sk_test_...)',
+      }),
+    CULQI_API_URL: joi.string().uri().default('https://api.culqi.com/v2'),
   })
   .and('S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY')
   .unknown(true);
@@ -90,4 +104,6 @@ export const envs = {
   s3BucketDocs: envVars.S3_BUCKET_DOCS,
   s3BucketMedia: envVars.S3_BUCKET_MEDIA,
   mediaBaseUrl: envVars.MEDIA_BASE_URL,
+  culqiSecretKey: envVars.CULQI_SECRET_KEY || undefined,
+  culqiApiUrl: envVars.CULQI_API_URL,
 };
