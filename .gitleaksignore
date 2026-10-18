@@ -22,3 +22,9 @@ a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:g
 # La segunda línea cubre la versión anterior de este comentario, que citaba esa llave.
 5a2364aaff580d21fb6d5c84d62a98710e528dc5:src/modules/sales/infrastructure/payment/culqi-pasarela-pago.service.spec.ts:stripe-access-token:122
 961dcde912230aa040e775577b7eb635b22ab690:.gitleaksignore:stripe-access-token:13
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba "ventas" en el
+# e2e de iniciativa (HU-A-029 / OFT0-433). Usuario desechable que el propio
+# test crea y borra; no es un secreto real. Mismo caso que el de
+# objetivo_estrategico de arriba.
+0951b6d988b7bfd522d392854610134e39966d97:test/iniciativa.e2e-spec.ts:generic-api-key:17

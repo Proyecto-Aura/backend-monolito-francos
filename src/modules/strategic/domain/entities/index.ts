@@ -13,3 +13,5 @@ export * from './unidad-medida-kpi.entity';
 export * from './frecuencia-medicion.entity';
 export * from './periodo.entity';
 export * from './kpi-valor.entity';
+export * from './estado-iniciativa.entity';
+export * from './iniciativa.entity';
