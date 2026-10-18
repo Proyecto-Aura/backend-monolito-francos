@@ -132,6 +132,14 @@ enum MetodoPago {
   @@schema("commerce")
 }
 
+enum TipoComprobante {
+  boleta
+  factura
+
+  @@map("tipo_comprobante")
+  @@schema("commerce")
+}
+
 // RN de reembolso: nace en `pendiente`; ventas lo aprueba o lo rechaza (sin
 // vuelta atrás), y solo tras aprobarse pasa a `reembolsado` al devolverse el dinero.
 enum EstadoReembolso {
@@ -343,6 +351,9 @@ model Empresa {
   email        String?  @unique(map: "uq_empresa_email") @db.VarChar(100)
   logo_url     String?  @db.Text
   estado       Boolean  @default(true)
+  // Marca la empresa emisora de comprobantes. Índice único parcial
+  // uq_empresa_emisora (solo una con true) en la migración: Prisma no lo modela.
+  es_emisora   Boolean  @default(false)
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -525,6 +536,26 @@ model Pago {
   reembolso Reembolso?
 
   @@map("pago")
+  @@schema("commerce")
+}
+
+// Serie de comprobantes (HU-A-044, RN23). `correlativo_actual` es el último número
+// emitido: nace en `correlativo_inicio - 1` y solo avanza con una reserva atómica.
+// A lo sumo una serie activa por tipo (índice parcial `uq_serie_activa_por_tipo`) y
+// los CHECK de rango se añaden a mano en la migración: Prisma no los modela.
+model SerieComprobante {
+  id                 Int             @id(map: "pk_serie_comprobante") @default(autoincrement())
+  tipo               TipoComprobante
+  serie              String          @unique(map: "uq_serie_comprobante_serie") @db.VarChar(4)
+  correlativo_inicio Int
+  correlativo_fin    Int
+  correlativo_actual Int
+  umbral_alerta      Int             @default(100)
+  estado             Boolean         @default(true)
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("serie_comprobante")
   @@schema("commerce")
 }
 

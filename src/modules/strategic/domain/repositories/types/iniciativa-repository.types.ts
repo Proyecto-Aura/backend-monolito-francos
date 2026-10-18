@@ -28,6 +28,7 @@ export interface ListIniciativasPorObjetivoParams extends PaginationParams {
 
 export interface IniciativaObjetivoResumen {
   id: number;
+  codigo: string;
   nombre: string;
   responsable: string;
   perspectiva_bsc: {

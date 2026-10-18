@@ -17,7 +17,9 @@ type PrismaKpiEnriquecido = Prisma.KpiGetPayload<{
     objetivo_estrategico: {
       select: {
         id: true;
+        codigo: true;
         nombre: true;
+        responsable: true;
         perspectiva_bsc: { select: { id: true; nombre: true } };
       };
     };
@@ -44,7 +46,9 @@ export class KpiMapper {
         unidad_medida: UnidadMedidaKpiMapper.toDomain(kpi.unidad_medida),
         objetivo_estrategico: {
           id: kpi.objetivo_estrategico.id,
+          codigo: kpi.objetivo_estrategico.codigo,
           nombre: kpi.objetivo_estrategico.nombre,
+          responsable: kpi.objetivo_estrategico.responsable,
           perspectiva_bsc: {
             id: kpi.objetivo_estrategico.perspectiva_bsc.id,
             nombre: kpi.objetivo_estrategico.perspectiva_bsc.nombre,
@@ -77,6 +81,7 @@ export class KpiMapper {
               semaforo.updated_at,
             ),
         ),
+        valores_anuales: [],
       },
     );
   }
