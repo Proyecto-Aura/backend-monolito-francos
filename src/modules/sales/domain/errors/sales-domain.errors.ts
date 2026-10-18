@@ -7,6 +7,15 @@ export abstract class SalesDomainError extends Error {
   }
 }
 
+export class InvalidRequestError extends SalesDomainError {
+  readonly statusCode = 400;
+}
+
+// Culqi rechazó el cobro: el pedido no se registra.
+export class PagoRechazadoError extends SalesDomainError {
+  readonly statusCode = 402;
+}
+
 export class ResourceNotFoundError extends SalesDomainError {
   readonly statusCode = 404;
 }
@@ -33,4 +42,9 @@ export class CorrelativoNoDisponibleError extends SalesDomainError {
   ) {
     super(message);
   }
+}
+
+// No se pudo hablar con Culqi (sin configurar, caído o sin respuesta válida).
+export class PasarelaNoDisponibleError extends SalesDomainError {
+  readonly statusCode = 503;
 }
