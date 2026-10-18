@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -23,8 +24,10 @@ import {
 import { CurrentUser } from '../../../auth/presentation/decorators/current-user.decorator';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../../auth/presentation/strategies/jwt.strategy';
+import { ActualizarEstadoPedidoDto } from '../../application/dto/pedido-dtos/actualizar-estado-pedido.dto';
 import { CreatePedidoDto } from '../../application/dto/pedido-dtos/create-pedido.dto';
 import { ListPedidosQueryDto } from '../../application/dto/pedido-dtos/list-pedidos-query.dto';
+import { ActualizarEstadoPedidoUseCase } from '../../application/use-cases/pedido/actualizar-estado-pedido.use-case';
 import { CreatePedidoUseCase } from '../../application/use-cases/pedido/create-pedido.use-case';
 import { GetPedidoByIdUseCase } from '../../application/use-cases/pedido/get-pedido-by-id.use-case';
 import { ListPedidosUseCase } from '../../application/use-cases/pedido/list-pedidos.use-case';
@@ -39,6 +42,7 @@ export class PedidosController {
     private readonly createPedido: CreatePedidoUseCase,
     private readonly listPedidos: ListPedidosUseCase,
     private readonly getPedidoById: GetPedidoByIdUseCase,
+    private readonly actualizarEstadoPedido: ActualizarEstadoPedidoUseCase,
   ) {}
 
   @Post()
@@ -101,5 +105,28 @@ export class PedidosController {
   @ApiNotFoundResponse({ description: 'El pedido no existe' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return PedidoPresenter.detalleToHttp(await this.getPedidoById.execute(id));
+  }
+
+  @Patch(':id/estado')
+  @ApiOperation({
+    summary: 'Actualizar el estado de un pedido',
+    description:
+      'Ventas pasa un pedido de confirmado a en_espera_inventario para que lo vea el operador de productos terminados (RN6, RF-A038).',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ description: 'Pedido con el estado actualizado' })
+  @ApiBadRequestResponse({ description: 'El estado enviado no existe' })
+  @ApiNotFoundResponse({ description: 'El pedido no existe' })
+  @ApiConflictResponse({
+    description:
+      'El cambio de estado no está permitido para ventas, o el pedido cambió de estado mientras tanto',
+  })
+  async actualizarEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarEstadoPedidoDto,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.actualizarEstadoPedido.execute(id, dto.estado),
+    );
   }
 }

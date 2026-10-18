@@ -184,6 +184,20 @@ export class PrismaPedidoRepository implements PedidoRepository {
     return pedido ? this.toPedidoDetalle(pedido) : null;
   }
 
+  async cambiarEstado(
+    id: number,
+    desde: EstadoPedido,
+    hacia: EstadoPedido,
+  ): Promise<boolean> {
+    // La condición sobre el estado actual evita pisar un cambio simultáneo.
+    const { count } = await this.prisma.pedido.updateMany({
+      where: { id, estado: desde },
+      data: { estado: hacia },
+    });
+
+    return count === 1;
+  }
+
   async marcarEntregado(id: number): Promise<PedidoEntity> {
     return this.prisma.$transaction(async (tx) => {
       // El cambio de estado va primero y con condición: si dos peticiones llegan

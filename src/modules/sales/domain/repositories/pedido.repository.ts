@@ -1,4 +1,5 @@
 import { PedidoEntity } from '../entities';
+import { EstadoPedido } from '../enums';
 import { PaginatedResult } from './types/pagination.types';
 import {
   ClienteParaPedido,
@@ -24,6 +25,13 @@ export abstract class PedidoRepository {
   ): Promise<PaginatedResult<PedidoResumen>>;
   abstract findById(id: number): Promise<PedidoEntity | null>;
   abstract findDetalleById(id: number): Promise<PedidoDetalle | null>;
+  // Cambia el estado solo si el pedido sigue en `desde`; devuelve false si en
+  // el camino otro usuario ya lo cambió.
+  abstract cambiarEstado(
+    id: number,
+    desde: EstadoPedido,
+    hacia: EstadoPedido,
+  ): Promise<boolean>;
   // Pasa el pedido a `entregado` y descuenta el stock de cada presentación en la
   // misma transacción (RF-A036). Falla si alguna no tiene stock suficiente.
   abstract marcarEntregado(id: number): Promise<PedidoEntity>;
