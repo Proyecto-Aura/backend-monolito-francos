@@ -6,10 +6,15 @@ import { RegistroRepository } from '../../domain/repositories/registro.repositor
 import { EmailService } from '../../domain/services/email.service';
 import { RegisterClienteDto } from '../dto/register-cliente.dto';
 import {
+  InvalidRequestError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
 import { hashPassword } from '../utils/password.util';
+import {
+  esFechaFutura,
+  tipoClienteSegunDocumento,
+} from '../utils/registro-cliente.util';
 import { generateRandomToken } from '../utils/token.util';
 import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
@@ -30,22 +35,47 @@ export class RegisterClienteUseCase {
   ) {}
 
   async execute(dto: RegisterClienteDto): Promise<RegistroClienteResult> {
+    // HU-B-002 (RF-B06): los datos que se piden dependen del documento.
+    const tipoEsperado = tipoClienteSegunDocumento(
+      dto.tipo_documento,
+      dto.numero_documento,
+    );
+    if (!tipoEsperado) {
+      throw new InvalidRequestError(
+        'El RUC debe empezar con 10 (persona natural) o con 20 (empresa)',
+      );
+    }
+    if (dto.tipo_cliente !== tipoEsperado) {
+      throw new InvalidRequestError(
+        tipoEsperado === TipoCliente.EMPRESA
+          ? 'Con un RUC 20 debes registrarte como empresa'
+          : 'Con este documento debes registrarte como persona natural',
+      );
+    }
+    if (dto.fecha_nacimiento && esFechaFutura(dto.fecha_nacimiento)) {
+      throw new InvalidRequestError(
+        'La fecha de nacimiento no puede ser futura',
+      );
+    }
+    if (tipoEsperado === TipoCliente.EMPRESA && !dto.razon_social?.trim()) {
+      throw new InvalidRequestError(
+        'La razón social es obligatoria para una empresa',
+      );
+    }
+
     // validaciones para duplicados
     if (await this.personaRepository.existsByDocument(dto.numero_documento)) {
       throw new ResourceConflictError(
-        'Existe una persona con ese mismo numero de documento',
+        'Ya existe una cuenta con ese número de documento',
       );
     }
     if (await this.userRepository.existsByEmail(dto.email)) {
-      throw new ResourceConflictError('Existe un usuario con ese mismo email');
-    }
-    if (dto.tipo_cliente === TipoCliente.EMPRESA && !dto.razon_social) {
       throw new ResourceConflictError(
-        'La razón social es obligatoria para un cliente empresa',
+        'Ya existe una cuenta con ese correo electrónico',
       );
     }
     if (await this.userRepository.existsByUsername(dto.username)) {
-      throw new ResourceConflictError('Existe un usuario con ese mismo nombre');
+      throw new ResourceConflictError('Ese nombre de usuario ya está en uso');
     }
 
     // validacion para rol

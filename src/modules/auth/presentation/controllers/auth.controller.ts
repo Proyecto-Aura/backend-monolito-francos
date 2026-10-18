@@ -33,7 +33,6 @@ import { RequestPasswordResetUseCase } from '../../application/use-cases/request
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
-import { envs } from '../../../../config/envs';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
 import { Authenticated } from '../decorators/authenticated.decorator';
@@ -41,7 +40,6 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../strategies/jwt.strategy';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
-const MS_POR_DIA = 24 * 60 * 60 * 1000;
 const FORGOT_PASSWORD_MESSAGE =
   'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña';
 const RESET_PASSWORD_MESSAGE = 'Contraseña restablecida correctamente';
@@ -116,7 +114,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const resultado = await this.login.execute(dto);
-    this.setRefreshTokenCookie(res, resultado.refreshTokenPlano);
+    this.setRefreshTokenCookie(
+      res,
+      resultado.refreshTokenPlano,
+      resultado.refreshTokenExpiresAt,
+    );
     return AuthPresenter.loginToHttp(resultado);
   }
 
@@ -177,13 +179,17 @@ export class AuthController {
     return { message: RESET_PASSWORD_MESSAGE };
   }
 
-  private setRefreshTokenCookie(res: Response, refreshTokenPlano: string) {
+  private setRefreshTokenCookie(
+    res: Response,
+    refreshTokenPlano: string,
+    expiresAt: Date,
+  ) {
     res.cookie(REFRESH_TOKEN_COOKIE, refreshTokenPlano, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/api/v1/auth',
-      maxAge: envs.refreshTokenExpiresInDays * MS_POR_DIA,
+      maxAge: expiresAt.getTime() - Date.now(),
     });
   }
 

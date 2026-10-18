@@ -15,9 +15,13 @@ export interface LoginResult {
   roles: string[];
   emailVerificado: boolean;
   debeCambiarContrasena: boolean;
+  // Hasta cuándo vale el refresh token; la cookie dura lo mismo.
+  refreshTokenExpiresAt: Date;
 }
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
+// "Recordar sesión por 30 días" del portal del cliente (HU-B-001).
+export const DIAS_SESION_RECORDADA = 30;
 
 @Injectable()
 export class LoginUseCase {
@@ -60,9 +64,10 @@ export class LoginUseCase {
 
     const refreshTokenPlano = generateRandomToken();
     const tokenHash = hashToken(refreshTokenPlano);
-    const expiresAt = new Date(
-      Date.now() + envs.refreshTokenExpiresInDays * MS_POR_DIA,
-    );
+    const diasSesion = dto.recordar
+      ? DIAS_SESION_RECORDADA
+      : envs.refreshTokenExpiresInDays;
+    const expiresAt = new Date(Date.now() + diasSesion * MS_POR_DIA);
 
     await this.refreshTokenRepository.create({
       user_id: user.id,
@@ -76,6 +81,7 @@ export class LoginUseCase {
       roles,
       emailVerificado: user.email_verificado,
       debeCambiarContrasena: user.debe_cambiar_contrasena,
+      refreshTokenExpiresAt: expiresAt,
     };
   }
 }
