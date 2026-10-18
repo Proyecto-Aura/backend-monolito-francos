@@ -452,6 +452,14 @@ describe('Solicitar reembolso desde el portal (e2e, HU-B-014)', () => {
       }).expect(400);
     });
 
+    it('con una imagen real declarada como text/html', async () => {
+      await solicitar(campos(pedidos.entregado), tokens.cliente, {
+        buffer: PNG,
+        filename: 'foto.png',
+        contentType: 'text/html',
+      }).expect(400);
+    });
+
     it('con una evidencia de más de 5 MB', async () => {
       const grande = Buffer.concat([PDF, Buffer.alloc(5 * 1024 * 1024)]);
 

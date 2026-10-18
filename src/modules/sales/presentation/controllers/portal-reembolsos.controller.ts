@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -105,6 +106,14 @@ export class PortalReembolsosController {
     evidencia: Express.Multer.File,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    // El validador mira el contenido, pero S3 sirve el archivo con el tipo que
+    // declara el cliente: una imagen real enviada como text/html no debe pasar.
+    if (!TIPOS_EVIDENCIA.test(evidencia.mimetype)) {
+      throw new BadRequestException(
+        'El tipo declarado de la evidencia no es PDF, JPG, PNG ni WEBP',
+      );
+    }
+
     return ReembolsoPortalPresenter.detalleToHttp(
       await this.solicitarReembolso.execute(
         dto,
