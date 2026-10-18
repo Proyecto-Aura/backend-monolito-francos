@@ -343,6 +343,9 @@ model Empresa {
   email        String?  @unique(map: "uq_empresa_email") @db.VarChar(100)
   logo_url     String?  @db.Text
   estado       Boolean  @default(true)
+  // Marca la empresa emisora de comprobantes. Índice único parcial
+  // uq_empresa_emisora (solo una con true) en la migración: Prisma no lo modela.
+  es_emisora   Boolean  @default(false)
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 

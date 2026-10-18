@@ -9,6 +9,7 @@ import {
 export abstract class EmpresaRepository {
   abstract create(params: CreateEmpresaParams): Promise<EmpresaEntity>;
   abstract findById(id: number): Promise<EmpresaEntity | null>;
+  abstract findEmisora(): Promise<EmpresaEntity | null>;
   abstract findMany(
     params: ListEmpresasParams,
   ): Promise<PaginatedResult<EmpresaEntity>>;
