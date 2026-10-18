@@ -45,7 +45,7 @@ export class EliminarObjetivoEstrategicoUseCase {
 
     if (tieneDependencias) {
       throw new ResourceConflictError(
-        'No se puede eliminar un objetivo con KPIs o relaciones asociadas',
+        'No se puede eliminar un objetivo con KPIs, iniciativas o relaciones asociadas',
       );
     }
 

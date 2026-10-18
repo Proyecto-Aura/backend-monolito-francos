@@ -277,15 +277,22 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
   }
 
   async tieneKpisORelacionesActivas(id: number): Promise<boolean> {
-    // TODO(HU-A-028): sumar el conteo de KPIs cuando exista la tabla kpi.
-    const relaciones = await this.prisma.relacionOe.count({
-      where: {
-        estado: true,
-        OR: [{ origen_id: id }, { destino_id: id }],
-      },
-    });
+    const [relaciones, kpis, iniciativas] = await this.prisma.$transaction([
+      this.prisma.relacionOe.count({
+        where: {
+          estado: true,
+          OR: [{ origen_id: id }, { destino_id: id }],
+        },
+      }),
+      this.prisma.kpi.count({
+        where: { objetivo_estrategico_id: id, estado: true },
+      }),
+      this.prisma.iniciativa.count({
+        where: { objetivo_estrategico_id: id, estado: true },
+      }),
+    ]);
 
-    return relaciones > 0;
+    return relaciones > 0 || kpis > 0 || iniciativas > 0;
   }
 
   async findRelacionesActivasPorPlanYTipo(
