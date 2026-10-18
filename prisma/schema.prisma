@@ -91,6 +91,45 @@ enum TipoPromocion {
   @@schema("commerce")
 }
 
+enum OrigenPedido {
+  portal
+  manual
+
+  @@map("origen_pedido_enum")
+  @@schema("commerce")
+}
+
+// Estados del portal interno (RN6). El pedido nace en `confirmado`: solo se
+// registra cuando el pago ya está confirmado (RN5).
+enum EstadoPedido {
+  confirmado
+  en_espera_inventario
+  en_preparacion
+  pendiente_entrega
+  en_camino
+  entregado
+  cancelado
+
+  @@map("estado_pedido_enum")
+  @@schema("commerce")
+}
+
+enum TipoEntrega {
+  recojo_tienda
+  delivery
+
+  @@map("tipo_entrega_enum")
+  @@schema("commerce")
+}
+
+enum MetodoPago {
+  efectivo
+  culqi
+
+  @@map("metodo_pago_enum")
+  @@schema("commerce")
+}
+
 /**
  * #######################################################################
  * ##   BLOQUE 1: TABLAS relacionadas a persona, seguridad y empresa    ##
@@ -144,6 +183,7 @@ model Cliente {
   created_at        DateTime         @default(now()) @db.Timestamptz(6)
   updated_at        DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   persona           Persona          @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cliente_persona")
+  pedidos           Pedido[]
 
   @@map("cliente")
   @@schema("persons")
@@ -168,6 +208,7 @@ model User {
   usuario_roles      UsuarioRol[]
   notificacion_users NotificacionUser[]
   refresh_tokens     RefreshToken[]
+  pedidos            Pedido[]
 
   @@map("user")
   @@schema("persons")
@@ -367,6 +408,7 @@ model ProductoPresentacion {
   promociones        Promocion[] @relation("PromocionProducto")
   promociones_regalo   Promocion[] @relation("PromocionRegalo")
   producto_terminado ProductoTerminado?
+  detalles_pedido    DetallePedido[]
 
   producto Producto @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_producto")
 
@@ -398,6 +440,73 @@ model Promocion {
   producto_presentacion_regalo ProductoPresentacion? @relation("PromocionRegalo", fields: [producto_presentacion_regalo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_regalo")
 
   @@map("promocion")
+  @@schema("commerce")
+}
+
+// Pedido de venta (HU-A-009). El código PED-000001 sale del id (RF-A034), así que
+// es correlativo para cualquier origen. `user_id` es el trabajador que lo registró
+// a mano; queda vacío en los pedidos que llegan del portal del cliente.
+model Pedido {
+  id                Int          @id(map: "pk_pedido") @default(autoincrement())
+  codigo            String       @unique(map: "uq_pedido_codigo") @db.VarChar(20)
+  cliente_id        String       @db.Uuid
+  user_id           String?      @db.Uuid
+  origen            OrigenPedido
+  estado            EstadoPedido @default(confirmado)
+  tipo_entrega      TipoEntrega
+  // Solo para delivery; en recojo en tienda queda vacía.
+  direccion_entrega String?      @db.Text
+  total             Decimal      @db.Decimal(10, 2)
+  created_at        DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+
+  cliente  Cliente         @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_cliente")
+  user     User?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_user")
+  detalles DetallePedido[]
+  pago     Pago?
+
+  @@index([created_at], map: "idx_pedido_created_at")
+  @@index([cliente_id], map: "idx_pedido_cliente")
+  @@map("pedido")
+  @@schema("commerce")
+}
+
+// Los precios se copian al registrar el pedido para que no cambien si después
+// cambia el catálogo. `precio_aplicado` es el que se cobra: el unitario o el
+// mayorista cuando la cantidad supera el umbral (RN17).
+model DetallePedido {
+  id                       Int      @id(map: "pk_detalle_pedido") @default(autoincrement())
+  pedido_id                Int
+  producto_presentacion_id Int
+  cantidad                 Int
+  precio_unitario          Decimal  @db.Decimal(10, 2)
+  precio_aplicado          Decimal  @db.Decimal(10, 2)
+  subtotal                 Decimal  @db.Decimal(10, 2)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+
+  pedido                Pedido               @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_pedido_pedido")
+  producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_pedido_producto_presentacion")
+
+  @@unique([pedido_id, producto_presentacion_id], map: "uq_detalle_pedido_pedido_producto_presentacion")
+  @@map("detalle_pedido")
+  @@schema("commerce")
+}
+
+// Un pedido tiene un solo pago. No lleva estado: el pedido solo existe con el
+// pago confirmado (RN5). En Culqi, `numero_operacion` es el id del cargo; en
+// efectivo queda vacío.
+model Pago {
+  id               Int        @id(map: "pk_pago") @default(autoincrement())
+  pedido_id        Int        @unique(map: "uq_pago_pedido")
+  metodo_pago      MetodoPago
+  monto            Decimal    @db.Decimal(10, 2)
+  numero_operacion String?    @unique(map: "uq_pago_numero_operacion") @db.VarChar(100)
+  fecha_pago       DateTime   @db.Timestamptz(6)
+  created_at       DateTime   @default(now()) @db.Timestamptz(6)
+
+  pedido Pedido @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
+
+  @@map("pago")
   @@schema("commerce")
 }
 
