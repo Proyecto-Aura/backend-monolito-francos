@@ -10,6 +10,12 @@ a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:g
 4c13f2bfa366dc91850c51d4fb9e725def809118:test/promociones.e2e-spec.ts:generic-api-key:24
 4c13f2bfa366dc91850c51d4fb9e725def809118:test/catalogo.e2e-spec.ts:generic-api-key:25
 
+# Falso positivo: contrasenas hardcodeadas de usuarios de prueba desechables en el e2e de
+# usuarios internos (HU-A-042). El propio test los crea y los borra; no son secretos reales.
+3b2a85f5400520eeafffc6b8a42467fddb7f3f37:test/usuarios.e2e-spec.ts:generic-api-key:22
+3b2a85f5400520eeafffc6b8a42467fddb7f3f37:test/usuarios.e2e-spec.ts:generic-api-key:29
+3b2a85f5400520eeafffc6b8a42467fddb7f3f37:test/usuarios.e2e-spec.ts:generic-api-key:122
+
 # Falso positivo: en el unitario de Culqi (HU-A-009) hay una llave de producción
 # inventada para comprobar que el backend rechaza ese tipo de llaves. Coincide con el
 # formato de la regla de Stripe, pero no es una llave real de Culqi ni de Stripe.
