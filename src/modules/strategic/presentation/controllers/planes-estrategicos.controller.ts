@@ -32,10 +32,12 @@ import { ListTodosPlanesEstrategicosUseCase } from '../../application/use-cases/
 import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
 import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { ObtenerSeguimientoKpisUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 import { IniciativaPresenter } from '../presenters/iniciativa.presenter';
 import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
 import { PlanEstrategicoPresenter } from '../presenters/plan-estrategico.presenter';
+import { SeguimientoKpisPresenter } from '../presenters/seguimiento-kpis.presenter';
 import { TableroControlPresenter } from '../presenters/tablero-control.presenter';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
@@ -57,6 +59,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
+    private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
   ) {}
 
   @Post()
@@ -148,6 +151,22 @@ export class PlanesEstrategicosController {
   async tableroControlDelPlan(@Param('id', ParseIntPipe) id: number) {
     return TableroControlPresenter.toHttp(
       await this.obtenerTableroControl.execute(id),
+    );
+  }
+
+  @Get(':id/seguimiento-kpis')
+  @ApiOperation({
+    summary:
+      'Seguimiento de KPIs del plan (tendencia y cumplimiento para gráficos)',
+  })
+  @ApiOkResponse({
+    description:
+      'KPIs agrupados por perspectiva/objetivo con su serie histórica completa y cumplimiento agregado',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async seguimientoKpisDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return SeguimientoKpisPresenter.toHttp(
+      await this.obtenerSeguimientoKpis.execute(id),
     );
   }
 
