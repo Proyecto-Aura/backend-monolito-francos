@@ -65,3 +65,9 @@ export interface KpiResumenPlanEntidad extends KpiEntityEnriquecido {
   objetivo_estrategico: KpiObjetivoResumenConResponsable;
   ultimo_valor: KpiValorEntityEnriquecido | null;
 }
+
+export interface KpiSeguimientoEntidad extends KpiEntityEnriquecido {
+  objetivo_estrategico: KpiObjetivoResumenConResponsable;
+  historial: KpiValorEntityEnriquecido[];
+  ultimo_valor: KpiValorEntityEnriquecido | null;
+}
