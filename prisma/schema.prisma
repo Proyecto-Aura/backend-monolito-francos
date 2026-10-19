@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "persons", "commerce", "strategic"]
 }
 
 /**
@@ -19,6 +20,7 @@ enum TipoDocumento {
   ruc
 
   @@map("tipo_documento_enum")
+  @@schema("persons")
 }
 
 enum TipoCliente {
@@ -26,6 +28,7 @@ enum TipoCliente {
   empresa
 
   @@map("tipo_cliente_enum")
+  @@schema("persons")
 }
 
 enum CategoriaCliente {
@@ -33,6 +36,7 @@ enum CategoriaCliente {
   mayorista
 
   @@map("categoria_cliente_enum")
+  @@schema("persons")
 }
 
 enum ReferenciaTipo {
@@ -42,6 +46,17 @@ enum ReferenciaTipo {
   promocion
 
   @@map("referencia_tipo_enum")
+  @@schema("persons")
+}
+
+enum AreaEmpleado {
+  ventas
+  almacen
+  produccion
+  administracion
+
+  @@map("area_empleado_enum")
+  @@schema("persons")
 }
 
 enum TipoEventoNotificacion {
@@ -51,11 +66,13 @@ enum TipoEventoNotificacion {
   pedido_entregado
   reembolso_aprobado
   reembolso_rechazado
+  reembolso_procesado
   ticket_respondido
   promocion
   mantenimiento
 
   @@map("tipo_evento_notificacion_enum")
+  @@schema("persons")
 }
 
 enum UnidadMedidaPresentacion {
@@ -63,6 +80,7 @@ enum UnidadMedidaPresentacion {
   gr
 
   @@map("unidad_medida_presentacion_enum")
+  @@schema("commerce")
 }
 
 enum TipoPromocion {
@@ -70,7 +88,68 @@ enum TipoPromocion {
   monto_fijo
   nxm
   regalo
+
   @@map("tipo_promocion")
+  @@schema("commerce")
+}
+
+enum OrigenPedido {
+  portal
+  manual
+
+  @@map("origen_pedido_enum")
+  @@schema("commerce")
+}
+
+// Estados del portal interno (RN6). El pedido nace en `confirmado`: solo se
+// registra cuando el pago ya está confirmado (RN5).
+enum EstadoPedido {
+  confirmado
+  en_espera_inventario
+  en_preparacion
+  pendiente_entrega
+  en_camino
+  entregado
+  cancelado
+
+  @@map("estado_pedido_enum")
+  @@schema("commerce")
+}
+
+enum TipoEntrega {
+  recojo_tienda
+  delivery
+
+  @@map("tipo_entrega_enum")
+  @@schema("commerce")
+}
+
+enum MetodoPago {
+  efectivo
+  culqi
+
+  @@map("metodo_pago_enum")
+  @@schema("commerce")
+}
+
+enum TipoComprobante {
+  boleta
+  factura
+
+  @@map("tipo_comprobante")
+  @@schema("commerce")
+}
+
+// RN de reembolso: nace en `pendiente`; ventas lo aprueba o lo rechaza (sin
+// vuelta atrás), y solo tras aprobarse pasa a `reembolsado` al devolverse el dinero.
+enum EstadoReembolso {
+  pendiente
+  aprobado
+  rechazado
+  reembolsado
+
+  @@map("estado_reembolso_enum")
+  @@schema("commerce")
 }
 
 /**
@@ -97,53 +176,80 @@ model Persona {
   user             User?
 
   @@map("persona")
+  @@schema("persons")
 }
 
 model Empleado {
-  id            String    @id(map: "pk_empleado") @default(uuid()) @db.Uuid
-  persona_id    String    @unique(map: "uq_empleado_persona_id") @db.Uuid
-  cargo         String?   @db.VarChar(100)
-  area          String?   @db.VarChar(100)
-  fecha_ingreso DateTime? @db.Date
-  fecha_des_lab DateTime? @db.Date
-  estado        Boolean   @default(true)
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  persona       Persona   @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_persona")
+  id            String        @id(map: "pk_empleado") @default(uuid()) @db.Uuid
+  persona_id    String        @unique(map: "uq_empleado_persona_id") @db.Uuid
+  cargo         String?       @db.VarChar(100)
+  area          AreaEmpleado?
+  fecha_ingreso DateTime?     @db.Date
+  fecha_des_lab DateTime?     @db.Date
+  estado        Boolean       @default(true)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  persona       Persona       @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_persona")
 
   @@map("empleado")
+  @@schema("persons")
 }
 
 model Cliente {
   id                String           @id(map: "pk_cliente") @default(uuid()) @db.Uuid
   persona_id        String           @unique(map: "uq_cliente_persona_id") @db.Uuid
-  tipo_cliente      TipoCliente?
+  tipo_cliente      TipoCliente
   razon_social      String?          @db.VarChar(200)
   categoria_cliente CategoriaCliente
   estado            Boolean          @default(true)
   created_at        DateTime         @default(now()) @db.Timestamptz(6)
   updated_at        DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
   persona           Persona          @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cliente_persona")
+  pedidos           Pedido[]
 
   @@map("cliente")
+  @@schema("persons")
 }
 
 model User {
-  id                 String             @id(map: "pk_user") @default(uuid()) @db.Uuid
-  persona_id         String             @unique(map: "uq_user_persona_id") @db.Uuid
-  email              String             @unique(map: "uq_user_email") @db.VarChar(150)
-  username           String             @unique(map: "uq_user_username") @db.VarChar(50)
-  contrasena         String             @map("contraseña") @db.VarChar(255)
-  estado             Boolean            @default(true)
-  token_recuperacion String?            @db.VarChar(255)
-  token_expiracion   DateTime?          @db.Timestamptz(6)
-  created_at         DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
-  persona            Persona            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
-  usuario_roles      UsuarioRol[]
-  notificacion_users NotificacionUser[]
+  id                                  String             @id(map: "pk_user") @default(uuid()) @db.Uuid
+  persona_id                          String             @unique(map: "uq_user_persona_id") @db.Uuid
+  email                               String             @unique(map: "uq_user_email") @db.VarChar(150)
+  username                            String             @unique(map: "uq_user_username") @db.VarChar(50)
+  contrasena                          String             @map("contraseña") @db.VarChar(255)
+  estado                              Boolean            @default(true)
+  token_recuperacion                  String?            @db.VarChar(255)
+  token_expiracion                    DateTime?          @db.Timestamptz(6)
+  debe_cambiar_contrasena             Boolean            @default(false)
+  email_verificado                    Boolean            @default(false)
+  token_verificacion_email            String?            @db.VarChar(255)
+  token_verificacion_email_expiracion DateTime?          @db.Timestamptz(6)
+  created_at                          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                          DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  persona                             Persona            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
+  usuario_roles                       UsuarioRol[]
+  notificacion_users                  NotificacionUser[]
+  refresh_tokens                      RefreshToken[]
+  pedidos                             Pedido[]
+  reembolsos_resueltos                Reembolso[]
 
   @@map("user")
+  @@schema("persons")
+}
+
+// modelo para token expiracion 7d
+model RefreshToken {
+  id         String    @id(map: "pk_refresh_token") @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique(map: "uq_refresh_token_hash") @db.VarChar(255)
+  expires_at DateTime  @db.Timestamptz(6)
+  revoked_at DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_refresh_token_user")
+
+  @@index([user_id], map: "idx_refresh_token_user")
+  @@map("refresh_token")
+  @@schema("persons")
 }
 
 model Rol {
@@ -157,20 +263,25 @@ model Rol {
   usuario_roles UsuarioRol[]
 
   @@map("rol")
+  @@schema("persons")
 }
 
 model Ruta {
-  id         Int      @id(map: "pk_ruta") @default(autoincrement())
-  nombre     String   @unique(map: "uq_ruta_nombre") @db.VarChar(100)
-  estado     Boolean  @default(true)
-  parent_id  Int?
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  parent     Ruta?    @relation("RutaJerarquia", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ruta_parent")
-  children   Ruta[]   @relation("RutaJerarquia")
-  accesos    Acceso[]
+  id          Int      @id(map: "pk_ruta") @default(autoincrement())
+  nombre      String   @unique(map: "uq_ruta_nombre") @db.VarChar(100)
+  etiqueta    String   @db.VarChar(150)
+  icono       String   @db.VarChar(50)
+  descripcion String?  @db.VarChar(255)
+  estado      Boolean  @default(true)
+  parent_id   Int?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  parent      Ruta?    @relation("RutaJerarquia", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ruta_parent")
+  children    Ruta[]   @relation("RutaJerarquia")
+  accesos     Acceso[]
 
   @@map("ruta")
+  @@schema("persons")
 }
 
 model Acceso {
@@ -185,6 +296,7 @@ model Acceso {
 
   @@unique([rol_id, ruta_id], map: "uq_acceso_rol_ruta")
   @@map("acceso")
+  @@schema("persons")
 }
 
 model UsuarioRol {
@@ -198,6 +310,7 @@ model UsuarioRol {
 
   @@unique([user_id, rol_id], map: "uq_usuario_rol")
   @@map("usuario_rol")
+  @@schema("persons")
 }
 
 model Notificacion {
@@ -211,6 +324,7 @@ model Notificacion {
   notificacion_users NotificacionUser[]
 
   @@map("notificacion")
+  @@schema("persons")
 }
 
 model NotificacionUser {
@@ -225,6 +339,7 @@ model NotificacionUser {
 
   @@id([notificacion_id, user_id], map: "pk_notificacion_user")
   @@map("notificacion_user")
+  @@schema("persons")
 }
 
 model Empresa {
@@ -236,10 +351,14 @@ model Empresa {
   email        String?  @unique(map: "uq_empresa_email") @db.VarChar(100)
   logo_url     String?  @db.Text
   estado       Boolean  @default(true)
+  // Marca la empresa emisora de comprobantes. Índice único parcial
+  // uq_empresa_emisora (solo una con true) en la migración: Prisma no lo modela.
+  es_emisora   Boolean  @default(false)
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@map("empresa")
+  @@schema("persons")
 }
 
 /**
@@ -259,6 +378,7 @@ model Categoria {
   productos Producto[]
 
   @@map("categoria")
+  @@schema("commerce")
 }
 
 model Producto {
@@ -276,6 +396,7 @@ model Producto {
   producto_presentaciones ProductoPresentacion[]
 
   @@map("producto")
+  @@schema("commerce")
 }
 
 model Presentacion {
@@ -290,6 +411,7 @@ model Presentacion {
   producto_presentaciones ProductoPresentacion[]
 
   @@map("presentacion")
+  @@schema("commerce")
 }
 
 model ProductoPresentacion {
@@ -300,14 +422,19 @@ model ProductoPresentacion {
   umbral_mayorista Int?
   producto_id      Int
   presentacion_id  Int
-  imagen_url       String?  @db.Text
+  // Solo la key dentro de francos-media (productos/<uuid>.<ext>); la URL se arma al responder.
+  imagen_key       String?  @db.VarChar(255)
   slug             String?  @unique(map: "uq_producto_presentacion_slug") @db.VarChar(100)
   estado           Boolean  @default(true)
+  // Nace oculta del catálogo del cliente (RF-A025) hasta que se active a mano.
+  visible_portal_b Boolean  @default(false)
   created_at       DateTime @default(now()) @db.Timestamptz(6)
   updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
-  promociones        Promocion[] @relation("PromocionProducto")
-  promociones_regalo   Promocion[] @relation("PromocionRegalo")
+  promociones        Promocion[]        @relation("PromocionProducto")
+  promociones_regalo Promocion[]        @relation("PromocionRegalo")
+  producto_terminado ProductoTerminado?
+  detalles_pedido    DetallePedido[]
 
   producto Producto @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_presentacion_producto")
 
@@ -315,27 +442,478 @@ model ProductoPresentacion {
 
   @@unique([producto_id, presentacion_id], map: "uq_producto_presentacion_producto_presentacion")
   @@map("producto_presentacion")
+  @@schema("commerce")
 }
 
 model Promocion {
-  id                              Int       @id(map: "pk_promocion") @default(autoincrement())
+  id                              Int           @id(map: "pk_promocion") @default(autoincrement())
   producto_presentacion_id        Int
-  nombre                          String    @db.VarChar(150)
+  nombre                          String        @db.VarChar(150)
   tipo                            TipoPromocion
-  valor                           Decimal   @db.Decimal(10, 2)
+  valor                           Decimal       @db.Decimal(10, 2)
   cantidad_paga                   Int?
   cantidad_lleva                  Int?
   cantidad_minima                 Int?
   producto_presentacion_regalo_id Int?
-  fecha_inicio                    DateTime  @db.Date
-  fecha_fin                       DateTime  @db.Date
-  estado                          Boolean   @default(true)
-  created_at                      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at                      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  fecha_inicio                    DateTime      @db.Date
+  fecha_fin                       DateTime      @db.Date
+  estado                          Boolean       @default(true)
+  created_at                      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
   producto_presentacion ProductoPresentacion @relation("PromocionProducto", fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_producto_presentacion")
 
   producto_presentacion_regalo ProductoPresentacion? @relation("PromocionRegalo", fields: [producto_presentacion_regalo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promocion_regalo")
 
   @@map("promocion")
+  @@schema("commerce")
+}
+
+// Pedido de venta (HU-A-009). El código PED-000001 sale del id (RF-A034), así que
+// es correlativo para cualquier origen. `user_id` es el trabajador que lo registró
+// a mano; queda vacío en los pedidos que llegan del portal del cliente.
+model Pedido {
+  id                Int          @id(map: "pk_pedido") @default(autoincrement())
+  codigo            String       @unique(map: "uq_pedido_codigo") @db.VarChar(20)
+  cliente_id        String       @db.Uuid
+  user_id           String?      @db.Uuid
+  origen            OrigenPedido
+  estado            EstadoPedido @default(confirmado)
+  tipo_entrega      TipoEntrega
+  // Solo para delivery; en recojo en tienda queda vacía.
+  direccion_entrega String?      @db.Text
+  total             Decimal      @db.Decimal(10, 2)
+  created_at        DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+
+  cliente  Cliente         @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_cliente")
+  user     User?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_user")
+  detalles DetallePedido[]
+  pago     Pago?
+
+  @@index([created_at], map: "idx_pedido_created_at")
+  @@index([cliente_id], map: "idx_pedido_cliente")
+  @@map("pedido")
+  @@schema("commerce")
+}
+
+// Los precios se copian al registrar el pedido para que no cambien si después
+// cambia el catálogo. `precio_aplicado` es el que se cobra: el unitario o el
+// mayorista cuando la cantidad supera el umbral (RN17).
+model DetallePedido {
+  id                       Int      @id(map: "pk_detalle_pedido") @default(autoincrement())
+  pedido_id                Int
+  producto_presentacion_id Int
+  cantidad                 Int
+  precio_unitario          Decimal  @db.Decimal(10, 2)
+  precio_aplicado          Decimal  @db.Decimal(10, 2)
+  subtotal                 Decimal  @db.Decimal(10, 2)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+
+  pedido                Pedido               @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_pedido_pedido")
+  producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detalle_pedido_producto_presentacion")
+
+  @@unique([pedido_id, producto_presentacion_id], map: "uq_detalle_pedido_pedido_producto_presentacion")
+  @@map("detalle_pedido")
+  @@schema("commerce")
+}
+
+// Un pedido tiene un solo pago. No lleva estado: el pedido solo existe con el
+// pago confirmado (RN5). En Culqi, `numero_operacion` es el id del cargo; en
+// efectivo queda vacío.
+model Pago {
+  id               Int        @id(map: "pk_pago") @default(autoincrement())
+  pedido_id        Int        @unique(map: "uq_pago_pedido")
+  metodo_pago      MetodoPago
+  monto            Decimal    @db.Decimal(10, 2)
+  numero_operacion String?    @unique(map: "uq_pago_numero_operacion") @db.VarChar(100)
+  fecha_pago       DateTime   @db.Timestamptz(6)
+  created_at       DateTime   @default(now()) @db.Timestamptz(6)
+
+  pedido    Pedido     @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
+  reembolso Reembolso?
+
+  @@map("pago")
+  @@schema("commerce")
+}
+
+// Serie de comprobantes (HU-A-044, RN23). `correlativo_actual` es el último número
+// emitido: nace en `correlativo_inicio - 1` y solo avanza con una reserva atómica.
+// A lo sumo una serie activa por tipo (índice parcial `uq_serie_activa_por_tipo`) y
+// los CHECK de rango se añaden a mano en la migración: Prisma no los modela.
+model SerieComprobante {
+  id                 Int             @id(map: "pk_serie_comprobante") @default(autoincrement())
+  tipo               TipoComprobante
+  serie              String          @unique(map: "uq_serie_comprobante_serie") @db.VarChar(4)
+  correlativo_inicio Int
+  correlativo_fin    Int
+  correlativo_actual Int
+  umbral_alerta      Int             @default(100)
+  estado             Boolean         @default(true)
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("serie_comprobante")
+  @@schema("commerce")
+}
+
+// Solicitud de reembolso de un pedido pagado (HU-A-011). La registra el cliente
+// desde su portal (HU-B-014); `pago_id` único = una sola solicitud por pedido.
+// La evidencia es un archivo del bucket de documentos; aquí va su llave.
+model Reembolso {
+  id               Int             @id(map: "pk_reembolso") @default(autoincrement())
+  codigo           String          @unique(map: "uq_reembolso_codigo") @db.VarChar(20)
+  pago_id          Int             @unique(map: "uq_reembolso_pago")
+  monto            Decimal         @db.Decimal(10, 2)
+  motivo_cliente   String          @db.Text
+  evidencia_key    String?         @db.VarChar(255)
+  estado           EstadoReembolso @default(pendiente)
+  motivo_rechazo   String?         @db.Text
+  // Operador de ventas que la aprobó o la rechazó.
+  resuelto_por     String?         @db.Uuid
+  fecha_solicitud  DateTime        @default(now()) @db.Timestamptz(6)
+  fecha_resolucion DateTime?       @db.Timestamptz(6)
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  pago              Pago  @relation(fields: [pago_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reembolso_pago")
+  resuelto_por_user User? @relation(fields: [resuelto_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reembolso_resuelto_por")
+
+  @@index([estado], map: "idx_reembolso_estado")
+  @@index([fecha_solicitud], map: "idx_reembolso_fecha_solicitud")
+  @@map("reembolso")
+  @@schema("commerce")
+}
+
+/**
+ * #########################################################
+ * ##   BLOQUE 3: TABLAS relacionadas a estrategia        ##
+ * #########################################################
+ */
+
+// Existencias de una presentación de producto, siempre contadas en unidades. Se
+// crea sola con cada presentación (RF-A024) y su stock solo cambia con movimientos
+// de inventario. No tiene `estado` propio: no se activa ni desactiva directamente,
+// sigue al de la presentación.
+model ProductoTerminado {
+  id                       Int      @id(map: "pk_producto_terminado") @default(autoincrement())
+  producto_presentacion_id Int      @unique(map: "uq_producto_terminado_producto_presentacion")
+  stock_actual             Decimal  @default(0) @db.Decimal(10, 2)
+  stock_minimo             Decimal  @default(1) @db.Decimal(10, 2)
+  stock_maximo             Decimal? @db.Decimal(10, 2)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_terminado_producto_presentacion")
+
+  @@map("producto_terminado")
+  @@schema("commerce")
+}
+
+model EstadoPlanEstrategico {
+  id         Int      @id(map: "pk_estado_plan_estrategico") @default(autoincrement())
+  codigo     String   @unique(map: "uq_estado_plan_codigo") @db.VarChar(20)
+  nombre     String   @db.VarChar(100)
+  orden      Int      @unique(map: "uq_estado_plan_orden") @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  planes_estrategicos PlanEstrategico[]
+
+  @@map("estado_plan_estrategico")
+  @@schema("strategic")
+}
+
+model PlanEstrategico {
+  id             Int      @id(map: "pk_plan_estrategico") @default(autoincrement())
+  codigo         String   @db.VarChar(10)
+  nombre         String   @db.VarChar(200)
+  descripcion    String?  @db.Text
+  anio_inicio    Int      @db.SmallInt
+  anio_fin       Int      @db.SmallInt
+  estado_plan_id Int      @default(1)
+  estado         Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  estado_plan EstadoPlanEstrategico @relation(fields: [estado_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_plan_estrategico_estado")
+
+  objetivos_estrategicos  ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
+
+  @@map("plan_estrategico")
+  @@schema("strategic")
+}
+
+model PerspectivaBsc {
+  id          Int      @id(map: "pk_perspectiva_bsc") @default(autoincrement())
+  nombre      String   @unique(map: "uq_perspectiva_nombre") @db.VarChar(100)
+  descripcion String?  @db.Text
+  orden       Int      @db.SmallInt
+  estado      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos ObjetivoEstrategico[]
+
+  @@map("perspectiva_bsc")
+  @@schema("strategic")
+}
+
+model TipoModulo {
+  id         Int      @id(map: "pk_tipo_modulo") @default(autoincrement())
+  codigo     String   @unique(map: "uq_tipo_modulo_codigo") @db.VarChar(10)
+  nombre     String   @db.VarChar(100)
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos  ObjetivoEstrategico[]
+  documentos_estrategicos DocumentoEstrategico[]
+
+  @@map("tipo_modulo")
+  @@schema("strategic")
+}
+
+model EstadoObjetivo {
+  id         Int      @id(map: "pk_estado_objetivo") @default(autoincrement())
+  codigo     String   @unique(map: "uq_estado_objetivo_codigo") @db.VarChar(20)
+  nombre     String   @db.VarChar(100)
+  orden      Int      @unique(map: "uq_estado_objetivo_orden") @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivos_estrategicos ObjetivoEstrategico[]
+
+  @@map("estado_objetivo")
+  @@schema("strategic")
+}
+
+model ObjetivoEstrategico {
+  id                  Int      @id(map: "pk_objetivo_estrategico") @default(autoincrement())
+  codigo              String   @db.VarChar(20)
+  plan_estrategico_id Int
+  perspectiva_bsc_id  Int
+  tipo_modulo_id      Int
+  oe_negocio_id       Int?
+  estado_objetivo_id  Int      @default(1)
+  responsable         String   @db.VarChar(200)
+  nombre              String   @db.VarChar(200)
+  descripcion         String?  @db.Text
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_plan_estrategico")
+  perspectiva_bsc  PerspectivaBsc  @relation(fields: [perspectiva_bsc_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_perspectiva_bsc")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_tipo_modulo")
+  estado_objetivo  EstadoObjetivo  @relation(fields: [estado_objetivo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_estado_objetivo")
+
+  oe_negocio      ObjetivoEstrategico?  @relation("AlineamientoTiNegocio", fields: [oe_negocio_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_oe_negocio")
+  oe_alineados_ti ObjetivoEstrategico[] @relation("AlineamientoTiNegocio")
+
+  relaciones_como_origen  RelacionOe[] @relation("RelacionOrigen")
+  relaciones_como_destino RelacionOe[] @relation("RelacionDestino")
+  kpis                    Kpi[]
+  iniciativas             Iniciativa[]
+
+  @@map("objetivo_estrategico")
+  @@schema("strategic")
+}
+
+model RelacionOe {
+  id         Int      @id(map: "pk_relacion_oe") @default(autoincrement())
+  origen_id  Int
+  destino_id Int
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  origen  ObjetivoEstrategico @relation("RelacionOrigen", fields: [origen_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_origen")
+  destino ObjetivoEstrategico @relation("RelacionDestino", fields: [destino_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_relacion_oe_destino")
+
+  @@map("relacion_oe")
+  @@schema("strategic")
+}
+
+model DocumentoEstrategico {
+  id                  Int      @id(map: "pk_documento_estrategico") @default(autoincrement())
+  plan_estrategico_id Int
+  tipo_modulo_id      Int
+  nombre              String   @db.VarChar(200)
+  ruta_archivo        String   @db.VarChar(500)
+  nombre_original     String?  @db.VarChar(255)
+  estado              Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  plan_estrategico PlanEstrategico @relation(fields: [plan_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_plan_estrategico")
+  tipo_modulo      TipoModulo      @relation(fields: [tipo_modulo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_doc_tipo_modulo")
+
+  @@map("documento_estrategico")
+  @@schema("strategic")
+}
+
+model UnidadMedidaKpi {
+  id         Int      @id(map: "pk_unidad_medida_kpi") @default(autoincrement())
+  nombre     String   @unique @db.VarChar(100)
+  simbolo    String   @db.VarChar(10)
+  decimales  Int      @default(2) @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpis Kpi[]
+
+  @@map("unidad_medida_kpi")
+  @@schema("strategic")
+}
+
+model FrecuenciaMedicion {
+  id                Int      @id(map: "pk_frecuencia_medicion") @default(autoincrement())
+  nombre            String   @unique @db.VarChar(100)
+  periodos_por_anio Int      @db.SmallInt
+  orden             Int      @db.SmallInt
+  estado            Boolean  @default(true)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  periodos Periodo[]
+  kpis     Kpi[]
+
+  @@map("frecuencia_medicion")
+  @@schema("strategic")
+}
+
+model Periodo {
+  id            Int      @id(map: "pk_periodo") @default(autoincrement())
+  frecuencia_id Int
+  numero        Int      @db.SmallInt
+  codigo        String   @unique @db.VarChar(5)
+  nombre        String   @db.VarChar(50)
+  mes_fin       Int      @db.SmallInt
+  estado        Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  frecuencia  FrecuenciaMedicion @relation(fields: [frecuencia_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_periodo_frecuencia")
+  kpi_valores KpiValor[]
+
+  @@map("periodo")
+  @@schema("strategic")
+}
+
+model Kpi {
+  id                      Int      @id(map: "pk_kpi") @default(autoincrement())
+  codigo                  String   @db.VarChar(20)
+  objetivo_estrategico_id Int
+  frecuencia_id           Int
+  unidad_medida_id        Int
+  nombre                  String   @db.VarChar(200)
+  formula                 String   @db.Text
+  estado                  Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivo_estrategico ObjetivoEstrategico @relation(fields: [objetivo_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_objetivo")
+  frecuencia           FrecuenciaMedicion  @relation(fields: [frecuencia_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_frecuencia")
+  unidad_medida        UnidadMedidaKpi     @relation(fields: [unidad_medida_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_kpi_unidad")
+
+  semaforos     SemaforoConfig[]
+  metas_anuales KpiMetaAnual[]
+  valores       KpiValor[]
+
+  @@map("kpi")
+  @@schema("strategic")
+}
+
+model SemaforoConfig {
+  id               Int      @id(map: "pk_semaforo_config") @default(autoincrement())
+  kpi_id           Int
+  anio             Int      @db.SmallInt
+  color            String   @db.VarChar(10)
+  color_hex        String   @db.VarChar(7)
+  operador         String   @db.VarChar(2)
+  valor_referencia Decimal  @db.Decimal(12, 2)
+  estado           Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_semaforo_kpi")
+
+  @@map("semaforo_config")
+  @@schema("strategic")
+}
+
+model KpiMetaAnual {
+  id         Int      @id(map: "pk_kpi_meta_anual") @default(autoincrement())
+  kpi_id     Int
+  anio       Int      @db.SmallInt
+  meta       Decimal  @db.Decimal(12, 2)
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi Kpi @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_meta_anual_kpi")
+
+  @@map("kpi_meta_anual")
+  @@schema("strategic")
+}
+
+model KpiValor {
+  id             Int      @id(map: "pk_kpi_valor") @default(autoincrement())
+  kpi_id         Int
+  anio           Int      @db.SmallInt
+  periodo_id     Int
+  valor          Decimal  @db.Decimal(12, 2)
+  semaforo_color String   @db.VarChar(10)
+  estado         Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  kpi     Kpi     @relation(fields: [kpi_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_valor_kpi")
+  periodo Periodo @relation(fields: [periodo_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_valor_periodo")
+
+  @@map("kpi_valor")
+  @@schema("strategic")
+}
+
+model EstadoIniciativa {
+  id         Int      @id(map: "pk_estado_iniciativa") @default(autoincrement())
+  codigo     String   @unique(map: "uq_estado_iniciativa_codigo") @db.VarChar(20)
+  nombre     String   @db.VarChar(100)
+  orden      Int      @unique(map: "uq_estado_iniciativa_orden") @db.SmallInt
+  estado     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  iniciativas Iniciativa[]
+
+  @@map("estado_iniciativa")
+  @@schema("strategic")
+}
+
+model Iniciativa {
+  id                      Int      @id(map: "pk_iniciativa") @default(autoincrement())
+  codigo                  String   @db.VarChar(20)
+  objetivo_estrategico_id Int
+  estado_iniciativa_id    Int      @default(1)
+  responsable             String   @db.VarChar(200)
+  nombre                  String   @db.VarChar(200)
+  descripcion             String?  @db.Text
+  presupuesto             Decimal? @db.Decimal(12, 2)
+  motivo_cancelacion      String?  @db.Text
+  fecha_inicio            DateTime @db.Date
+  fecha_fin               DateTime @db.Date
+  estado                  Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  objetivo_estrategico ObjetivoEstrategico @relation(fields: [objetivo_estrategico_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_iniciativa_objetivo")
+  estado_iniciativa    EstadoIniciativa    @relation(fields: [estado_iniciativa_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_iniciativa_estado")
+
+  @@map("iniciativa")
+  @@schema("strategic")
 }

@@ -4,7 +4,7 @@ export class ClienteEntity {
   constructor(
     public readonly id: string,
     public readonly persona_id: string,
-    public tipo_cliente: TipoCliente | null,
+    public tipo_cliente: TipoCliente,
     public razon_social: string | null,
     public categoria_cliente: CategoriaCliente,
     public estado: boolean,

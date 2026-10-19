@@ -9,7 +9,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateEmpleadoDto } from '../../application/dto/empleado-dtos/create-empleado.dto';
 import { ListEmpleadosQueryDto } from '../../application/dto/empleado-dtos/list-empleados-query.dto';
 import { UpdateEmpleadoDto } from '../../application/dto/empleado-dtos/update-empleado.dto';
@@ -21,8 +26,11 @@ import {
   UpdateEmpleadoUseCase,
 } from '../../application/use-cases/empleados/empleados.use-cases';
 import { EmpleadoPresenter } from '../presenters/empleado.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Empleados')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller('empleados')
 export class EmpleadosController {
   constructor(

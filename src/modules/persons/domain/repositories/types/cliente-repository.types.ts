@@ -1,18 +1,17 @@
 import { CategoriaCliente, TipoCliente } from '../../enums/persons.enums';
 import { PaginationParams } from './pagination.types';
-
-export interface CreateClienteParams {
-  persona_id: string;
-  tipo_cliente: TipoCliente;
-  razon_social: string | null;
-  categoria_cliente: CategoriaCliente;
-  estado: boolean;
-}
+import { UpdatePersonaParams } from './persona-repository.types';
 
 export interface UpdateClienteParams {
   tipo_cliente?: TipoCliente;
-  razon_social?: string;
+  razon_social?: string | null;
   categoria_cliente?: CategoriaCliente;
+}
+
+export interface UpdateClienteConPersonaParams {
+  persona_id: string;
+  persona: UpdatePersonaParams;
+  cliente: UpdateClienteParams;
 }
 
 export interface ListClientesParams extends PaginationParams {

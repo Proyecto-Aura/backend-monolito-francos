@@ -3,6 +3,7 @@ import { PresentacionRepository } from '../../../domain/repositories/presentacio
 import { CreatePresentacionDto } from '../../dto/presentacion-dtos/create-presentacion.dto';
 import { ResourceConflictError } from '../../../domain/errors/catalog-domain.errors';
 import { PresentacionEntity } from '../../../domain/entities';
+import { normalizarTexto } from '../../utils/texto.utils';
 
 @Injectable()
 export class CreatePresentacionUseCase {
@@ -24,7 +25,7 @@ export class CreatePresentacionUseCase {
     return this.presentacionRepository.create({
       cantidad: dto.cantidad,
       unidad_medida: dto.unidad_medida,
-      descripcion: dto.descripcion ?? null,
+      descripcion: normalizarTexto(dto.descripcion ?? '') || null,
       estado: dto.estado ?? true,
     });
   }

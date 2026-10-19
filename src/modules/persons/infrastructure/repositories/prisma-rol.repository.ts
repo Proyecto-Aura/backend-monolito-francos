@@ -17,13 +17,20 @@ export class PrismaRolRepository implements RolRepository {
 
   async create(params: CreateRolParams): Promise<RolEntity> {
     const rol = await this.prisma.rol.create({
-      data: params
-    })
-    return RolMapper.toDomain(rol)
+      data: params,
+    });
+    return RolMapper.toDomain(rol);
   }
 
   async findById(id: number): Promise<RolEntity | null> {
     const rol = await this.prisma.rol.findUnique({ where: { id } });
+    return rol ? RolMapper.toDomain(rol) : null;
+  }
+
+  async findByName(nombre: string): Promise<RolEntity | null> {
+    const rol = await this.prisma.rol.findUnique({
+      where: { nombre },
+    });
     return rol ? RolMapper.toDomain(rol) : null;
   }
 

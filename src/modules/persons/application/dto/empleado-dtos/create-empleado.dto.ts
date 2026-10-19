@@ -1,11 +1,13 @@
 import {
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
 } from 'class-validator';
+import { AreaEmpleado } from '@prisma/client';
 
 export class CreateEmpleadoDto {
   @IsUUID('4')
@@ -16,10 +18,8 @@ export class CreateEmpleadoDto {
   @MaxLength(100)
   cargo?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  area?: string;
+  @IsEnum(AreaEmpleado)
+  area!: AreaEmpleado;
 
   @IsOptional()
   @IsDateString()

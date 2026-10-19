@@ -1,9 +1,10 @@
 import { PaginationParams } from './pagination.types';
+import { AreaEmpleado } from '../../enums/persons.enums';
 
 export interface CreateEmpleadoParams {
   persona_id: string;
   cargo: string | null;
-  area: string | null;
+  area: AreaEmpleado | null;
   fecha_ingreso: Date | null;
   fecha_des_lab: Date | null;
   estado: boolean;
@@ -11,7 +12,7 @@ export interface CreateEmpleadoParams {
 
 export interface UpdateEmpleadoParams {
   cargo?: string;
-  area?: string;
+  area?: AreaEmpleado;
   fecha_ingreso?: Date;
   fecha_des_lab?: Date;
 }

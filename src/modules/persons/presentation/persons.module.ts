@@ -11,6 +11,7 @@ import { ChangeRutaStatusUseCase } from '../application/use-cases/rutas/change-r
 import { CreateRutaUseCase } from '../application/use-cases/rutas/create-ruta.use-case';
 import { GetRutaByIdUseCase } from '../application/use-cases/rutas/get-ruta-by-id.use-case';
 import { GetRutasTreeUseCase } from '../application/use-cases/rutas/get-rutas-tree.use-case';
+import { GetMiMenuUseCase } from '../application/use-cases/rutas/get-mi-menu.use-case';
 import { ListRutasUseCase } from '../application/use-cases/rutas/list-rutas.use-case';
 import { MoveRutaUseCase } from '../application/use-cases/rutas/move-ruta.use-case';
 import { UpdateRutaUseCase } from '../application/use-cases/rutas/update-ruta.use-case';
@@ -36,9 +37,12 @@ import { CreateEmpresaUseCase } from '../application/use-cases/empresas/create-e
 import { GetEmpresaByIdUseCase } from '../application/use-cases/empresas/get-empresa-by-id.use-case';
 import { ListEmpresasUseCase } from '../application/use-cases/empresas/list-empresas.use-case';
 import { UpdateEmpresaUseCase } from '../application/use-cases/empresas/update-empresa.use-case';
+import { GetEmpresaEmisoraUseCase } from '../application/use-cases/empresas/get-empresa-emisora.use-case';
+import { UpsertEmpresaEmisoraUseCase } from '../application/use-cases/empresas/upsert-empresa-emisora.use-case';
 import { EmpresaRepository } from '../domain/repositories/empresa.repository';
 import { PrismaEmpresaRepository } from '../infrastructure/repositories/prisma-empresa.repository';
 import { EmpresasController } from './controllers/empresas.controller';
+import { EmpresaEmisoraController } from './controllers/empresa-emisora.controller';
 import {
   ChangeEmpleadoStatusUseCase,
   CreateEmpleadoUseCase,
@@ -49,9 +53,29 @@ import {
 import { EmpleadoRepository } from '../domain/repositories/empleado.repository';
 import { PrismaEmpleadoRepository } from '../infrastructure/repositories/prisma-empleado.repository';
 import { EmpleadosController } from './controllers/empleados.controller';
+import { ClientesController } from './controllers/clientes.controller';
 import { RolesController } from './controllers/roles.controller';
 import { RutasController } from './controllers/rutas.controller';
 import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception.filter';
+import { ChangeClienteStatusUseCase } from '../application/use-cases/clientes/change-cliente-status.use-case';
+import { GetClienteByIdUseCase } from '../application/use-cases/clientes/get-cliente-by-id.use-case';
+import { ListClientesUseCase } from '../application/use-cases/clientes/list-cliente.use-case';
+import { UpdateClienteUseCase } from '../application/use-cases/clientes/update-cliente.use-case';
+import { ClienteRepository } from '../domain/repositories/cliente.repository';
+import { PrismaClienteRepository } from '../infrastructure/repositories/prisma-cliente.repository';
+import { UserRepository } from '../domain/repositories/user.repository';
+import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
+import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
+import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
+import { CreateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/create-usuario-interno.use-case';
+import { ListUsuariosInternosUseCase } from '../application/use-cases/usuarios-internos/list-usuarios-internos.use-case';
+import { GetUsuarioInternoByIdUseCase } from '../application/use-cases/usuarios-internos/get-usuario-interno-by-id.use-case';
+import { UpdateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/update-usuario-interno.use-case';
+import { ChangeUsuarioInternoStatusUseCase } from '../application/use-cases/usuarios-internos/change-usuario-interno-status.use-case';
+import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios-internos/set-usuario-interno-roles.use-case';
+import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
+import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
+import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
 
 @Module({
   controllers: [
@@ -60,7 +84,10 @@ import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception
     AccesosController,
     PersonasController,
     EmpresasController,
+    EmpresaEmisoraController,
     EmpleadosController,
+    ClientesController,
+    UsuariosInternosController,
   ],
   providers: [
     CreateRolUseCase,
@@ -76,6 +103,7 @@ import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception
     GetRutaByIdUseCase,
     ListRutasUseCase,
     GetRutasTreeUseCase,
+    GetMiMenuUseCase,
     UpdateRutaUseCase,
     MoveRutaUseCase,
     ChangeRutaStatusUseCase,
@@ -105,6 +133,8 @@ import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception
     ListEmpresasUseCase,
     UpdateEmpresaUseCase,
     ChangeEmpresaStatusUseCase,
+    GetEmpresaEmisoraUseCase,
+    UpsertEmpresaEmisoraUseCase,
     {
       provide: EmpresaRepository,
       useClass: PrismaEmpresaRepository,
@@ -115,10 +145,36 @@ import { PersonsDomainExceptionFilter } from './filters/persons-domain-exception
     UpdateEmpleadoUseCase,
     ChangeEmpleadoStatusUseCase,
     { provide: EmpleadoRepository, useClass: PrismaEmpleadoRepository },
+    GetClienteByIdUseCase,
+    ListClientesUseCase,
+    UpdateClienteUseCase,
+    ChangeClienteStatusUseCase,
+    { provide: ClienteRepository, useClass: PrismaClienteRepository },
+    { provide: UserRepository, useClass: PrismaUserRepository },
+    { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
+    CreateUsuarioInternoUseCase,
+    ListUsuariosInternosUseCase,
+    GetUsuarioInternoByIdUseCase,
+    UpdateUsuarioInternoUseCase,
+    ChangeUsuarioInternoStatusUseCase,
+    SetUsuarioInternoRolesUseCase,
+    {
+      provide: UsuarioInternoRepository,
+      useClass: PrismaUsuarioInternoRepository,
+    },
     {
       provide: APP_FILTER,
       useClass: PersonsDomainExceptionFilter,
     },
+  ],
+  exports: [
+    PersonaRepository,
+    ClienteRepository,
+    EmpleadoRepository,
+    RolRepository,
+    UserRepository,
+    UsuarioRolRepository,
+    EmpresaRepository,
   ],
 })
 export class PersonsModule {}

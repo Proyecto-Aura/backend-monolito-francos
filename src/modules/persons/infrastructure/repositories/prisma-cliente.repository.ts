@@ -4,21 +4,37 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import { ClienteEntity } from '../../domain/entities/cliente.entity';
 import { ClienteRepository } from '../../domain/repositories/cliente.repository';
 import {
-  CreateClienteParams,
   ListClientesParams,
-  UpdateClienteParams,
+  UpdateClienteConPersonaParams,
 } from '../../domain/repositories/types/cliente-repository.types';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import { ClienteMapper } from '../mappers/cliente.mapper';
+import { PersonaEntity } from '../../domain/entities';
+import { PersonaMapper } from '../mappers/persona.mapper';
 
 @Injectable()
 export class PrismaClienteRepository implements ClienteRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(params: CreateClienteParams): Promise<ClienteEntity> {
-    return ClienteMapper.toDomain(
-      await this.prisma.cliente.create({ data: params }),
-    );
+  updateWithPersona(
+    clienteId: string,
+    params: UpdateClienteConPersonaParams,
+  ): Promise<{ cliente: ClienteEntity; persona: PersonaEntity }> {
+    return this.prisma.$transaction(async (tx) => {
+      const persona = await tx.persona.update({
+        where: { id: params.persona_id },
+        data: params.persona,
+      });
+      const cliente = await tx.cliente.update({
+        where: { id: clienteId },
+        data: params.cliente,
+      });
+
+      return {
+        cliente: ClienteMapper.toDomain(cliente),
+        persona: PersonaMapper.toDomain(persona),
+      };
+    });
   }
 
   async findById(id: string): Promise<ClienteEntity | null> {
@@ -71,15 +87,7 @@ export class PrismaClienteRepository implements ClienteRepository {
       })) !== null
     );
   }
-  
-  async update(
-    id: string,
-    params: UpdateClienteParams,
-  ): Promise<ClienteEntity> {
-    return ClienteMapper.toDomain(
-      await this.prisma.cliente.update({ where: { id }, data: params }),
-    );
-  }
+
   async setStatus(id: string, estado: boolean): Promise<ClienteEntity> {
     return ClienteMapper.toDomain(
       await this.prisma.cliente.update({ where: { id }, data: { estado } }),

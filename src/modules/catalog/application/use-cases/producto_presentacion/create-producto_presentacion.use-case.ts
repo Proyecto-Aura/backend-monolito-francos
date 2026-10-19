@@ -13,6 +13,7 @@ import {
   createProductoPresentacionSlug,
   validateWholesalePrice,
 } from '../../utils/producto-presentacion.utils';
+import { resolverSlugUnico } from '../../utils/slug-unico.utils';
 
 @Injectable()
 export class CreateProductoPresentacionUseCase {
@@ -70,8 +71,11 @@ export class CreateProductoPresentacionUseCase {
       umbral_mayorista: dto.umbral_mayorista ?? null,
       producto_id: producto.id,
       presentacion_id: presentacion.id,
-      imagen_url: dto.imagen_url ?? null,
-      slug: createProductoPresentacionSlug(producto.nombre, presentacion),
+      imagen_key: null,
+      slug: await resolverSlugUnico(
+        createProductoPresentacionSlug(producto.nombre, presentacion),
+        (slug) => this.productoPresentacionRepository.existsBySlug(slug),
+      ),
       estado: dto.estado ?? true,
     });
   }

@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,8 +26,11 @@ import { GetPresentacionUseCase } from '../../application/use-cases/presentacion
 import { ListPresentacionUseCase } from '../../application/use-cases/presentacion/list-presentacion.use-case';
 import { UpdatePresentacionUseCase } from '../../application/use-cases/presentacion/update-presentacion.use-case';
 import { PresentacionPresenter } from '../presenters/presentacion.presenter';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 
 @ApiTags('Presentaciones')
+@ApiBearerAuth()
+@Roles('admin')
 @Controller('presentaciones')
 export class PresentacionesController {
   constructor(
@@ -46,6 +50,9 @@ export class PresentacionesController {
     );
   }
 
+  // Lectura abierta a ventas: el formulario de productos necesita estas opciones.
+  // Crear, editar y desactivar siguen siendo solo admin (@Roles de la clase).
+  @Roles('admin', 'ventas')
   @Get()
   @ApiOperation({ summary: 'Listar presentaciones' })
   @ApiOkResponse({ description: 'Lista paginada de presentaciones' })
@@ -55,6 +62,7 @@ export class PresentacionesController {
     );
   }
 
+  @Roles('admin', 'ventas')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una presentación por ID' })
   @ApiParam({ name: 'id', type: Number })

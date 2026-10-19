@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { envs } from '../../../config/envs';
 import { CreateCategoriaUseCase } from '../application/use-cases/categoria/create-categoria.use-case';
 import { GetCategoriaByIdUseCase } from '../application/use-cases/categoria/get-categoria-by-id.use-case';
 import { ListCategoriasUseCase } from '../application/use-cases/categoria/list-categorias.use-case';
@@ -20,26 +22,54 @@ import { GetProductoPresentacionUseCase } from '../application/use-cases/product
 import { ListProductoPresentacionesUseCase } from '../application/use-cases/producto_presentacion/list-producto_presentacion.use-case';
 import { UpdateProductoPresentacionUseCase } from '../application/use-cases/producto_presentacion/update-producto_presentacion.use-case';
 import { ChangeProductoPresentacionStatusUseCase } from '../application/use-cases/producto_presentacion/change-producto_presentacion-status.use-case';
+import { SubirImagenProductoPresentacionUseCase } from '../application/use-cases/producto_presentacion/subir-imagen-producto_presentacion.use-case';
+import { CreatePromocionUseCase } from '../application/use-cases/promocion/create-promocion.use-case';
+import { GetPromocionByIdUseCase } from '../application/use-cases/promocion/get-promocion-by-id.use-case';
+import { ListPromocionesUseCase } from '../application/use-cases/promocion/list-promociones.use-case';
+import { UpdatePromocionUseCase } from '../application/use-cases/promocion/update-promocion.use-case';
+import { ChangePromocionStatusUseCase } from '../application/use-cases/promocion/change-promocion-status.use-case';
+import { ListCatalogoPublicoUseCase } from '../application/use-cases/catalogo-publico/list-catalogo-publico.use-case';
+import { GetProductoPublicoUseCase } from '../application/use-cases/catalogo-publico/get-producto-publico.use-case';
+import { CatalogoPublicoRepository } from '../domain/repositories/catalogo-publico.repository';
+import { PrismaCatalogoPublicoRepository } from '../infrastructure/repositories/prisma-catalogo-publico.repository';
 import { CategoriaRepository } from '../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../domain/repositories/presentacion.repository';
 import { ProductoRepository } from '../domain/repositories/producto.repository';
 import { ProductoPresentacionRepository } from '../domain/repositories/producto_presentacion.repository';
+import { PromocionRepository } from '../domain/repositories/promocion.repository';
 import { PrismaCategoriaRepository } from '../infrastructure/repositories/prisma-categoria.repository';
 import { PrismaPresentacionRepository } from '../infrastructure/repositories/prisma-presentacion.repository';
 import { PrismaProductoRepository } from '../infrastructure/repositories/prisma-producto.repository';
 import { PrismaProductoPresentacionRepository } from '../infrastructure/repositories/prisma-producto_presentacion.repository';
+import { PrismaPromocionRepository } from '../infrastructure/repositories/prisma-promocion.repository';
 import { CategoriasController } from './controllers/categorias.controller';
 import { PresentacionesController } from './controllers/presentaciones.controller';
 import { ProductoPresentacionesController } from './controllers/producto-presentaciones.controller';
 import { ProductosController } from './controllers/productos.controller';
+import { PromocionesController } from './controllers/promociones.controller';
+import { CatalogoPublicoController } from './controllers/catalogo-publico.controller';
 import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception.filter';
 
 @Module({
+  imports: [
+    // Solo registra la configuración del rate limit; no hay guard global. El
+    // ThrottlerGuard se aplica con @UseGuards en CatalogoPublicoController.
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: envs.catalogoPublicoRateTtlMs,
+          limit: envs.catalogoPublicoRateLimit,
+        },
+      ],
+    }),
+  ],
   controllers: [
     CategoriasController,
     PresentacionesController,
     ProductosController,
     ProductoPresentacionesController,
+    PromocionesController,
+    CatalogoPublicoController,
   ],
   providers: [
     CreateCategoriaUseCase,
@@ -65,9 +95,22 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     ListProductoPresentacionesUseCase,
     UpdateProductoPresentacionUseCase,
     ChangeProductoPresentacionStatusUseCase,
+    SubirImagenProductoPresentacionUseCase,
     {
       provide: ProductoPresentacionRepository,
       useClass: PrismaProductoPresentacionRepository,
+    },
+    CreatePromocionUseCase,
+    GetPromocionByIdUseCase,
+    ListPromocionesUseCase,
+    UpdatePromocionUseCase,
+    ChangePromocionStatusUseCase,
+    { provide: PromocionRepository, useClass: PrismaPromocionRepository },
+    ListCatalogoPublicoUseCase,
+    GetProductoPublicoUseCase,
+    {
+      provide: CatalogoPublicoRepository,
+      useClass: PrismaCatalogoPublicoRepository,
     },
     {
       provide: APP_FILTER,

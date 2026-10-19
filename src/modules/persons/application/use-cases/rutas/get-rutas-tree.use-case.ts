@@ -14,6 +14,9 @@ export class GetRutasTreeUseCase {
       nodes.set(ruta.id, {
         id: ruta.id,
         nombre: ruta.nombre,
+        etiqueta: ruta.etiqueta,
+        icono: ruta.icono,
+        descripcion: ruta.descripcion,
         estado: ruta.estado,
         parent_id: ruta.parent_id,
         created_at: ruta.created_at,

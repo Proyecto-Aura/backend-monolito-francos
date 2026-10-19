@@ -2,12 +2,18 @@ import { PaginationParams } from './pagination.types';
 
 export interface CreateRutaParams {
   nombre: string;
+  etiqueta: string;
+  icono: string;
+  descripcion: string | null;
   estado: boolean;
   parent_id: number | null;
 }
 
 export interface UpdateRutaParams {
   nombre?: string;
+  etiqueta?: string;
+  icono?: string;
+  descripcion?: string | null;
 }
 
 export interface MoveRutaParams {
@@ -23,6 +29,9 @@ export interface ListRutasParams extends PaginationParams {
 export interface RutaTreeNode {
   id: number;
   nombre: string;
+  etiqueta: string;
+  icono: string;
+  descripcion: string | null;
   estado: boolean;
   parent_id: number | null;
   created_at: Date;

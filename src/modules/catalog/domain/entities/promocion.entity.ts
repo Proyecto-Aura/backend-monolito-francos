@@ -6,7 +6,7 @@ export class PromocionEntity {
     public producto_presentacion_id: number,
     public nombre: string,
     public tipo: TipoPromocion,
-    public valor: number | 0,
+    public valor: number,
     public cantidad_paga: number | null,
     public cantidad_lleva: number | null,
     public cantidad_minima: number | null,

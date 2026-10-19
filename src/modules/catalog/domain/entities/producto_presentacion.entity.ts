@@ -1,5 +1,3 @@
-import { Decimal } from '@prisma/client/runtime/client';
-
 export class ProductoPresentacionEntity {
   constructor(
     public readonly id: number,
@@ -9,7 +7,7 @@ export class ProductoPresentacionEntity {
     public umbral_mayorista: number | null,
     public producto_id: number,
     public presentacion_id: number,
-    public imagen_url: string | null,
+    public imagen_key: string | null,
     public slug: string | null,
     public estado: boolean,
     public readonly created_at: Date,

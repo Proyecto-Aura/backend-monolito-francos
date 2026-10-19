@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 
 export class CreateNotificacionDto {
-
   @IsEnum(TipoEventoNotificacion)
   tipo!: TipoEventoNotificacion;
 
@@ -25,8 +24,7 @@ export class CreateNotificacionDto {
   // Ambos campos deben enviarse juntos o no enviarse.
   @ValidateIf(
     (dto: CreateNotificacionDto) =>
-      dto.referencia_id !== undefined ||
-      dto.referencia_tipo !== undefined,
+      dto.referencia_id !== undefined || dto.referencia_tipo !== undefined,
   )
   @IsDefined()
   @IsString()
@@ -36,8 +34,7 @@ export class CreateNotificacionDto {
 
   @ValidateIf(
     (dto: CreateNotificacionDto) =>
-      dto.referencia_id !== undefined ||
-      dto.referencia_tipo !== undefined,
+      dto.referencia_id !== undefined || dto.referencia_tipo !== undefined,
   )
   @IsDefined()
   @IsEnum(ReferenciaTipo)

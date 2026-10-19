@@ -6,14 +6,18 @@ import {
   ResourceNotFoundError,
 } from '../../../domain/errors/catalog-domain.errors';
 import { PresentacionRepository } from '../../../domain/repositories/presentacion.repository';
+import { normalizarTexto } from '../../utils/texto.utils';
 
 @Injectable()
 export class UpdatePresentacionUseCase {
   constructor(
     private readonly presentacionRepository: PresentacionRepository,
-  ) { }
+  ) {}
 
-  async execute(id: number, dto: UpdatePresentacionDto): Promise<PresentacionEntity> {
+  async execute(
+    id: number,
+    dto: UpdatePresentacionDto,
+  ): Promise<PresentacionEntity> {
     const presentacion = await this.presentacionRepository.findById(id);
 
     if (!presentacion) {
@@ -22,16 +26,30 @@ export class UpdatePresentacionUseCase {
 
     const cantidad = dto.cantidad ?? presentacion.cantidad;
     const unidadMedida = dto.unidad_medida ?? presentacion.unidad_medida;
-    const changedCombination = cantidad !== presentacion.cantidad || unidadMedida !== presentacion.unidad_medida;
+    const changedCombination =
+      cantidad !== presentacion.cantidad ||
+      unidadMedida !== presentacion.unidad_medida;
 
-    if ( changedCombination && (await this.presentacionRepository.existsByCantidadAndUnidadMedida( cantidad, unidadMedida, id))) {
-      throw new ResourceConflictError('Ya existe una presentación con esta cantidad y unidad de medida');
+    if (
+      changedCombination &&
+      (await this.presentacionRepository.existsByCantidadAndUnidadMedida(
+        cantidad,
+        unidadMedida,
+        id,
+      ))
+    ) {
+      throw new ResourceConflictError(
+        'Ya existe una presentación con esta cantidad y unidad de medida',
+      );
     }
 
     return this.presentacionRepository.update(id, {
       cantidad: dto.cantidad,
       unidad_medida: dto.unidad_medida,
-      descripcion: dto.descripcion,
+      descripcion:
+        dto.descripcion === undefined
+          ? undefined
+          : normalizarTexto(dto.descripcion) || null,
     });
   }
 }

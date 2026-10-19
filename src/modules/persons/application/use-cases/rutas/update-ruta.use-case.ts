@@ -26,6 +26,11 @@ export class UpdateRutaUseCase {
       }
     }
 
-    return this.rutaRepository.update(id, { nombre: dto.nombre });
+    return this.rutaRepository.update(id, {
+      nombre: dto.nombre,
+      etiqueta: dto.etiqueta,
+      icono: dto.icono,
+      descripcion: dto.descripcion,
+    });
   }
 }
