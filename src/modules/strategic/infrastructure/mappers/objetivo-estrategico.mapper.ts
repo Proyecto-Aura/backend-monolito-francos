@@ -13,6 +13,7 @@ type PrismaObjetivoEstrategicoEnriquecido =
       perspectiva_bsc: true;
       estado_objetivo: true;
       relaciones_como_origen: true;
+      oe_negocio: { select: { id: true; codigo: true; nombre: true } };
     };
   }>;
 
@@ -52,6 +53,7 @@ export class ObjetivoEstrategicoMapper {
               relacion.estado,
             ),
         ),
+        oe_negocio: objetivo.oe_negocio,
       },
     );
   }
