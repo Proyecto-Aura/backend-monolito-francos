@@ -9,6 +9,12 @@ const RUTAS_ESTRATEGICO = [
   'tablero-control',
   'analisis-estrategico',
   'gestion-estrategica-ti',
+  'objetivos-estrategicos-ti',
+  'mapa-estrategico-ti',
+  'gestionar-kpis-ti',
+  'gestionar-iniciativas-ti',
+  'tablero-control-ti',
+  'analisis-estrategico-ti',
 ];
 
 export async function seedAccesos(prisma: PrismaClient) {
