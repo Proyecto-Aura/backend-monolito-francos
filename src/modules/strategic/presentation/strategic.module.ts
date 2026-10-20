@@ -17,7 +17,16 @@ import { ListObjetivosEstrategicosUseCase } from '../application/use-cases/objet
 import { ListTodosObjetivosEstrategicosUseCase } from '../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos.use-case';
 import { UpdateObjetivoEstrategicoUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObtenerObjetivosPorPlanTiUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan-ti.use-case';
 import { ValidarRelacionesOeService } from '../application/use-cases/objetivo-estrategico/validar-relaciones-oe.service';
+import { ActualizarEstadoObjetivoTiUseCase } from '../application/use-cases/objetivo-estrategico/actualizar-estado-objetivo-ti.use-case';
+import { CreateObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/create-objetivo-estrategico-ti.use-case';
+import { EliminarObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/eliminar-objetivo-estrategico-ti.use-case';
+import { GetObjetivoEstrategicoTiByIdUseCase } from '../application/use-cases/objetivo-estrategico/get-objetivo-estrategico-ti-by-id.use-case';
+import { ListObjetivosEstrategicosTiUseCase } from '../application/use-cases/objetivo-estrategico/list-objetivos-estrategicos-ti.use-case';
+import { ListTodosObjetivosEstrategicosTiUseCase } from '../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos-ti.use-case';
+import { UpdateObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico-ti.use-case';
+import { ValidarOeNegocioService } from '../application/use-cases/objetivo-estrategico/validar-oe-negocio.service';
 import { ListPerspectivasBscUseCase } from '../application/use-cases/perspectiva-bsc/list-perspectivas-bsc.use-case';
 import { EliminarDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/eliminar-documento-estrategico.use-case';
 import { ListarDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-documentos-estrategicos.use-case';
@@ -75,6 +84,7 @@ import { DocumentosEstrategicosController } from './controllers/documentos-estra
 import { FrecuenciasMedicionController } from './controllers/frecuencias-medicion.controller';
 import { KpisController } from './controllers/kpis.controller';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
+import { ObjetivosEstrategicosTiController } from './controllers/objetivos-estrategicos-ti.controller';
 import { PeriodosController } from './controllers/periodos.controller';
 import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
@@ -86,6 +96,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
   controllers: [
     PlanesEstrategicosController,
     ObjetivosEstrategicosController,
+    ObjetivosEstrategicosTiController,
     PerspectivasBscController,
     DocumentosEstrategicosController,
     KpisController,
@@ -112,7 +123,16 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     EliminarRelacionOeUseCase,
     ActualizarEstadoObjetivoUseCase,
     ObtenerObjetivosPorPlanUseCase,
+    ObtenerObjetivosPorPlanTiUseCase,
     ValidarRelacionesOeService,
+    CreateObjetivoEstrategicoTiUseCase,
+    UpdateObjetivoEstrategicoTiUseCase,
+    EliminarObjetivoEstrategicoTiUseCase,
+    GetObjetivoEstrategicoTiByIdUseCase,
+    ListObjetivosEstrategicosTiUseCase,
+    ListTodosObjetivosEstrategicosTiUseCase,
+    ActualizarEstadoObjetivoTiUseCase,
+    ValidarOeNegocioService,
     ListPerspectivasBscUseCase,
     SubirDocumentoEstrategicoUseCase,
     ListarDocumentosEstrategicosUseCase,

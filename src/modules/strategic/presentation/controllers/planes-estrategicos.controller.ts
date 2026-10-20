@@ -31,6 +31,7 @@ import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-
 import { ListTodosPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-todos-planes-estrategicos.use-case';
 import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObtenerObjetivosPorPlanTiUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan-ti.use-case';
 import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
@@ -56,6 +57,7 @@ export class PlanesEstrategicosController {
     private readonly activarPlanEstrategico: ActivarPlanEstrategicoUseCase,
     private readonly cerrarPlanEstrategico: CerrarPlanEstrategicoUseCase,
     private readonly obtenerObjetivosPorPlan: ObtenerObjetivosPorPlanUseCase,
+    private readonly obtenerObjetivosPorPlanTi: ObtenerObjetivosPorPlanTiUseCase,
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
@@ -116,6 +118,19 @@ export class PlanesEstrategicosController {
   async objetivosDelPlan(@Param('id', ParseIntPipe) id: number) {
     const { plan, objetivos } = await this.obtenerObjetivosPorPlan.execute(id);
     return ObjetivoEstrategicoPresenter.resumenPorPlanToHttp(plan, objetivos);
+  }
+
+  @Get(':id/objetivos-estrategicos-ti')
+  @ApiOperation({
+    summary:
+      'Resumen del plan con sus objetivos estratégicos de TI agrupados por perspectiva',
+  })
+  @ApiOkResponse({ description: 'Plan y sus objetivos estratégicos (TI)' })
+  @ApiParam({ name: 'id', type: Number })
+  async objetivosTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    const { plan, objetivos } =
+      await this.obtenerObjetivosPorPlanTi.execute(id);
+    return ObjetivoEstrategicoPresenter.resumenPorPlanToHttpTi(plan, objetivos);
   }
 
   @Get(':id/kpis')
