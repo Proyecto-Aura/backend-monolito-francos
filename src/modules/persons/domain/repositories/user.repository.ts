@@ -1,4 +1,5 @@
 import { UserEntity } from '../entities';
+import { UpdatePersonaParams } from './types/persona-repository.types';
 import {
   CreateUserParams,
   UpdateUserParams,
@@ -18,4 +19,10 @@ export abstract class UserRepository {
   ): Promise<boolean>;
   abstract update(id: string, params: UpdateUserParams): Promise<UserEntity>;
   abstract setStatus(id: string, estado: boolean): Promise<UserEntity>;
+  // Actualiza el usuario y su persona en una sola transacción.
+  abstract updateWithPersona(
+    id: string,
+    user: UpdateUserParams,
+    persona: UpdatePersonaParams,
+  ): Promise<UserEntity>;
 }

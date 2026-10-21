@@ -72,6 +72,9 @@ import {
 import { UbigeoRepository } from '../domain/repositories/ubigeo.repository';
 import { PrismaUbigeoRepository } from '../infrastructure/repositories/prisma-ubigeo.repository';
 import { UserRepository } from '../domain/repositories/user.repository';
+import { GetPerfilUseCase } from '../application/use-cases/perfil/get-perfil.use-case';
+import { UpdatePerfilUseCase } from '../application/use-cases/perfil/update-perfil.use-case';
+import { PerfilController } from './controllers/perfil.controller';
 import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
 import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
 import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
@@ -97,6 +100,7 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     ClientesController,
     UbigeoController,
     UsuariosInternosController,
+    PerfilController,
   ],
   providers: [
     CreateRolUseCase,
@@ -164,6 +168,8 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     ListDistritosUseCase,
     { provide: UbigeoRepository, useClass: PrismaUbigeoRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
+    GetPerfilUseCase,
+    UpdatePerfilUseCase,
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
     CreateUsuarioInternoUseCase,
     ListUsuariosInternosUseCase,
