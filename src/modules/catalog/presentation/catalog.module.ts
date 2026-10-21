@@ -26,11 +26,32 @@ import { GetPromocionByIdUseCase } from '../application/use-cases/promocion/get-
 import { ListPromocionesUseCase } from '../application/use-cases/promocion/list-promociones.use-case';
 import { UpdatePromocionUseCase } from '../application/use-cases/promocion/update-promocion.use-case';
 import { ChangePromocionStatusUseCase } from '../application/use-cases/promocion/change-promocion-status.use-case';
+import { CreateInsumoUseCase } from '../application/use-cases/insumo/create-insumo.use-case';
+import { GetInsumoByIdUseCase } from '../application/use-cases/insumo/get-insumo-by-id.use-case';
+import { ListInsumosUseCase } from '../application/use-cases/insumo/list-insumos.use-case';
+import { UpdateInsumoUseCase } from '../application/use-cases/insumo/update-insumo.use-case';
+import { ChangeInsumoStatusUseCase } from '../application/use-cases/insumo/change-insumo-status.use-case';
+import { GetIndicadoresInsumoUseCase } from '../application/use-cases/insumo/get-indicadores-insumo.use-case';
+import { CreateLoteInsumoUseCase } from '../application/use-cases/lote-insumo/create-lote-insumo.use-case';
+import { GetLoteInsumoByIdUseCase } from '../application/use-cases/lote-insumo/get-lote-insumo-by-id.use-case';
+import { ListLoteInsumosUseCase } from '../application/use-cases/lote-insumo/list-lote-insumos.use-case';
+import { ChangeLoteInsumoStatusUseCase } from '../application/use-cases/lote-insumo/change-lote-insumo-status.use-case';
+import { RegistrarEntradaInsumoUseCase } from '../application/use-cases/movimiento-insumo/registrar-entrada-insumo.use-case';
+import { RegistrarSalidaInsumoUseCase } from '../application/use-cases/movimiento-insumo/registrar-salida-insumo.use-case';
+import { RegistrarAjusteInsumoUseCase } from '../application/use-cases/movimiento-insumo/registrar-ajuste-insumo.use-case';
+import { GetMovimientoByIdUseCase } from '../application/use-cases/movimiento-insumo/get-movimiento-by-id.use-case';
+import { ListMovimientosUseCase } from '../application/use-cases/movimiento-insumo/list-movimientos.use-case';
 import { CategoriaRepository } from '../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../domain/repositories/presentacion.repository';
 import { ProductoRepository } from '../domain/repositories/producto.repository';
 import { ProductoPresentacionRepository } from '../domain/repositories/producto_presentacion.repository';
 import { PromocionRepository } from '../domain/repositories/promocion.repository';
+import { InsumoRepository } from '../domain/repositories/insumo.repository';
+import { LoteInsumoRepository } from '../domain/repositories/lote-insumo.repository';
+import { MovimientoInsumoRepository } from '../domain/repositories/movimiento-insumo.repository';
+import { PrismaInsumoRepository } from '../infrastructure/repositories/prisma-insumo.repository';
+import { PrismaLoteInsumoRepository } from '../infrastructure/repositories/prisma-lote-insumo.repository';
+import { PrismaMovimientoInsumoRepository } from '../infrastructure/repositories/prisma-movimiento-insumo.repository';
 import { PrismaCategoriaRepository } from '../infrastructure/repositories/prisma-categoria.repository';
 import { PrismaPresentacionRepository } from '../infrastructure/repositories/prisma-presentacion.repository';
 import { PrismaProductoRepository } from '../infrastructure/repositories/prisma-producto.repository';
@@ -41,6 +62,9 @@ import { PresentacionesController } from './controllers/presentaciones.controlle
 import { ProductoPresentacionesController } from './controllers/producto-presentaciones.controller';
 import { ProductosController } from './controllers/productos.controller';
 import { PromocionesController } from './controllers/promociones.controller';
+import { InsumosController } from './controllers/insumos.controller';
+import { LotesInsumoController } from './controllers/lotes-insumo.controller';
+import { MovimientosInsumoController } from './controllers/movimientos-insumo.controller';
 import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception.filter';
 
 @Module({
@@ -50,6 +74,9 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     ProductosController,
     ProductoPresentacionesController,
     PromocionesController,
+    InsumosController,
+    LotesInsumoController,
+    MovimientosInsumoController,
   ],
   providers: [
     CreateCategoriaUseCase,
@@ -86,6 +113,27 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     UpdatePromocionUseCase,
     ChangePromocionStatusUseCase,
     { provide: PromocionRepository, useClass: PrismaPromocionRepository },
+    CreateInsumoUseCase,
+    GetInsumoByIdUseCase,
+    ListInsumosUseCase,
+    UpdateInsumoUseCase,
+    ChangeInsumoStatusUseCase,
+    GetIndicadoresInsumoUseCase,
+    { provide: InsumoRepository, useClass: PrismaInsumoRepository },
+    CreateLoteInsumoUseCase,
+    GetLoteInsumoByIdUseCase,
+    ListLoteInsumosUseCase,
+    ChangeLoteInsumoStatusUseCase,
+    { provide: LoteInsumoRepository, useClass: PrismaLoteInsumoRepository },
+    RegistrarEntradaInsumoUseCase,
+    RegistrarSalidaInsumoUseCase,
+    RegistrarAjusteInsumoUseCase,
+    GetMovimientoByIdUseCase,
+    ListMovimientosUseCase,
+    {
+      provide: MovimientoInsumoRepository,
+      useClass: PrismaMovimientoInsumoRepository,
+    },
     {
       provide: APP_FILTER,
       useClass: CatalogDomainExceptionFilter,
