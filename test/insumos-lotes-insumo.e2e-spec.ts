@@ -131,6 +131,9 @@ describe('Insumos y lotes de insumo (e2e)', () => {
   };
 
   const limpiarDatos = async () => {
+    await prisma.movimientoInsumo.deleteMany({
+      where: { lote_insumo: { codigo_lote: { startsWith: MARCA } } },
+    });
     await prisma.loteInsumo.deleteMany({
       where: { codigo_lote: { startsWith: MARCA } },
     });
