@@ -63,14 +63,4 @@ export class CreateLoteInsumoDto {
   })
   @IsBoolean()
   activo?: boolean;
-
-  @ApiPropertyOptional({
-    example: 'Ingreso inicial de lote',
-    maxLength: 255,
-    description: 'Motivo del movimiento de entrada que genera este lote',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  razon?: string;
 }

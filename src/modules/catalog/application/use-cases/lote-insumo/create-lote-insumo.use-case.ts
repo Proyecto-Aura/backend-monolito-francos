@@ -43,8 +43,6 @@ export class CreateLoteInsumoUseCase {
       : null;
     validarFechaVencimiento(fecha_ingreso, fecha_vencimiento);
 
-    // cantidad_actual no se pasa: el repositorio crea el lote en 0 y lo deja
-    // en cantidad_inicial mediante el movimiento "entrada" correspondiente.
     return this.loteInsumoRepository.create({
       insumo_id: insumo.id,
       codigo_lote,
@@ -53,7 +51,6 @@ export class CreateLoteInsumoUseCase {
       cantidad_inicial: dto.cantidad_inicial,
       estado: EstadoLoteInsumo.ACTIVO,
       activo: dto.activo ?? true,
-      razon: dto.razon ?? 'Ingreso inicial de lote',
     });
   }
 }

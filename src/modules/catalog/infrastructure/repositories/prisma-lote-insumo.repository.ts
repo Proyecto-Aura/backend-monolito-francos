@@ -15,30 +15,11 @@ export class PrismaLoteInsumoRepository implements LoteInsumoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(params: CreateLoteInsumoParams): Promise<LoteInsumoEntity> {
-    const { razon, cantidad_inicial, ...loteParams } = params;
-
-    return this.prisma.$transaction(async (tx) => {
-      // Nace en 0: el movimiento "entrada" de abajo (vía trigger) lo deja
-      // en cantidad_inicial, igual que cualquier otro movimiento de stock.
-      const lote = await tx.loteInsumo.create({
-        data: { ...loteParams, cantidad_inicial, cantidad_actual: 0 },
-      });
-
-      await tx.movimientoInsumo.create({
-        data: {
-          lote_insumo_id: lote.id,
-          tipo: 'entrada',
-          cantidad: cantidad_inicial,
-          razon,
-        },
-      });
-
-      const loteActualizado = await tx.loteInsumo.findUniqueOrThrow({
-        where: { id: lote.id },
-      });
-
-      return LoteInsumoMapper.toDomain(loteActualizado);
+    const lote = await this.prisma.loteInsumo.create({
+      data: { ...params, cantidad_actual: params.cantidad_inicial },
     });
+
+    return LoteInsumoMapper.toDomain(lote);
   }
 
   async findById(id: number): Promise<LoteInsumoEntity | null> {
@@ -96,24 +77,5 @@ export class PrismaLoteInsumoRepository implements LoteInsumoRepository {
     });
 
     return LoteInsumoMapper.toDomain(lote);
-  }
-
-  async findDisponiblesParaSalida(
-    insumo_id: number,
-  ): Promise<LoteInsumoEntity[]> {
-    const lotes = await this.prisma.loteInsumo.findMany({
-      where: {
-        insumo_id,
-        estado: 'activo',
-        activo: true,
-        cantidad_actual: { gt: 0 },
-      },
-      orderBy: [
-        { fecha_vencimiento: { sort: 'asc', nulls: 'last' } },
-        { id: 'asc' },
-      ],
-    });
-
-    return lotes.map((lote) => LoteInsumoMapper.toDomain(lote));
   }
 }

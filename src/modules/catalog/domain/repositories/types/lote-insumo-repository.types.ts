@@ -9,10 +9,6 @@ export interface CreateLoteInsumoParams {
   cantidad_inicial: number;
   estado: EstadoLoteInsumo;
   activo: boolean;
-  // Motivo del movimiento "entrada" que se crea junto con el lote. No se
-  // pide cantidad_actual: nace en 0 y el propio movimiento "entrada" (vía
-  // trigger) la deja en cantidad_inicial.
-  razon: string;
 }
 
 export interface ListLoteInsumosParams extends PaginationParams {

@@ -117,15 +117,6 @@ enum EstadoLoteInsumo {
   @@schema("commerce")
 }
 
-enum TipoMovimientoInsumo {
-  entrada
-  salida
-  ajuste
-
-  @@map("tipo_movimiento_insumo_enum")
-  @@schema("commerce")
-}
-
 /**
  * #######################################################################
  * ##   BLOQUE 1: TABLAS relacionadas a persona, seguridad y empresa    ##
@@ -504,32 +495,7 @@ model LoteInsumo {
 
   insumo Insumo @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_insumo_insumo")
 
-  movimientos MovimientoInsumo[]
-
   @@map("lote_insumo")
-  @@schema("commerce")
-}
-
-// Kardex de insumos: registro histórico e inmutable (sin updated_at, sin
-// activo/estado propio — nunca se edita ni se borra, solo se agrega).
-// stock_anterior/stock_resultante los completa un trigger (ver migración),
-// no la aplicación: siempre reflejan el estado real del lote en ese instante.
-// cantidad es positiva para entrada/salida (la dirección la da "tipo"); para
-// ajuste puede ser positiva o negativa (corrección hacia arriba o abajo).
-model MovimientoInsumo {
-  id               Int                  @id(map: "pk_movimiento_insumo") @default(autoincrement())
-  lote_insumo_id   Int
-  tipo             TipoMovimientoInsumo
-  cantidad         Decimal              @db.Decimal(10, 2)
-  stock_anterior   Decimal              @default(0) @db.Decimal(10, 2)
-  stock_resultante Decimal              @default(0) @db.Decimal(10, 2)
-  razon            String               @db.VarChar(255)
-  fecha            DateTime             @default(now()) @db.Timestamptz(6)
-  created_at       DateTime             @default(now()) @db.Timestamptz(6)
-
-  lote_insumo LoteInsumo @relation(fields: [lote_insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_insumo_lote")
-
-  @@map("movimiento_insumo")
   @@schema("commerce")
 }
 

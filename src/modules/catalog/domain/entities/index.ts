@@ -5,4 +5,3 @@ export * from './categoria.entity';
 export * from './promocion.entity';
 export * from './insumo.entity';
 export * from './lote-insumo.entity';
-export * from './movimiento-insumo.entity';

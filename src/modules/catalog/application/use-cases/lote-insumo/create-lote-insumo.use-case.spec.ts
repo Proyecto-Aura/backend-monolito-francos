@@ -46,7 +46,7 @@ describe('CreateLoteInsumoUseCase', () => {
     create.mockImplementation((params: object) => Promise.resolve(params));
   });
 
-  it('crea el lote con cantidad_inicial y razon por defecto (cantidad_actual la define el movimiento de entrada)', async () => {
+  it('crea el lote con cantidad_inicial', async () => {
     await useCase.execute({
       insumo_id: 1,
       codigo_lote: 'LOTE-2026-001',
@@ -62,22 +62,7 @@ describe('CreateLoteInsumoUseCase', () => {
       cantidad_inicial: 100,
       estado: 'activo',
       activo: true,
-      razon: 'Ingreso inicial de lote',
     });
-  });
-
-  it('respeta la razon enviada en vez de la razon por defecto', async () => {
-    await useCase.execute({
-      insumo_id: 1,
-      codigo_lote: 'LOTE-2026-006',
-      fecha_ingreso: '2026-10-17',
-      cantidad_inicial: 10,
-      razon: 'Compra a proveedor X',
-    });
-
-    expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({ razon: 'Compra a proveedor X' }),
-    );
   });
 
   it('lanza 404 si el insumo no existe', async () => {
