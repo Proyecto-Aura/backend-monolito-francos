@@ -24,6 +24,51 @@ describe('NodemailerEmailService', () => {
     mockSendMail.mockReset();
   });
 
+  it('envía el enlace de recuperación al portal y escapa el nombre en HTML', async () => {
+    const service = new NodemailerEmailService();
+    const token = 'token-de-recuperacion';
+
+    await service.sendPasswordResetEmail({
+      to: 'usuario@francos.test',
+      nombre: '<script>alert(1)</script>',
+      resetToken: token,
+      frontend: 'portal',
+    });
+
+    const [message] = mockSendMail.mock.calls[0] as [
+      { to: string; subject: string; html: string },
+    ];
+    expect(message.to).toBe('usuario@francos.test');
+    expect(message.subject).toBe("Restablece tu contraseña — Franco's");
+    expect(message.html).toContain(
+      'https://portal.test/reset-password?token=token-de-recuperacion',
+    );
+    expect(message.html).not.toContain('https://tienda.test');
+    expect(message.html).toContain(
+      'Si no solicitaste este cambio, puedes ignorar este correo',
+    );
+    expect(message.html).toContain('El enlace vence en 1 hora');
+    expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(message.html).not.toContain('<script>');
+  });
+
+  it('envía el enlace de recuperación a la tienda', async () => {
+    const service = new NodemailerEmailService();
+
+    await service.sendPasswordResetEmail({
+      to: 'cliente@francos.test',
+      nombre: 'Cliente',
+      resetToken: 'token-tienda',
+      frontend: 'tienda',
+    });
+
+    const [message] = mockSendMail.mock.calls[0] as [{ html: string }];
+    expect(message.html).toContain(
+      'https://tienda.test/reset-password?token=token-tienda',
+    );
+    expect(message.html).not.toContain('https://portal.test');
+  });
+
   it('envía la verificación a la tienda', async () => {
     const service = new NodemailerEmailService();
 

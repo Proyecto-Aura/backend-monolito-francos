@@ -25,6 +25,13 @@ export class PrismaEmpresaRepository implements EmpresaRepository {
     return empresa ? EmpresaMapper.toDomain(empresa) : null;
   }
 
+  async findEmisora(): Promise<EmpresaEntity | null> {
+    const empresa = await this.prisma.empresa.findFirst({
+      where: { es_emisora: true },
+    });
+    return empresa ? EmpresaMapper.toDomain(empresa) : null;
+  }
+
   async findMany(
     params: ListEmpresasParams,
   ): Promise<PaginatedResult<EmpresaEntity>> {

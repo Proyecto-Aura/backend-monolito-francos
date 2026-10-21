@@ -7,6 +7,10 @@ export abstract class AuthDomainError extends Error {
   }
 }
 
+export class InvalidRequestError extends AuthDomainError {
+  readonly statusCode = 400;
+}
+
 export class ResourceNotFoundError extends AuthDomainError {
   readonly statusCode = 404;
 }
@@ -17,4 +21,8 @@ export class ResourceConflictError extends AuthDomainError {
 
 export class InvalidCredentialsError extends AuthDomainError {
   readonly statusCode = 401;
+}
+
+export class InvalidResetTokenError extends AuthDomainError {
+  readonly statusCode = 400;
 }

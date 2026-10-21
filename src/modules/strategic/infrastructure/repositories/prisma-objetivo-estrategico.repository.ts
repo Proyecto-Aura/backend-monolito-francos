@@ -20,6 +20,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
   async create(
     params: CreateObjetivoEstrategicoParams,
     tipoModuloId: number,
+    codigoInfijo: string,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido> {
     return this.prisma.$transaction(async (tx) => {
       const plan = await tx.planEstrategico.findUniqueOrThrow({
@@ -35,7 +36,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         },
       });
       const correlativo = String(totalExistentes + 1).padStart(3, '0');
-      const codigo = `${plan.codigo}-OE-N-${correlativo}`;
+      const codigo = `${plan.codigo}-OE-${codigoInfijo}-${correlativo}`;
 
       const created = await tx.objetivoEstrategico.create({
         data: {
@@ -47,11 +48,13 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
           responsable: params.responsable,
           nombre: params.nombre,
           descripcion: params.descripcion,
+          oe_negocio_id: params.oe_negocio_id ?? null,
         },
         include: {
           perspectiva_bsc: true,
           estado_objetivo: true,
           relaciones_como_origen: true,
+          oe_negocio: { select: { id: true, codigo: true, nombre: true } },
         },
       });
 
@@ -67,6 +70,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
           perspectiva_bsc: true,
           estado_objetivo: true,
           relaciones_como_origen: true,
+          oe_negocio: { select: { id: true, codigo: true, nombre: true } },
         },
       });
 
@@ -83,6 +87,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         perspectiva_bsc: true,
         estado_objetivo: true,
         relaciones_como_origen: true,
+        oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       },
     });
 
@@ -98,6 +103,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         perspectiva_bsc: true,
         estado_objetivo: true,
         relaciones_como_origen: true,
+        oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       },
     });
 
@@ -110,7 +116,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
   ): Promise<PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>> {
     const where: Prisma.ObjetivoEstrategicoWhereInput = {
       plan_estrategico_id: params.plan_estrategico_id,
-      tipo_modulo: { codigo: 'NEG' },
+      tipo_modulo_id: params.tipo_modulo_id,
       ...(soloActivos ? { estado: true } : {}),
       ...(params.perspectiva_bsc_id === undefined
         ? {}
@@ -127,6 +133,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
           perspectiva_bsc: true,
           estado_objetivo: true,
           relaciones_como_origen: true,
+          oe_negocio: { select: { id: true, codigo: true, nombre: true } },
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
@@ -171,6 +178,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         perspectiva_bsc: true,
         estado_objetivo: true,
         relaciones_como_origen: true,
+        oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       },
       orderBy: [{ perspectiva_bsc: { orden: 'asc' } }, { nombre: 'asc' }],
     });
@@ -252,6 +260,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
           perspectiva_bsc: true,
           estado_objetivo: true,
           relaciones_como_origen: true,
+          oe_negocio: { select: { id: true, codigo: true, nombre: true } },
         },
       });
 
@@ -270,6 +279,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         perspectiva_bsc: true,
         estado_objetivo: true,
         relaciones_como_origen: true,
+        oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       },
     });
 
@@ -277,15 +287,22 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
   }
 
   async tieneKpisORelacionesActivas(id: number): Promise<boolean> {
-    // TODO(HU-A-028): sumar el conteo de KPIs cuando exista la tabla kpi.
-    const relaciones = await this.prisma.relacionOe.count({
-      where: {
-        estado: true,
-        OR: [{ origen_id: id }, { destino_id: id }],
-      },
-    });
+    const [relaciones, kpis, iniciativas] = await this.prisma.$transaction([
+      this.prisma.relacionOe.count({
+        where: {
+          estado: true,
+          OR: [{ origen_id: id }, { destino_id: id }],
+        },
+      }),
+      this.prisma.kpi.count({
+        where: { objetivo_estrategico_id: id, estado: true },
+      }),
+      this.prisma.iniciativa.count({
+        where: { objetivo_estrategico_id: id, estado: true },
+      }),
+    ]);
 
-    return relaciones > 0;
+    return relaciones > 0 || kpis > 0 || iniciativas > 0;
   }
 
   async findRelacionesActivasPorPlanYTipo(
@@ -352,6 +369,7 @@ export class PrismaObjetivoEstrategicoRepository implements ObjetivoEstrategicoR
         perspectiva_bsc: true,
         estado_objetivo: true,
         relaciones_como_origen: true,
+        oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       },
     });
 

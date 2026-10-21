@@ -268,7 +268,14 @@ describe('Auth guards (e2e)', () => {
       document.paths['/api/v1/auth/register/empleado']?.post?.security,
     ).toEqual([{ bearer: [] }]);
 
-    for (const path of ['login', 'register', 'refresh', 'logout']) {
+    for (const path of [
+      'login',
+      'register',
+      'refresh',
+      'logout',
+      'forgot-password',
+      'reset-password',
+    ]) {
       expect(
         document.paths[`/api/v1/auth/${path}`]?.post?.security,
       ).toBeUndefined();

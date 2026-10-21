@@ -37,9 +37,12 @@ import { CreateEmpresaUseCase } from '../application/use-cases/empresas/create-e
 import { GetEmpresaByIdUseCase } from '../application/use-cases/empresas/get-empresa-by-id.use-case';
 import { ListEmpresasUseCase } from '../application/use-cases/empresas/list-empresas.use-case';
 import { UpdateEmpresaUseCase } from '../application/use-cases/empresas/update-empresa.use-case';
+import { GetEmpresaEmisoraUseCase } from '../application/use-cases/empresas/get-empresa-emisora.use-case';
+import { UpsertEmpresaEmisoraUseCase } from '../application/use-cases/empresas/upsert-empresa-emisora.use-case';
 import { EmpresaRepository } from '../domain/repositories/empresa.repository';
 import { PrismaEmpresaRepository } from '../infrastructure/repositories/prisma-empresa.repository';
 import { EmpresasController } from './controllers/empresas.controller';
+import { EmpresaEmisoraController } from './controllers/empresa-emisora.controller';
 import {
   ChangeEmpleadoStatusUseCase,
   CreateEmpleadoUseCase,
@@ -64,6 +67,15 @@ import { UserRepository } from '../domain/repositories/user.repository';
 import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
 import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
 import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
+import { CreateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/create-usuario-interno.use-case';
+import { ListUsuariosInternosUseCase } from '../application/use-cases/usuarios-internos/list-usuarios-internos.use-case';
+import { GetUsuarioInternoByIdUseCase } from '../application/use-cases/usuarios-internos/get-usuario-interno-by-id.use-case';
+import { UpdateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/update-usuario-interno.use-case';
+import { ChangeUsuarioInternoStatusUseCase } from '../application/use-cases/usuarios-internos/change-usuario-interno-status.use-case';
+import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios-internos/set-usuario-interno-roles.use-case';
+import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
+import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
+import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
 
 @Module({
   controllers: [
@@ -72,8 +84,10 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     AccesosController,
     PersonasController,
     EmpresasController,
+    EmpresaEmisoraController,
     EmpleadosController,
     ClientesController,
+    UsuariosInternosController,
   ],
   providers: [
     CreateRolUseCase,
@@ -119,6 +133,8 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     ListEmpresasUseCase,
     UpdateEmpresaUseCase,
     ChangeEmpresaStatusUseCase,
+    GetEmpresaEmisoraUseCase,
+    UpsertEmpresaEmisoraUseCase,
     {
       provide: EmpresaRepository,
       useClass: PrismaEmpresaRepository,
@@ -136,6 +152,16 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
+    CreateUsuarioInternoUseCase,
+    ListUsuariosInternosUseCase,
+    GetUsuarioInternoByIdUseCase,
+    UpdateUsuarioInternoUseCase,
+    ChangeUsuarioInternoStatusUseCase,
+    SetUsuarioInternoRolesUseCase,
+    {
+      provide: UsuarioInternoRepository,
+      useClass: PrismaUsuarioInternoRepository,
+    },
     {
       provide: APP_FILTER,
       useClass: PersonsDomainExceptionFilter,
@@ -148,6 +174,7 @@ import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prism
     RolRepository,
     UserRepository,
     UsuarioRolRepository,
+    EmpresaRepository,
   ],
 })
 export class PersonsModule {}

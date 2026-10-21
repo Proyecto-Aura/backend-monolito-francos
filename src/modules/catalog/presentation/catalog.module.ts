@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { envs } from '../../../config/envs';
 import { CreateCategoriaUseCase } from '../application/use-cases/categoria/create-categoria.use-case';
 import { GetCategoriaByIdUseCase } from '../application/use-cases/categoria/get-categoria-by-id.use-case';
 import { ListCategoriasUseCase } from '../application/use-cases/categoria/list-categorias.use-case';
@@ -36,6 +38,10 @@ import { CreateLoteInsumoUseCase } from '../application/use-cases/lote-insumo/cr
 import { GetLoteInsumoByIdUseCase } from '../application/use-cases/lote-insumo/get-lote-insumo-by-id.use-case';
 import { ListLoteInsumosUseCase } from '../application/use-cases/lote-insumo/list-lote-insumos.use-case';
 import { ChangeLoteInsumoStatusUseCase } from '../application/use-cases/lote-insumo/change-lote-insumo-status.use-case';
+import { ListCatalogoPublicoUseCase } from '../application/use-cases/catalogo-publico/list-catalogo-publico.use-case';
+import { GetProductoPublicoUseCase } from '../application/use-cases/catalogo-publico/get-producto-publico.use-case';
+import { CatalogoPublicoRepository } from '../domain/repositories/catalogo-publico.repository';
+import { PrismaCatalogoPublicoRepository } from '../infrastructure/repositories/prisma-catalogo-publico.repository';
 import { CategoriaRepository } from '../domain/repositories/categoria.repository';
 import { PresentacionRepository } from '../domain/repositories/presentacion.repository';
 import { ProductoRepository } from '../domain/repositories/producto.repository';
@@ -57,9 +63,22 @@ import { ProductosController } from './controllers/productos.controller';
 import { PromocionesController } from './controllers/promociones.controller';
 import { InsumosController } from './controllers/insumos.controller';
 import { LotesInsumoController } from './controllers/lotes-insumo.controller';
+import { CatalogoPublicoController } from './controllers/catalogo-publico.controller';
 import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception.filter';
 
 @Module({
+  imports: [
+    // Solo registra la configuración del rate limit; no hay guard global. El
+    // ThrottlerGuard se aplica con @UseGuards en CatalogoPublicoController.
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: envs.catalogoPublicoRateTtlMs,
+          limit: envs.catalogoPublicoRateLimit,
+        },
+      ],
+    }),
+  ],
   controllers: [
     CategoriasController,
     PresentacionesController,
@@ -68,6 +87,7 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     PromocionesController,
     InsumosController,
     LotesInsumoController,
+    CatalogoPublicoController,
   ],
   providers: [
     CreateCategoriaUseCase,
@@ -116,6 +136,12 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
     ListLoteInsumosUseCase,
     ChangeLoteInsumoStatusUseCase,
     { provide: LoteInsumoRepository, useClass: PrismaLoteInsumoRepository },
+    ListCatalogoPublicoUseCase,
+    GetProductoPublicoUseCase,
+    {
+      provide: CatalogoPublicoRepository,
+      useClass: PrismaCatalogoPublicoRepository,
+    },
     {
       provide: APP_FILTER,
       useClass: CatalogDomainExceptionFilter,
