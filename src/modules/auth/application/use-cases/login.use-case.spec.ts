@@ -70,6 +70,7 @@ describe('LoginUseCase', () => {
     jest.clearAllMocks();
     findByEmailOrUsername.mockResolvedValue(makeUser());
     findRolesByUserId.mockResolvedValue([{ nombre: 'cliente' }]);
+    createRefreshToken.mockResolvedValue({ id: 'sesion-1' });
     signAsync.mockResolvedValue('jwt');
   });
 
@@ -82,6 +83,15 @@ describe('LoginUseCase', () => {
     expect(findByEmailOrUsername).toHaveBeenCalledWith('rosaquispe');
     expect(resultado).toMatchObject({ accessToken: 'jwt', roles: ['cliente'] });
     expect(resultado.refreshTokenPlano).toEqual(expect.any(String));
+  });
+
+  it('el token lleva el id de la sesión para poder invalidarlo (HU-B-004)', async () => {
+    await useCase.execute({ identificador: 'rosaquispe', password: PASSWORD });
+
+    expect(signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'user-1', sid: 'sesion-1' }),
+      expect.anything(),
+    );
   });
 
   it('sin "recordar" el refresh token dura los días por defecto', async () => {

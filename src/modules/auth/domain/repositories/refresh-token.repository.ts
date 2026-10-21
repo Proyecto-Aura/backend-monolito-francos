@@ -8,5 +8,6 @@ export abstract class RefreshTokenRepository {
   abstract findByTokenHash(
     tokenHash: string,
   ): Promise<RefreshTokenEntity | null>;
+  abstract findById(id: string): Promise<RefreshTokenEntity | null>;
   abstract revoke(id: string): Promise<RefreshTokenEntity>;
 }

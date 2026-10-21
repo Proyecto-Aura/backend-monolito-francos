@@ -44,7 +44,7 @@ export class RefreshTokenUseCase {
     const roles = rolesAsignados.map((r) => r.nombre);
 
     const accessToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email, roles },
+      { sub: user.id, email: user.email, roles, sid: refreshToken.id },
       {
         expiresIn: envs.jwtAccessExpiresIn as NonNullable<
           JwtModuleOptions['signOptions']
