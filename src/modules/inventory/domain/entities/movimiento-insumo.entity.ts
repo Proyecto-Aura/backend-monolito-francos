@@ -5,6 +5,7 @@ import { TipoMovimientoInsumo } from '../enums';
 export class MovimientoInsumoEntity {
   constructor(
     public readonly id: number,
+    public readonly codigo: string,
     public readonly lote_insumo_id: number,
     public readonly tipo: TipoMovimientoInsumo,
     public readonly cantidad: number,

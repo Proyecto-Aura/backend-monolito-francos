@@ -16,6 +16,7 @@ describe('Consultas de movimientos de insumo', () => {
   const fecha = new Date('2026-10-17T00:00:00.000Z');
   const movimiento = new MovimientoInsumoEntity(
     1,
+    'FR-MV-001-261017-INS1',
     4,
     TipoMovimientoInsumo.SALIDA,
     20,

@@ -6,6 +6,7 @@ export class MovimientoInsumoMapper {
   static toDomain(movimiento: PrismaMovimientoInsumo): MovimientoInsumoEntity {
     return new MovimientoInsumoEntity(
       movimiento.id,
+      movimiento.codigo,
       movimiento.lote_insumo_id,
       movimiento.tipo as TipoMovimientoInsumo,
       movimiento.cantidad.toNumber(),

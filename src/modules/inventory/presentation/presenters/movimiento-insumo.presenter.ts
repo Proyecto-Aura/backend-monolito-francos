@@ -5,6 +5,7 @@ export class MovimientoInsumoPresenter {
   static toHttp(movimiento: MovimientoInsumoEntity) {
     return {
       id: movimiento.id,
+      codigo: movimiento.codigo,
       lote_insumo_id: movimiento.lote_insumo_id,
       tipo: movimiento.tipo,
       cantidad: movimiento.cantidad,
