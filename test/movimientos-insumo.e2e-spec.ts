@@ -126,8 +126,18 @@ describe('Movimientos de insumo (e2e)', () => {
   };
 
   const limpiarDatos = async () => {
+    const insumosDePrueba = await prisma.insumo.findMany({
+      where: { nombre: { startsWith: MARCA } },
+      select: { id: true },
+    });
+
     await prisma.movimientoInsumo.deleteMany({
       where: { lote_insumo: { codigo_lote: { startsWith: MARCA } } },
+    });
+    // El contador de correlativo (insumo_id + fecha) no se borra solo con
+    // el insumo: se limpia aparte para no dejar filas huérfanas entre corridas.
+    await prisma.movimientoInsumoCorrelativo.deleteMany({
+      where: { insumo_id: { in: insumosDePrueba.map((i) => i.id) } },
     });
     await prisma.loteInsumo.deleteMany({
       where: { codigo_lote: { startsWith: MARCA } },

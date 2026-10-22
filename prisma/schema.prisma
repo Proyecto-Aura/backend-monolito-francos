@@ -719,6 +719,19 @@ model MovimientoInsumo {
   @@schema("commerce")
 }
 
+// Contador auxiliar del trigger de arriba: una fila por (insumo, día), para
+// generar el correlativo de "codigo" sin choques bajo concurrencia. No se
+// consulta desde la aplicación salvo para limpieza en tests.
+model MovimientoInsumoCorrelativo {
+  insumo_id   Int
+  fecha       DateTime @db.Date
+  correlativo Int      @default(0)
+
+  @@id([insumo_id, fecha], map: "pk_movimiento_insumo_correlativo")
+  @@map("movimiento_insumo_correlativo")
+  @@schema("commerce")
+}
+
 model EstadoPlanEstrategico {
   id         Int      @id(map: "pk_estado_plan_estrategico") @default(autoincrement())
   codigo     String   @unique(map: "uq_estado_plan_codigo") @db.VarChar(20)
