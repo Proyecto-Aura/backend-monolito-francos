@@ -19,6 +19,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
   ): Promise<MovimientoInsumoEntity> {
     const movimiento = await this.prisma.movimientoInsumo.create({
       data: params,
+      include: { lote_insumo: { select: { codigo_lote: true } } },
     });
 
     return MovimientoInsumoMapper.toDomain(movimiento);
@@ -30,7 +31,10 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
     return this.prisma
       .$transaction(
         paramsList.map((params) =>
-          this.prisma.movimientoInsumo.create({ data: params }),
+          this.prisma.movimientoInsumo.create({
+            data: params,
+            include: { lote_insumo: { select: { codigo_lote: true } } },
+          }),
         ),
       )
       .then((movimientos) =>
@@ -43,6 +47,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
   async findById(id: number): Promise<MovimientoInsumoEntity | null> {
     const movimiento = await this.prisma.movimientoInsumo.findUnique({
       where: { id },
+      include: { lote_insumo: { select: { codigo_lote: true } } },
     });
 
     return movimiento ? MovimientoInsumoMapper.toDomain(movimiento) : null;
@@ -75,6 +80,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
         skip: (params.page - 1) * params.limit,
         take: params.limit,
         orderBy: { fecha: 'desc' },
+        include: { lote_insumo: { select: { codigo_lote: true } } },
       }),
       this.prisma.movimientoInsumo.count({ where }),
     ]);

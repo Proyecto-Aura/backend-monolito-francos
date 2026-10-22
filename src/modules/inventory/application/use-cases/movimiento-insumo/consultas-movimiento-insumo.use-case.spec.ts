@@ -18,6 +18,7 @@ describe('Consultas de movimientos de insumo', () => {
     1,
     'FR-MV-001-261017-INS1',
     4,
+    'LOTE-2026-004',
     TipoMovimientoInsumo.SALIDA,
     20,
     60,

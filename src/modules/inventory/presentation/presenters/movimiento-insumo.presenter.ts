@@ -7,6 +7,7 @@ export class MovimientoInsumoPresenter {
       id: movimiento.id,
       codigo: movimiento.codigo,
       lote_insumo_id: movimiento.lote_insumo_id,
+      codigo_lote: movimiento.codigo_lote,
       tipo: movimiento.tipo,
       cantidad: movimiento.cantidad,
       stock_anterior: movimiento.stock_anterior,

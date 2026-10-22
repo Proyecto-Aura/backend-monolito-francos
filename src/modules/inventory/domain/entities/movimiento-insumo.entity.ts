@@ -7,6 +7,9 @@ export class MovimientoInsumoEntity {
     public readonly id: number,
     public readonly codigo: string,
     public readonly lote_insumo_id: number,
+    // Embebido para que el front no tenga que resolver el lote aparte en
+    // listados (ej. historial de movimientos de un insumo).
+    public readonly codigo_lote: string,
     public readonly tipo: TipoMovimientoInsumo,
     public readonly cantidad: number,
     public readonly stock_anterior: number,
