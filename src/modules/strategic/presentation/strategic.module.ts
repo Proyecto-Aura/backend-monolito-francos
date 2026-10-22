@@ -33,6 +33,11 @@ import { ListarDocumentosEstrategicosUseCase } from '../application/use-cases/do
 import { ListarTodosDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos.use-case';
 import { ObtenerDocumentoEstrategicoByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-by-id.use-case';
 import { SubirDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico.use-case';
+import { EliminarDocumentoEstrategicoTiUseCase } from '../application/use-cases/documento-estrategico/eliminar-documento-estrategico-ti.use-case';
+import { ListarDocumentosEstrategicosTiUseCase } from '../application/use-cases/documento-estrategico/listar-documentos-estrategicos-ti.use-case';
+import { ListarTodosDocumentosEstrategicosTiUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos-ti.use-case';
+import { ObtenerDocumentoEstrategicoTiByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-ti-by-id.use-case';
+import { SubirDocumentoEstrategicoTiUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico-ti.use-case';
 import { CreateKpiUseCase } from '../application/use-cases/kpi/create-kpi.use-case';
 import { EliminarKpiUseCase } from '../application/use-cases/kpi/eliminar-kpi.use-case';
 import { ListarHistorialKpiValoresUseCase } from '../application/use-cases/kpi/listar-historial-kpi-valores.use-case';
@@ -81,6 +86,7 @@ import { PrismaUnidadMedidaKpiRepository } from '../infrastructure/repositories/
 import { PrismaEstadoIniciativaRepository } from '../infrastructure/repositories/prisma-estado-iniciativa.repository';
 import { PrismaIniciativaRepository } from '../infrastructure/repositories/prisma-iniciativa.repository';
 import { DocumentosEstrategicosController } from './controllers/documentos-estrategicos.controller';
+import { DocumentosEstrategicosTiController } from './controllers/documentos-estrategicos-ti.controller';
 import { FrecuenciasMedicionController } from './controllers/frecuencias-medicion.controller';
 import { KpisController } from './controllers/kpis.controller';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
@@ -99,6 +105,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ObjetivosEstrategicosTiController,
     PerspectivasBscController,
     DocumentosEstrategicosController,
+    DocumentosEstrategicosTiController,
     KpisController,
     FrecuenciasMedicionController,
     UnidadesMedidaKpiController,
@@ -139,6 +146,11 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ListarTodosDocumentosEstrategicosUseCase,
     ObtenerDocumentoEstrategicoByIdUseCase,
     EliminarDocumentoEstrategicoUseCase,
+    SubirDocumentoEstrategicoTiUseCase,
+    ListarDocumentosEstrategicosTiUseCase,
+    ListarTodosDocumentosEstrategicosTiUseCase,
+    ObtenerDocumentoEstrategicoTiByIdUseCase,
+    EliminarDocumentoEstrategicoTiUseCase,
     CreateKpiUseCase,
     UpdateKpiUseCase,
     EliminarKpiUseCase,

@@ -8,6 +8,7 @@ import type { S3Service } from '../../../../../infrastructure/storage/s3.service
 import { DocumentoEstrategicoEntity } from '../../../domain/entities';
 import { DocumentoEstrategicoRepository } from '../../../domain/repositories/documento-estrategico.repository';
 import { PaginatedResult } from '../../../domain/repositories/types/pagination.types';
+import { TipoModuloRepository } from '../../../domain/repositories/tipo-modulo.repository';
 import { ListDocumentoEstrategicoQueryDto } from '../../dto/documento-estrategico-dtos/list-documento-estrategico-query.dto';
 import { ListarDocumentosEstrategicosUseCase } from './listar-documentos-estrategicos.use-case';
 
@@ -16,6 +17,11 @@ describe('ListarDocumentosEstrategicosUseCase', () => {
   const documentoEstrategicoRepository = {
     findMany,
   } as unknown as jest.Mocked<DocumentoEstrategicoRepository>;
+
+  const findTipoModuloByCodigo = jest.fn();
+  const tipoModuloRepository = {
+    findByCodigo: findTipoModuloByCodigo,
+  } as unknown as jest.Mocked<TipoModuloRepository>;
 
   const upload = jest.fn();
   const deleteObject = jest.fn();
@@ -28,8 +34,11 @@ describe('ListarDocumentosEstrategicosUseCase', () => {
 
   const useCase = new ListarDocumentosEstrategicosUseCase(
     documentoEstrategicoRepository,
+    tipoModuloRepository,
     s3Service,
   );
+
+  const tipoModulo = { id: 7, codigo: 'NEG', estado: true };
 
   const documentoUno = {
     id: 10,
@@ -59,6 +68,7 @@ describe('ListarDocumentosEstrategicosUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
   });
 
   it('llama a findMany con los parámetros del DTO y devuelve las URLs presignadas', async () => {
@@ -79,6 +89,7 @@ describe('ListarDocumentosEstrategicosUseCase', () => {
       page: dto.page,
       limit: dto.limit,
       plan_estrategico_id: dto.plan_estrategico_id,
+      tipo_modulo_id: tipoModulo.id,
       search: dto.search,
     });
     expect(getPresignedUrl).toHaveBeenNthCalledWith(
@@ -138,5 +149,14 @@ describe('ListarDocumentosEstrategicosUseCase', () => {
 
     expect(response.urls).toEqual(new Map());
     expect(getPresignedUrl).not.toHaveBeenCalled();
+  });
+
+  it('lanza 404 si el tipo de módulo NEG no existe', async () => {
+    findTipoModuloByCodigo.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({ page: 1, limit: 10, plan_estrategico_id: 1 }),
+    ).rejects.toThrow('Tipo de módulo NEG no encontrado');
+    expect(findMany).not.toHaveBeenCalled();
   });
 });
