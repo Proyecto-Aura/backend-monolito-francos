@@ -5,18 +5,21 @@ import {
   TipoDocumento,
 } from '../../../domain/enums/persons.enums';
 import {
+  InvalidRequestError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/persons-domain.errors';
 import { UpdateClienteDto } from '../../dto/cliente-dtos/update-cliente.dto';
 import { ClienteRepository } from '../../../domain/repositories/cliente.repository';
 import { PersonaRepository } from '../../../domain/repositories/persona.repository';
+import { UbigeoRepository } from '../../../domain/repositories/ubigeo.repository';
 
 @Injectable()
 export class UpdateClienteUseCase {
   constructor(
     private readonly clienteRepository: ClienteRepository,
     private readonly personaRepository: PersonaRepository,
+    private readonly ubigeoRepository: UbigeoRepository,
   ) {}
   async execute(id: string, dto: UpdateClienteDto) {
     // validaciones de cliente
@@ -41,6 +44,14 @@ export class UpdateClienteUseCase {
       throw new ResourceConflictError(
         'Ya existe una persona con ese número de documento',
       );
+    }
+
+    // el distrito debe existir en el catálogo de ubicación
+    if (
+      dto.distrito_id !== undefined &&
+      !(await this.ubigeoRepository.existsDistrito(dto.distrito_id))
+    ) {
+      throw new InvalidRequestError('El distrito indicado no existe');
     }
 
     const { tipo_cliente, razon_social, categoria_cliente, ...dataPersona } =

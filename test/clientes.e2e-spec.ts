@@ -49,6 +49,12 @@ const UUID_INEXISTENTE = '00000000-0000-4000-8000-000000000333';
 
 interface ClienteHttp {
   id: string;
+  codigo: string;
+  ubicacion: {
+    departamento: { id: string; nombre: string };
+    provincia: { id: string; nombre: string };
+    distrito: { id: string; nombre: string };
+  } | null;
   persona_id: string;
   tipo_cliente: string;
   razon_social: string | null;
@@ -580,6 +586,70 @@ describe('Clientes (e2e)', () => {
         .patch(`/api/v1/clientes/${UUID_INEXISTENTE}/activate`)
         .set(auth(adminToken))
         .expect(404);
+    });
+  });
+
+  // El catálogo de ubicación sale del seed (Lima y Callao).
+  describe('código y ubicación', () => {
+    it('cada cliente trae un código CLI-000000 distinto', async () => {
+      const res = await listar().expect(200);
+      const codigos = (res.body as ListadoHttp).data.map((c) => c.codigo);
+
+      codigos.forEach((codigo) => expect(codigo).toMatch(/^CLI-\d{6,}$/));
+      expect(new Set(codigos).size).toBe(codigos.length);
+    });
+
+    it('un cliente sin ubicación la devuelve en null', async () => {
+      const res = await http()
+        .get(`/api/v1/clientes/${clienteIds.beto}`)
+        .set(auth(adminToken))
+        .expect(200);
+
+      expect((res.body as ClienteHttp).ubicacion).toBeNull();
+    });
+
+    it('guarda el distrito y devuelve departamento, provincia y distrito', async () => {
+      const res = await http()
+        .patch(`/api/v1/clientes/${clienteIds.beto}`)
+        .set(auth(adminToken))
+        .send({ distrito_id: '150131' })
+        .expect(200);
+
+      expect((res.body as ClienteHttp).ubicacion).toEqual({
+        departamento: { id: '15', nombre: 'Lima' },
+        provincia: { id: '1501', nombre: 'Lima' },
+        distrito: { id: '150131', nombre: 'San Isidro' },
+      });
+    });
+
+    it('filtra por distrito, provincia y departamento', async () => {
+      for (const filtro of [
+        { distrito_id: '150131' },
+        { provincia_id: '1501' },
+        { departamento_id: '15' },
+      ]) {
+        const res = await listar(filtro).expect(200);
+        const { data } = res.body as ListadoHttp;
+
+        expect(data.map((c) => c.id)).toEqual([clienteIds.beto]);
+      }
+
+      const otro = await listar({ departamento_id: '07' }).expect(200);
+      expect((otro.body as ListadoHttp).data).toHaveLength(0);
+    });
+
+    it('devuelve 400 con un distrito inexistente o mal formado', async () => {
+      await http()
+        .patch(`/api/v1/clientes/${clienteIds.beto}`)
+        .set(auth(adminToken))
+        .send({ distrito_id: '999999' })
+        .expect(400);
+      await http()
+        .patch(`/api/v1/clientes/${clienteIds.beto}`)
+        .set(auth(adminToken))
+        .send({ distrito_id: '15' })
+        .expect(400);
+      await listar({ distrito_id: 'abc' }).expect(400);
     });
   });
 });

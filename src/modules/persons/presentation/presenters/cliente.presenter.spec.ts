@@ -5,13 +5,24 @@ import {
   TipoCliente,
   TipoDocumento,
 } from '../../domain/enums/persons.enums';
-import { ClienteConPersona } from '../../domain/repositories/types/cliente-repository.types';
+import {
+  ClienteConPersona,
+  UbicacionCliente,
+} from '../../domain/repositories/types/cliente-repository.types';
 import { ClientePresenter } from './cliente.presenter';
 
 describe('ClientePresenter', () => {
   const fecha = new Date('2026-01-01T00:00:00.000Z');
   const nacimiento = new Date('1990-03-20T00:00:00.000Z');
-  const item = (email: string | null): ClienteConPersona => ({
+  const ubicacion: UbicacionCliente = {
+    departamento: { id: '15', nombre: 'Lima' },
+    provincia: { id: '1501', nombre: 'Lima' },
+    distrito: { id: '150131', nombre: 'San Isidro' },
+  };
+  const item = (
+    email: string | null,
+    ubicacionCliente: UbicacionCliente | null = null,
+  ): ClienteConPersona => ({
     cliente: new ClienteEntity(
       'c1',
       'p1',
@@ -21,6 +32,7 @@ describe('ClientePresenter', () => {
       true,
       fecha,
       fecha,
+      7,
     ),
     persona: new PersonaEntity(
       'p1',
@@ -37,11 +49,13 @@ describe('ClientePresenter', () => {
       fecha,
     ),
     email,
+    ubicacion: ubicacionCliente,
   });
 
   it('conserva los campos del cliente y agrega los de la persona y el correo', () => {
     expect(ClientePresenter.toHttp(item('ana@francos.test'))).toEqual({
       id: 'c1',
+      codigo: 'CLI-000007',
       persona_id: 'p1',
       tipo_cliente: 'empresa',
       razon_social: 'Distribuidora El Sol S.A.C.',
@@ -57,8 +71,21 @@ describe('ClientePresenter', () => {
       telefono: '987654321',
       fecha_nacimiento: nacimiento,
       direccion: 'Av. Los Girasoles 123',
+      ubicacion: null,
       email: 'ana@francos.test',
     });
+  });
+
+  it('devuelve la ubicación con departamento, provincia y distrito', () => {
+    expect(ClientePresenter.toHttp(item(null, ubicacion)).ubicacion).toEqual(
+      ubicacion,
+    );
+  });
+
+  it('arma el código con ceros a la izquierda', () => {
+    expect(ClientePresenter.codigo(1)).toBe('CLI-000001');
+    expect(ClientePresenter.codigo(123456)).toBe('CLI-123456');
+    expect(ClientePresenter.codigo(1234567)).toBe('CLI-1234567');
   });
 
   it('devuelve email null cuando el cliente no tiene cuenta', () => {
