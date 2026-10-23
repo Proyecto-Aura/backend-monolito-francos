@@ -14,6 +14,7 @@ export abstract class KpiRepository {
     params: CreateKpiParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<KpiEntityEnriquecido>;
   abstract existsByNombre(
     objetivoEstrategicoId: number,
