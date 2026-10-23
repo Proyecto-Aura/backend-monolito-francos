@@ -1,3 +1,5 @@
+import { ClienteEntity } from '../../entities/cliente.entity';
+import { PersonaEntity } from '../../entities/persona.entity';
 import { CategoriaCliente, TipoCliente } from '../../enums/persons.enums';
 import { PaginationParams } from './pagination.types';
 import { UpdatePersonaParams } from './persona-repository.types';
@@ -19,4 +21,12 @@ export interface ListClientesParams extends PaginationParams {
   estado?: boolean;
   tipo_cliente?: TipoCliente;
   categoria_cliente?: CategoriaCliente;
+}
+
+// Modelo de lectura: un cliente junto con su persona y el correo de su cuenta
+// (null si el cliente no tiene cuenta). No es una entidad de dominio.
+export interface ClienteConPersona {
+  cliente: ClienteEntity;
+  persona: PersonaEntity;
+  email: string | null;
 }

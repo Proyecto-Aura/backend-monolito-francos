@@ -58,27 +58,24 @@ export class UpdateClienteUseCase {
       );
     }
 
-    const { cliente: clienteActualizado } =
-      await this.clienteRepository.updateWithPersona(id, {
-        persona_id: cliente.persona_id,
-        persona: {
-          ...dataPersona,
-          tipo_documento: dataPersona.tipo_documento as
-            TipoDocumento | undefined,
-          fecha_nacimiento: dataPersona.fecha_nacimiento
-            ? new Date(dataPersona.fecha_nacimiento)
-            : undefined,
-        },
-        cliente: {
-          tipo_cliente: tipo_cliente as TipoCliente | undefined,
-          razon_social:
-            (tipo_cliente as TipoCliente | undefined) ===
-            TipoCliente.PERSONA_NATURAL
-              ? null
-              : razon_social,
-          categoria_cliente: categoria_cliente as CategoriaCliente | undefined,
-        },
-      });
-    return clienteActualizado;
+    return this.clienteRepository.updateWithPersona(id, {
+      persona_id: cliente.persona_id,
+      persona: {
+        ...dataPersona,
+        tipo_documento: dataPersona.tipo_documento as TipoDocumento | undefined,
+        fecha_nacimiento: dataPersona.fecha_nacimiento
+          ? new Date(dataPersona.fecha_nacimiento)
+          : undefined,
+      },
+      cliente: {
+        tipo_cliente: tipo_cliente as TipoCliente | undefined,
+        razon_social:
+          (tipo_cliente as TipoCliente | undefined) ===
+          TipoCliente.PERSONA_NATURAL
+            ? null
+            : razon_social,
+        categoria_cliente: categoria_cliente as CategoriaCliente | undefined,
+      },
+    });
   }
 }
