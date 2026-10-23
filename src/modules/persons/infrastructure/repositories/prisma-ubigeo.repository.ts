@@ -6,33 +6,41 @@ import {
 } from '../../domain/repositories/ubigeo.repository';
 
 const SELECT_ITEM = { id: true, nombre: true } as const;
-const ORDEN_POR_NOMBRE = { nombre: 'asc' } as const;
+
+// El orden alfabético lo resuelve la app y no la base: con la colación de
+// Postgres "Áncash" quedaría al final, después de "Ucayali".
+const COLLATOR_ES = new Intl.Collator('es');
+
+function ordenarPorNombre(items: UbigeoItem[]): UbigeoItem[] {
+  return [...items].sort((a, b) => COLLATOR_ES.compare(a.nombre, b.nombre));
+}
 
 @Injectable()
 export class PrismaUbigeoRepository implements UbigeoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  listDepartamentos(): Promise<UbigeoItem[]> {
-    return this.prisma.departamento.findMany({
-      select: SELECT_ITEM,
-      orderBy: ORDEN_POR_NOMBRE,
-    });
+  async listDepartamentos(): Promise<UbigeoItem[]> {
+    return ordenarPorNombre(
+      await this.prisma.departamento.findMany({ select: SELECT_ITEM }),
+    );
   }
 
-  listProvincias(departamentoId: string): Promise<UbigeoItem[]> {
-    return this.prisma.provincia.findMany({
-      where: { departamento_id: departamentoId },
-      select: SELECT_ITEM,
-      orderBy: ORDEN_POR_NOMBRE,
-    });
+  async listProvincias(departamentoId: string): Promise<UbigeoItem[]> {
+    return ordenarPorNombre(
+      await this.prisma.provincia.findMany({
+        where: { departamento_id: departamentoId },
+        select: SELECT_ITEM,
+      }),
+    );
   }
 
-  listDistritos(provinciaId: string): Promise<UbigeoItem[]> {
-    return this.prisma.distrito.findMany({
-      where: { provincia_id: provinciaId },
-      select: SELECT_ITEM,
-      orderBy: ORDEN_POR_NOMBRE,
-    });
+  async listDistritos(provinciaId: string): Promise<UbigeoItem[]> {
+    return ordenarPorNombre(
+      await this.prisma.distrito.findMany({
+        where: { provincia_id: provinciaId },
+        select: SELECT_ITEM,
+      }),
+    );
   }
 
   async existsDistrito(id: string): Promise<boolean> {
