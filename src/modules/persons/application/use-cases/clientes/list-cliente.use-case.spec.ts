@@ -21,6 +21,7 @@ const clienteConPersona = (id: string): ClienteConPersona => ({
     true,
     fecha,
     fecha,
+    7,
   ),
   persona: new PersonaEntity(
     `persona-${id}`,
@@ -37,6 +38,7 @@ const clienteConPersona = (id: string): ClienteConPersona => ({
     fecha,
   ),
   email: 'ana@francos.test',
+  ubicacion: null,
 });
 
 describe('ListClientesUseCase', () => {

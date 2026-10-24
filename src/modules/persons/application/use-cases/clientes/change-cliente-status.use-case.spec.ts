@@ -17,6 +17,7 @@ const cliente = new ClienteEntity(
   true,
   fecha,
   fecha,
+  7,
 );
 
 describe('ChangeClienteStatusUseCase', () => {

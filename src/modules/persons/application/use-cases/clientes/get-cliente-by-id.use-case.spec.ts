@@ -21,6 +21,7 @@ const encontrado: ClienteConPersona = {
     true,
     fecha,
     fecha,
+    7,
   ),
   persona: new PersonaEntity(
     'persona-c1',
@@ -37,6 +38,7 @@ const encontrado: ClienteConPersona = {
     fecha,
   ),
   email: null,
+  ubicacion: null,
 };
 
 describe('GetClienteByIdUseCase', () => {

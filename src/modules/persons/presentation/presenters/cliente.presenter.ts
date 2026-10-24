@@ -3,9 +3,10 @@ import { PaginatedResult } from '../../domain/repositories/types/pagination.type
 
 // Lista explícita de campos: nunca se exponen contraseña, hash ni tokens.
 export class ClientePresenter {
-  static toHttp({ cliente, persona, email }: ClienteConPersona) {
+  static toHttp({ cliente, persona, email, ubicacion }: ClienteConPersona) {
     return {
       id: cliente.id,
+      codigo: this.codigo(cliente.codigo),
       persona_id: cliente.persona_id,
       tipo_cliente: cliente.tipo_cliente,
       razon_social: cliente.razon_social,
@@ -21,8 +22,14 @@ export class ClientePresenter {
       telefono: persona.telefono,
       fecha_nacimiento: persona.fecha_nacimiento,
       direccion: persona.direccion,
+      ubicacion,
       email,
     };
+  }
+
+  // CLI-000001: el número correlativo con ceros a la izquierda.
+  static codigo(numero: number): string {
+    return `CLI-${String(numero).padStart(6, '0')}`;
   }
 
   static paginatedToHttp(result: PaginatedResult<ClienteConPersona>) {

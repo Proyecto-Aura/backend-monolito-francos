@@ -32,6 +32,26 @@ const coincideCon = (termino: string): Prisma.ClienteWhereInput => {
   };
 };
 
+// Cada nivel de ubicación se resuelve por la cadena distrito → provincia → departamento.
+const filtroUbicacion = (
+  params: ListClientesParams,
+): Prisma.ClienteWhereInput => {
+  if (params.distrito_id !== undefined) {
+    return { persona: { distrito_id: params.distrito_id } };
+  }
+  if (params.provincia_id !== undefined) {
+    return { persona: { distrito: { provincia_id: params.provincia_id } } };
+  }
+  if (params.departamento_id !== undefined) {
+    return {
+      persona: {
+        distrito: { provincia: { departamento_id: params.departamento_id } },
+      },
+    };
+  }
+  return {};
+};
+
 @Injectable()
 export class PrismaClienteRepository implements ClienteRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -80,6 +100,7 @@ export class PrismaClienteRepository implements ClienteRepository {
       ...(params.categoria_cliente === undefined
         ? {}
         : { categoria_cliente: params.categoria_cliente }),
+      ...filtroUbicacion(params),
       ...(terminos.length > 0 ? { AND: terminos.map(coincideCon) } : {}),
     };
     const [clientes, total] = await this.prisma.$transaction([
