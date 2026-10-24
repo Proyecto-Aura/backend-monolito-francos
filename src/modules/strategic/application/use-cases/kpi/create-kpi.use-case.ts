@@ -110,15 +110,17 @@ export class CreateKpiUseCase {
       }
     }
 
-    const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
+    const tipoModulo = await this.tipoModuloRepository.findById(
+      objetivo.tipo_modulo_id,
+    );
 
     if (!tipoModulo || !tipoModulo.estado) {
-      throw new ResourceNotFoundError('Tipo de módulo NEG no encontrado');
+      throw new ResourceNotFoundError('Tipo de módulo no encontrado');
     }
 
     const totalKpis = await this.kpiRepository.countByPlanYTipo(
       plan.id,
-      tipoModulo.id,
+      objetivo.tipo_modulo_id,
     );
     const correlativo = String(totalKpis + 1).padStart(3, '0');
 
@@ -133,6 +135,7 @@ export class CreateKpiUseCase {
       },
       plan.codigo,
       correlativo,
+      tipoModulo.codigo === 'NEG' ? 'N' : 'TI',
     );
   }
 }

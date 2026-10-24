@@ -20,6 +20,7 @@ type PrismaKpiEnriquecido = Prisma.KpiGetPayload<{
         codigo: true;
         nombre: true;
         responsable: true;
+        tipo_modulo_id: true;
         perspectiva_bsc: { select: { id: true; nombre: true } };
       };
     };
@@ -49,6 +50,7 @@ export class KpiMapper {
           codigo: kpi.objetivo_estrategico.codigo,
           nombre: kpi.objetivo_estrategico.nombre,
           responsable: kpi.objetivo_estrategico.responsable,
+          tipo_modulo_id: kpi.objetivo_estrategico.tipo_modulo_id,
           perspectiva_bsc: {
             id: kpi.objetivo_estrategico.perspectiva_bsc.id,
             nombre: kpi.objetivo_estrategico.perspectiva_bsc.nombre,
