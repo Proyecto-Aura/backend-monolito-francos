@@ -131,6 +131,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
     const where: Prisma.PedidoWhereInput = {
       ...(params.estado ? { estado: params.estado } : {}),
       ...(params.origen ? { origen: params.origen } : {}),
+      ...(params.cliente_id ? { cliente_id: params.cliente_id } : {}),
       ...(params.desde || params.hasta
         ? {
             created_at: {

@@ -54,6 +54,7 @@ export interface CreatePedidoParams {
 export interface ListPedidosParams extends PaginationParams {
   estado?: EstadoPedido;
   origen?: OrigenPedido;
+  cliente_id?: string;
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;

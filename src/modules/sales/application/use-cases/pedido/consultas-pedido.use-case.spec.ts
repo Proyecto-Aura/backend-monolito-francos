@@ -46,6 +46,19 @@ describe('Consultas de pedidos', () => {
       });
     });
 
+    it('pasa el cliente para listar solo sus pedidos', async () => {
+      const clienteId = 'a1b2c3d4-0000-4000-8000-000000000001';
+      const query = Object.assign(new ListPedidosQueryDto(), {
+        cliente_id: clienteId,
+      });
+
+      await useCase.execute(query);
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ cliente_id: clienteId }),
+      );
+    });
+
     it('sin filtros lista todos los estados y orígenes', async () => {
       await useCase.execute(new ListPedidosQueryDto());
 
@@ -54,6 +67,7 @@ describe('Consultas de pedidos', () => {
         limit: 10,
         estado: undefined,
         origen: undefined,
+        cliente_id: undefined,
         desde: undefined,
         hasta: undefined,
       });
