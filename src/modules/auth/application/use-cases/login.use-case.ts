@@ -4,10 +4,14 @@ import { JwtModuleOptions, JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
-import { InvalidCredentialsError } from '../../domain/errors/auth-domain.errors';
+import {
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+} from '../../domain/errors/auth-domain.errors';
 import { comparePassword } from '../utils/password.util';
 import { envs } from '../../../../config/envs';
 import { generateRandomToken, hashToken } from '../utils/token.util';
+import { ROL_CLIENTE } from '../utils/email-verification.util';
 
 export interface LoginResult {
   accessToken: string;
@@ -52,15 +56,16 @@ export class LoginUseCase {
     );
     const roles = roles_asignados.map((r) => r.nombre);
 
-    // generamos token jwt
-    const accessToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email, roles },
-      {
-        expiresIn: envs.jwtAccessExpiresIn as NonNullable<
-          JwtModuleOptions['signOptions']
-        >['expiresIn'],
-      },
-    );
+    if (
+      envs.requireVerifiedEmail &&
+      !user.email_verificado &&
+      roles.length > 0 &&
+      roles.every((role) => role === ROL_CLIENTE)
+    ) {
+      throw new EmailNotVerifiedError(
+        'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja o solicita un nuevo enlace',
+      );
+    }
 
     const refreshTokenPlano = generateRandomToken();
     const tokenHash = hashToken(refreshTokenPlano);
@@ -69,11 +74,21 @@ export class LoginUseCase {
       : envs.refreshTokenExpiresInDays;
     const expiresAt = new Date(Date.now() + diasSesion * MS_POR_DIA);
 
-    await this.refreshTokenRepository.create({
+    const sesion = await this.refreshTokenRepository.create({
       user_id: user.id,
       token_hash: tokenHash,
       expires_at: expiresAt,
     });
+
+    // generamos token jwt; `sid` lo ata a la sesión para invalidarlo al cerrarla (HU-B-004)
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id, email: user.email, roles, sid: sesion.id },
+      {
+        expiresIn: envs.jwtAccessExpiresIn as NonNullable<
+          JwtModuleOptions['signOptions']
+        >['expiresIn'],
+      },
+    );
 
     return {
       accessToken,

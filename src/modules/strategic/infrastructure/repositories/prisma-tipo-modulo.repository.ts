@@ -8,6 +8,14 @@ import { TipoModuloMapper } from '../mappers/tipo-modulo.mapper';
 export class PrismaTipoModuloRepository implements TipoModuloRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: number): Promise<TipoModuloEntity | null> {
+    const tipoModulo = await this.prisma.tipoModulo.findUnique({
+      where: { id },
+    });
+
+    return tipoModulo ? TipoModuloMapper.toDomain(tipoModulo) : null;
+  }
+
   async findByCodigo(codigo: string): Promise<TipoModuloEntity | null> {
     const tipoModulo = await this.prisma.tipoModulo.findUnique({
       where: { codigo },

@@ -21,6 +21,7 @@ import { CreatePlanEstrategicoDto } from '../../application/dto/plan-estrategico
 import { ListPlanEstrategicoQueryDto } from '../../application/dto/plan-estrategico-dtos/list-plan-estrategico-query.dto';
 import { UpdatePlanEstrategicoDto } from '../../application/dto/plan-estrategico-dtos/update-plan-estrategico.dto';
 import { ObtenerKpisPorPlanUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan.use-case';
+import { ObtenerKpisPorPlanTiUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan-ti.use-case';
 import { ObtenerIniciativasPorPlanUseCase } from '../../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
 import { ActivarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/activar-plan-estrategico.use-case';
 import { CerrarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/cerrar-plan-estrategico.use-case';
@@ -59,6 +60,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerObjetivosPorPlan: ObtenerObjetivosPorPlanUseCase,
     private readonly obtenerObjetivosPorPlanTi: ObtenerObjetivosPorPlanTiUseCase,
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
+    private readonly obtenerKpisPorPlanTi: ObtenerKpisPorPlanTiUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
     private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
@@ -131,6 +133,20 @@ export class PlanesEstrategicosController {
     const { plan, objetivos } =
       await this.obtenerObjetivosPorPlanTi.execute(id);
     return ObjetivoEstrategicoPresenter.resumenPorPlanToHttpTi(plan, objetivos);
+  }
+
+  @Get(':id/kpis-ti')
+  @ApiOperation({
+    summary: 'Resumen de KPIs de TI del plan con su último valor registrado',
+  })
+  @ApiOkResponse({
+    description: 'Lista de KPIs del plan (TI) con último valor',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async kpisTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return KpiPresenter.resumenPorPlanToHttp(
+      await this.obtenerKpisPorPlanTi.execute(id),
+    );
   }
 
   @Get(':id/kpis')

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID, Matches } from 'class-validator';
 import { EstadoPedido, OrigenPedido } from '../../../domain/enums';
 import { PaginationQueryDto } from '../common/pagination-query.dto';
 
@@ -16,6 +16,14 @@ export class ListPedidosQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(OrigenPedido)
   origen?: OrigenPedido;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Solo los pedidos de este cliente (HU-A-006)',
+  })
+  @IsOptional()
+  @IsUUID()
+  cliente_id?: string;
 
   @ApiPropertyOptional({
     example: '2026-10-01',

@@ -14,6 +14,14 @@ export interface SendDefaultCredentialsEmailParams {
   contrasenaDefault: string;
 }
 
+export interface SendClienteBienvenidaEmailParams {
+  to: string;
+  nombre: string;
+  username: string;
+  contrasenaDefault: string;
+  verificationToken: string;
+}
+
 export interface SendPasswordResetEmailParams {
   to: string;
   nombre: string;

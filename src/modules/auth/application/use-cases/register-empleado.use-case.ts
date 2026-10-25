@@ -86,7 +86,8 @@ export class RegisterEmpleadoUseCase {
         contrasena_hash: default_credentials.contrasenaHash,
         email_verificado: default_credentials.emailVerificado,
         debe_cambiar_contrasena: default_credentials.debeCambiarContrasena,
-        token_verificacion_email: default_credentials.tokenVerificacionEmail,
+        token_verificacion_email:
+          default_credentials.tokenVerificacionEmailHash,
         token_verificacion_email_expiracion:
           default_credentials.tokenVerificacionEmailExpiracion,
       },
@@ -104,12 +105,12 @@ export class RegisterEmpleadoUseCase {
       await this.emailService.sendVerificationEmail({
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
-        verificationToken: default_credentials.tokenVerificacionEmail,
+        verificationToken: default_credentials.tokenVerificacionEmailPlano,
         frontend: 'portal',
       });
     } catch (error) {
       this.logger.warn(
-        `No se pudo enviar el correo a ${resultado.user.email}`,
+        'No se pudo enviar el correo',
         error instanceof Error ? error.stack : undefined,
       );
     }

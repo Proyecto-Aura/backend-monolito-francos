@@ -9,7 +9,7 @@ import { PedidoRepository } from '../../../domain/repositories/pedido.repository
 
 // RF-A036: al completarse (entregarse) un pedido se descuenta el stock de sus
 // productos. Según RN6, solo el operario de despacho lo marca como entregado y
-// solo desde "en camino"; el endpoint que lo dispara llega con la HU de despacho.
+// solo desde "en camino"; lo dispara PATCH /despacho/pedidos/:id/entregado.
 @Injectable()
 export class CompletarPedidoUseCase {
   constructor(private readonly pedidoRepository: PedidoRepository) {}

@@ -203,14 +203,54 @@ model Persona {
   telefono         String?       @db.VarChar(9)
   fecha_nacimiento DateTime?     @db.Date
   direccion        String?       @db.Text
+  distrito_id      String?       @db.Char(6)
   estado           Boolean       @default(true)
   created_at       DateTime      @default(now()) @db.Timestamptz(6)
   updated_at       DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  distrito         Distrito?     @relation(fields: [distrito_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_persona_distrito")
   empleado         Empleado?
   cliente          Cliente?
   user             User?
 
+  @@index([distrito_id], map: "idx_persona_distrito_id")
   @@map("persona")
+  @@schema("persons")
+}
+
+// Catálogo de ubicación (ubigeo INEI): el id es el código oficial.
+// departamento = 2 dígitos, provincia = 4, distrito = 6.
+model Departamento {
+  id         String      @id(map: "pk_departamento") @db.Char(2)
+  nombre     String      @unique(map: "uq_departamento_nombre") @db.VarChar(60)
+  provincias Provincia[]
+
+  @@map("departamento")
+  @@schema("persons")
+}
+
+model Provincia {
+  id              String       @id(map: "pk_provincia") @db.Char(4)
+  departamento_id String       @db.Char(2)
+  nombre          String       @db.VarChar(60)
+  departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_provincia_departamento")
+  distritos       Distrito[]
+
+  @@unique([departamento_id, nombre], map: "uq_provincia_departamento_nombre")
+  @@index([departamento_id], map: "idx_provincia_departamento_id")
+  @@map("provincia")
+  @@schema("persons")
+}
+
+model Distrito {
+  id           String    @id(map: "pk_distrito") @db.Char(6)
+  provincia_id String    @db.Char(4)
+  nombre       String    @db.VarChar(80)
+  provincia    Provincia @relation(fields: [provincia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_distrito_provincia")
+  personas     Persona[]
+
+  @@unique([provincia_id, nombre], map: "uq_distrito_provincia_nombre")
+  @@index([provincia_id], map: "idx_distrito_provincia_id")
+  @@map("distrito")
   @@schema("persons")
 }
 
@@ -232,6 +272,7 @@ model Empleado {
 
 model Cliente {
   id                String           @id(map: "pk_cliente") @default(uuid()) @db.Uuid
+  codigo            Int              @unique(map: "uq_cliente_codigo") @default(autoincrement())
   persona_id        String           @unique(map: "uq_cliente_persona_id") @db.Uuid
   tipo_cliente      TipoCliente
   razon_social      String?          @db.VarChar(200)
@@ -518,6 +559,8 @@ model Pedido {
   // Solo para delivery; en recojo en tienda queda vacía.
   direccion_entrega String?      @db.Text
   total             Decimal      @db.Decimal(10, 2)
+  // Hora en que despacho lo marca como entregado (RF-A098); vacía hasta entonces.
+  fecha_entrega     DateTime?    @db.Timestamptz(6)
   created_at        DateTime     @default(now()) @db.Timestamptz(6)
   updated_at        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
 
