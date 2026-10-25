@@ -12,6 +12,7 @@ import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
   ApiBadRequestResponse,
+  ApiForbiddenResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -29,8 +30,12 @@ import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.u
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
 import { ForgotPasswordDto } from '../../application/dto/forgot-password.dto';
 import { ResetPasswordDto } from '../../application/dto/reset-password.dto';
+import { VerifyEmailDto } from '../../application/dto/verify-email.dto';
+import { ResendVerificationDto } from '../../application/dto/resend-verification.dto';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
+import { ResendVerificationUseCase } from '../../application/use-cases/resend-verification.use-case';
 import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
 import { Roles } from '../decorators/roles.decorator';
@@ -43,6 +48,9 @@ const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const FORGOT_PASSWORD_MESSAGE =
   'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña';
 const RESET_PASSWORD_MESSAGE = 'Contraseña restablecida correctamente';
+const VERIFY_EMAIL_MESSAGE = 'Correo verificado correctamente';
+const RESEND_VERIFICATION_MESSAGE =
+  'Si el correo está registrado, recibirás un enlace de verificación';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -56,6 +64,8 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetPassword: ResetPasswordUseCase,
+    private readonly verifyEmailUseCase: VerifyEmailUseCase,
+    private readonly resendVerificationUseCase: ResendVerificationUseCase,
     private readonly getMeUseCase: GetMeUseCase,
   ) {}
 
@@ -109,6 +119,9 @@ export class AuthController {
   @Public()
   @ApiOperation({ summary: 'Iniciar sesión' })
   @ApiCreatedResponse({ description: 'Login exitoso' })
+  @ApiForbiddenResponse({
+    description: 'El correo del cliente aún no fue verificado',
+  })
   async iniciarSesion(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -177,6 +190,32 @@ export class AuthController {
   async resetPasswordFromToken(@Body() dto: ResetPasswordDto) {
     await this.resetPassword.execute(dto);
     return { message: RESET_PASSWORD_MESSAGE };
+  }
+
+  @Post('verify-email')
+  @HttpCode(200)
+  @Public()
+  @ApiOperation({
+    summary: 'Verificar el correo electrónico con un enlace válido',
+  })
+  @ApiOkResponse({ description: 'Correo verificado correctamente' })
+  @ApiBadRequestResponse({ description: 'El enlace no es válido o expiró' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.verifyEmailUseCase.execute(dto);
+    return { message: VERIFY_EMAIL_MESSAGE };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @Public()
+  @ApiOperation({ summary: 'Reenviar un enlace de verificación de correo' })
+  @ApiOkResponse({ description: 'Solicitud procesada correctamente' })
+  @ApiBadRequestResponse({
+    description: 'El correo no tiene un formato válido',
+  })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    await this.resendVerificationUseCase.execute(dto);
+    return { message: RESEND_VERIFICATION_MESSAGE };
   }
 
   private setRefreshTokenCookie(

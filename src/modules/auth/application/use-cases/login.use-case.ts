@@ -4,10 +4,14 @@ import { JwtModuleOptions, JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
-import { InvalidCredentialsError } from '../../domain/errors/auth-domain.errors';
+import {
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+} from '../../domain/errors/auth-domain.errors';
 import { comparePassword } from '../utils/password.util';
 import { envs } from '../../../../config/envs';
 import { generateRandomToken, hashToken } from '../utils/token.util';
+import { ROL_CLIENTE } from '../utils/email-verification.util';
 
 export interface LoginResult {
   accessToken: string;
@@ -51,6 +55,17 @@ export class LoginUseCase {
       user.id,
     );
     const roles = roles_asignados.map((r) => r.nombre);
+
+    if (
+      envs.requireVerifiedEmail &&
+      !user.email_verificado &&
+      roles.length > 0 &&
+      roles.every((role) => role === ROL_CLIENTE)
+    ) {
+      throw new EmailNotVerifiedError(
+        'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja o solicita un nuevo enlace',
+      );
+    }
 
     const refreshTokenPlano = generateRandomToken();
     const tokenHash = hashToken(refreshTokenPlano);
