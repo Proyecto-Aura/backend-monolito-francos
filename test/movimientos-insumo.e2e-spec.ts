@@ -304,6 +304,88 @@ describe('Movimientos de insumo (e2e)', () => {
     expect(Number(insumoActualizado.stock_actual)).toBe(35);
   });
 
+  it('salida (FEFO) nunca reparte un lote vencido, aunque tenga stock', async () => {
+    const insumoFefoVencido = (
+      await request(app.getHttpServer())
+        .post(INSUMOS_URL)
+        .set(auth(adminToken))
+        .send({
+          nombre: `${MARCA} Fefo Vencido`,
+          unidad_medida: 'kg',
+          stock_minimo: 5,
+          stock_maximo: 500,
+          tipo: 'materia_prima',
+        })
+        .expect(201)
+    ).body as InsumoHttp;
+
+    const loteVencido = (
+      await request(app.getHttpServer())
+        .post(LOTES_URL)
+        .set(auth(adminToken))
+        .send({
+          insumo_id: insumoFefoVencido.id,
+          codigo_lote: `${MARCA}-fefo-vencido`,
+          fecha_ingreso: '2020-01-01',
+          fecha_vencimiento: '2020-02-01',
+          cantidad_inicial: 50,
+        })
+        .expect(201)
+    ).body as LoteHttp;
+
+    const loteValido = (
+      await request(app.getHttpServer())
+        .post(LOTES_URL)
+        .set(auth(adminToken))
+        .send({
+          insumo_id: insumoFefoVencido.id,
+          codigo_lote: `${MARCA}-fefo-valido`,
+          fecha_ingreso: '2026-10-01',
+          fecha_vencimiento: '2027-01-01',
+          cantidad_inicial: 30,
+        })
+        .expect(201)
+    ).body as LoteHttp;
+
+    // El vencido "vencería" antes en orden FEFO, pero queda afuera: la
+    // salida toma del válido, no del vencido.
+    const res = await request(app.getHttpServer())
+      .post(`${MOVIMIENTOS_URL}/salida`)
+      .set(auth(inventarioToken))
+      .send({
+        insumo_id: insumoFefoVencido.id,
+        cantidad: 20,
+        razon: `${MARCA}: no debería tocar el lote vencido`,
+      })
+      .expect(201);
+
+    const movimientos = res.body as MovimientoHttp[];
+    expect(movimientos).toHaveLength(1);
+    expect(movimientos[0].lote_insumo_id).toBe(loteValido.id);
+
+    // Al válido ya le quedan 10 (30 - 20). Pedir 15 más da 409, aunque
+    // sumando el vencido (50) alcanzaría de sobra: el vencido no cuenta
+    // como disponible.
+    await request(app.getHttpServer())
+      .post(`${MOVIMIENTOS_URL}/salida`)
+      .set(auth(inventarioToken))
+      .send({
+        insumo_id: insumoFefoVencido.id,
+        cantidad: 15,
+        razon: `${MARCA}: supera lo que queda del válido`,
+      })
+      .expect(409);
+
+    const loteVencidoLeido = (
+      await request(app.getHttpServer())
+        .get(`${LOTES_URL}/${loteVencido.id}`)
+        .set(auth(adminToken))
+        .expect(200)
+    ).body as LoteHttp;
+    expect(loteVencidoLeido.estado).toBe('vencido');
+    expect(Number(loteVencidoLeido.cantidad_actual)).toBe(50);
+  });
+
   it('salida sin stock suficiente devuelve 409 y no crea ningún movimiento', async () => {
     const antes = await request(app.getHttpServer())
       .get(MOVIMIENTOS_URL)

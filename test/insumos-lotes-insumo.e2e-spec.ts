@@ -459,6 +459,50 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .expect(409);
     });
 
+    it('muestra estado "vencido" (derivado, no persistido) si fecha_vencimiento ya pasó', async () => {
+      // Insumo propio para no mezclar este lote con el de la prueba de orden
+      // FEFO, que lista todos los lotes de `insumoId` y espera una lista
+      // exacta.
+      const insumoVencido = (
+        await request(app.getHttpServer())
+          .post(INSUMOS_URL)
+          .set(auth(adminToken))
+          .send({
+            nombre: `${MARCA} Insumo para lote vencido`,
+            unidad_medida: 'kg',
+            stock_minimo: 10,
+            stock_maximo: 1000,
+            tipo: 'materia_prima',
+          })
+          .expect(201)
+      ).body as InsumoHttp;
+
+      const creado = (
+        await request(app.getHttpServer())
+          .post(LOTES_URL)
+          .set(auth(adminToken))
+          .send({
+            insumo_id: insumoVencido.id,
+            codigo_lote: `${MARCA}-vencido`,
+            fecha_ingreso: '2020-01-01',
+            fecha_vencimiento: '2020-02-01',
+            cantidad_inicial: 10,
+          })
+          .expect(201)
+      ).body as LoteHttp;
+      // Se calcula al leer (no hay columna "vencido" en la DB): ya se ve así
+      // desde la propia respuesta de creación.
+      expect(creado.estado).toBe('vencido');
+
+      const leido = (
+        await request(app.getHttpServer())
+          .get(`${LOTES_URL}/${creado.id}`)
+          .set(auth(adminToken))
+          .expect(200)
+      ).body as LoteHttp;
+      expect(leido.estado).toBe('vencido');
+    });
+
     it('ordena el listado por fecha de vencimiento más próxima primero (sin fecha al final)', async () => {
       await request(app.getHttpServer())
         .post(LOTES_URL)

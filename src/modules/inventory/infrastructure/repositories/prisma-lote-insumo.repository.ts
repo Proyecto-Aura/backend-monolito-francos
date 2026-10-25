@@ -107,6 +107,14 @@ export class PrismaLoteInsumoRepository implements LoteInsumoRepository {
         estado: 'activo',
         activo: true,
         cantidad_actual: { gt: 0 },
+        // 'vencido' no se persiste en estado (se deriva al leer, ver
+        // LoteInsumoMapper): acá se excluye igual, por fecha, para que la
+        // salida (FEFO) nunca reparta un lote ya vencido aunque la columna
+        // siga en 'activo'.
+        OR: [
+          { fecha_vencimiento: null },
+          { fecha_vencimiento: { gte: new Date() } },
+        ],
       },
       orderBy: [
         { fecha_vencimiento: { sort: 'asc', nulls: 'last' } },
