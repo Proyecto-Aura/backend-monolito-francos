@@ -38,6 +38,8 @@ import { GetEmpresaByIdUseCase } from '../application/use-cases/empresas/get-emp
 import { ListEmpresasUseCase } from '../application/use-cases/empresas/list-empresas.use-case';
 import { UpdateEmpresaUseCase } from '../application/use-cases/empresas/update-empresa.use-case';
 import { GetEmpresaEmisoraUseCase } from '../application/use-cases/empresas/get-empresa-emisora.use-case';
+import { QuitarLogoEmpresaEmisoraUseCase } from '../application/use-cases/empresas/quitar-logo-empresa-emisora.use-case';
+import { SubirLogoEmpresaEmisoraUseCase } from '../application/use-cases/empresas/subir-logo-empresa-emisora.use-case';
 import { UpsertEmpresaEmisoraUseCase } from '../application/use-cases/empresas/upsert-empresa-emisora.use-case';
 import { EmpresaRepository } from '../domain/repositories/empresa.repository';
 import { PrismaEmpresaRepository } from '../infrastructure/repositories/prisma-empresa.repository';
@@ -148,6 +150,8 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     ChangeEmpresaStatusUseCase,
     GetEmpresaEmisoraUseCase,
     UpsertEmpresaEmisoraUseCase,
+    SubirLogoEmpresaEmisoraUseCase,
+    QuitarLogoEmpresaEmisoraUseCase,
     {
       provide: EmpresaRepository,
       useClass: PrismaEmpresaRepository,

@@ -241,7 +241,6 @@ describe('Empresa emisora HU-A-039 (e2e)', () => {
       ruc: RUC_EMISORA,
       direccion: 'Av. Principal 100',
       telefono: '987654321',
-      logo_url: 'https://cdn.francos.test/logo.png',
     }).expect(200);
 
     const creada = res.body as EmpresaHttp;
@@ -259,7 +258,7 @@ describe('Empresa emisora HU-A-039 (e2e)', () => {
       razon_social: `${MARCA} Emisora`,
       direccion: 'Av. Principal 100',
       telefono: '987654321',
-      logo_url: 'https://cdn.francos.test/logo.png',
+      logo_url: null,
       es_emisora: true,
     });
   });

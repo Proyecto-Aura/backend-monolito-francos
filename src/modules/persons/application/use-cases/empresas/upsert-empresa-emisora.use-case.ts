@@ -23,19 +23,20 @@ export class UpsertEmpresaEmisoraUseCase {
       throw new ResourceConflictError('Ya existe una empresa con ese email');
     }
 
-    // PUT reemplaza: un opcional que no llega queda en null.
+    // PUT reemplaza: un opcional que no llega queda en null. El logo no entra
+    // aquí: al actualizar se conserva el que ya tenga la emisora.
     const datos = {
       razon_social: dto.razon_social,
       ruc: dto.ruc,
       direccion: dto.direccion,
       telefono: dto.telefono ?? null,
       email: dto.email ?? null,
-      logo_url: dto.logo_url ?? null,
     };
 
     if (!emisora) {
       return this.empresaRepository.create({
         ...datos,
+        logo_url: null,
         estado: true,
         es_emisora: true,
       });
