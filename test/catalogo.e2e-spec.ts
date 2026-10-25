@@ -460,6 +460,42 @@ describe('Catálogo (e2e)', () => {
       expect(presentacion.visible_portal_b).toBe(false);
     });
 
+    // OFT0-258: el rol inventario (pantalla de stock de producto terminado)
+    // puede activar/desactivar una producto-presentación, mismo interruptor
+    // que usa el catálogo.
+    it('DELETE y PATCH :id/activate con rol inventario desactivan y reactivan', async () => {
+      const presentacionPropia = await prisma.presentacion.create({
+        data: {
+          cantidad: 7779,
+          unidad_medida: 'gr',
+          descripcion: PRESENTACION_DESCRIPCION,
+        },
+      });
+      const creada = (
+        await request(app.getHttpServer())
+          .post('/api/v1/producto-presentaciones')
+          .set('Authorization', `Bearer ${ventasToken}`)
+          .send({
+            producto_id: productoId,
+            presentacion_id: presentacionPropia.id,
+            precio_unitario: 5,
+          })
+          .expect(201)
+      ).body as { id: number };
+
+      const desactivada = await request(app.getHttpServer())
+        .delete(`/api/v1/producto-presentaciones/${creada.id}`)
+        .set('Authorization', `Bearer ${inventarioToken}`)
+        .expect(200);
+      expect((desactivada.body as { estado: boolean }).estado).toBe(false);
+
+      const reactivada = await request(app.getHttpServer())
+        .patch(`/api/v1/producto-presentaciones/${creada.id}/activate`)
+        .set('Authorization', `Bearer ${inventarioToken}`)
+        .expect(200);
+      expect((reactivada.body as { estado: boolean }).estado).toBe(true);
+    });
+
     it('POST /api/v1/producto-presentaciones con una presentación repetida devuelve 409 y no crea nada', async () => {
       const antes = await prisma.productoTerminado.count({
         where: { producto_presentacion: { producto_id: productoId } },
