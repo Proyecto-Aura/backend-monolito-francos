@@ -352,7 +352,9 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .set(auth(adminToken))
         .expect(200);
       expect(
-        (agotados.body.data as InsumoHttp[]).some((i) => i.id === creado.id),
+        (agotados.body as { data: InsumoHttp[] }).data.some(
+          (i) => i.id === creado.id,
+        ),
       ).toBe(true);
 
       const normales = await request(app.getHttpServer())
@@ -361,7 +363,9 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .set(auth(adminToken))
         .expect(200);
       expect(
-        (normales.body.data as InsumoHttp[]).some((i) => i.id === creado.id),
+        (normales.body as { data: InsumoHttp[] }).data.some(
+          (i) => i.id === creado.id,
+        ),
       ).toBe(false);
     });
 
