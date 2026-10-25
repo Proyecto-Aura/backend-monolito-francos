@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TipoInsumo } from '../../../domain/enums';
+import { NivelStockInsumo, TipoInsumo } from '../../../domain/enums';
 import { PaginationQueryDto } from '../../../../catalog/application/dto/common/pagination-query-dto';
 
 export class ListInsumosQueryDto extends PaginationQueryDto {
@@ -32,4 +32,9 @@ export class ListInsumosQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(TipoInsumo)
   tipo?: TipoInsumo;
+
+  @ApiPropertyOptional({ enum: NivelStockInsumo, example: 'bajo' })
+  @IsOptional()
+  @IsEnum(NivelStockInsumo)
+  nivel?: NivelStockInsumo;
 }

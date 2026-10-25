@@ -329,6 +329,49 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .set(auth(adminToken))
         .expect(404);
     });
+
+    it('filtra por nivel de stock (mismo criterio que /indicadores)', async () => {
+      // Recién creado, stock_actual queda en 0 => nivel "agotado".
+      const creado = (
+        await request(app.getHttpServer())
+          .post(INSUMOS_URL)
+          .set(auth(adminToken))
+          .send({
+            nombre: `${MARCA} Nivel Agotado`,
+            unidad_medida: 'kg',
+            stock_minimo: 10,
+            stock_maximo: 500,
+            tipo: 'materia_prima',
+          })
+          .expect(201)
+      ).body as InsumoHttp;
+
+      const agotados = await request(app.getHttpServer())
+        .get(INSUMOS_URL)
+        .query({ search: MARCA, nivel: 'agotado', limit: 100 })
+        .set(auth(adminToken))
+        .expect(200);
+      expect(
+        (agotados.body.data as InsumoHttp[]).some((i) => i.id === creado.id),
+      ).toBe(true);
+
+      const normales = await request(app.getHttpServer())
+        .get(INSUMOS_URL)
+        .query({ search: MARCA, nivel: 'normal', limit: 100 })
+        .set(auth(adminToken))
+        .expect(200);
+      expect(
+        (normales.body.data as InsumoHttp[]).some((i) => i.id === creado.id),
+      ).toBe(false);
+    });
+
+    it('rechaza un nivel inválido (400)', async () => {
+      await request(app.getHttpServer())
+        .get(INSUMOS_URL)
+        .query({ nivel: 'inexistente' })
+        .set(auth(adminToken))
+        .expect(400);
+    });
   });
 
   describe('Lotes de insumo', () => {
