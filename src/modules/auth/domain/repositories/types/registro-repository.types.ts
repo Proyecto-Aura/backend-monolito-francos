@@ -21,6 +21,7 @@ export interface RegisterPersonaData {
   telefono: string | null;
   fecha_nacimiento: Date | null;
   direccion: string | null;
+  distrito_id?: string | null;
 }
 
 // datos necesarios para la tabla user

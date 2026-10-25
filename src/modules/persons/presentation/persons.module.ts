@@ -63,7 +63,18 @@ import { ListClientesUseCase } from '../application/use-cases/clientes/list-clie
 import { UpdateClienteUseCase } from '../application/use-cases/clientes/update-cliente.use-case';
 import { ClienteRepository } from '../domain/repositories/cliente.repository';
 import { PrismaClienteRepository } from '../infrastructure/repositories/prisma-cliente.repository';
+import { UbigeoController } from './controllers/ubigeo.controller';
+import {
+  ListDepartamentosUseCase,
+  ListDistritosUseCase,
+  ListProvinciasUseCase,
+} from '../application/use-cases/ubigeo/consultar-ubigeo.use-cases';
+import { UbigeoRepository } from '../domain/repositories/ubigeo.repository';
+import { PrismaUbigeoRepository } from '../infrastructure/repositories/prisma-ubigeo.repository';
 import { UserRepository } from '../domain/repositories/user.repository';
+import { GetPerfilUseCase } from '../application/use-cases/perfil/get-perfil.use-case';
+import { UpdatePerfilUseCase } from '../application/use-cases/perfil/update-perfil.use-case';
+import { PerfilController } from './controllers/perfil.controller';
 import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
 import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
 import { PrismaUsuarioRolRepository } from '../infrastructure/repositories/prisma-usuario-rol.repository';
@@ -87,7 +98,9 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     EmpresaEmisoraController,
     EmpleadosController,
     ClientesController,
+    UbigeoController,
     UsuariosInternosController,
+    PerfilController,
   ],
   providers: [
     CreateRolUseCase,
@@ -150,7 +163,13 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     UpdateClienteUseCase,
     ChangeClienteStatusUseCase,
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
+    ListDepartamentosUseCase,
+    ListProvinciasUseCase,
+    ListDistritosUseCase,
+    { provide: UbigeoRepository, useClass: PrismaUbigeoRepository },
     { provide: UserRepository, useClass: PrismaUserRepository },
+    GetPerfilUseCase,
+    UpdatePerfilUseCase,
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
     CreateUsuarioInternoUseCase,
     ListUsuariosInternosUseCase,
@@ -175,6 +194,7 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     UserRepository,
     UsuarioRolRepository,
     EmpresaRepository,
+    UbigeoRepository,
   ],
 })
 export class PersonsModule {}

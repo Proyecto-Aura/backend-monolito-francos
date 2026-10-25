@@ -31,6 +31,10 @@ export abstract class IniciativaRepository {
     estadoIniciativaId: number,
     motivoCancelacion?: string,
   ): Promise<IniciativaEntityEnriquecido>;
+  abstract cancelarActivasPorObjetivo(
+    objetivoEstrategicoId: number,
+    estadoCanceladaId: number,
+  ): Promise<void>;
   abstract countByPlanYTipo(
     planId: number,
     tipoModuloId: number,

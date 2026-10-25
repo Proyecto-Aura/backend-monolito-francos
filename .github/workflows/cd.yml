@@ -19,6 +19,13 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: francos-backend
+  ECS_CLUSTER: francos-cluster
+  ECS_SERVICE: francos-backend
+  # ARN completo: la condición ecs:cluster de la política del rol es sobre el ARN
+  # y no está documentado si ECS resuelve el nombre corto antes de evaluarla.
+  ECS_CLUSTER_ARN: arn:aws:ecs:us-east-1:075367015000:cluster/francos-cluster
+  ECS_SERVICE_ARN: arn:aws:ecs:us-east-1:075367015000:service/francos-cluster/francos-backend
+  MIGRATE_FAMILY: francos-backend-migrate
 
 ##################
 #      JOBS      #
@@ -52,10 +59,33 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
+      # Los tags de ECR son inmutables: re-ejecutar el workflow con el mismo SHA
+      # fallaría en el push. Solo "ImageNotFoundException" cuenta como "no existe";
+      # cualquier otro error (p. ej. AccessDenied) corta en rojo en vez de
+      # disfrazarse de "hay que publicar".
+      - name: Comprobar si la imagen del commit ya existe
+        id: existe
+        run: |
+          if salida=$(aws ecr describe-images \
+              --repository-name "$ECR_REPOSITORY" \
+              --image-ids imageTag="$GITHUB_SHA" 2>&1); then
+            echo "La imagen $GITHUB_SHA ya está en ECR: se salta el push."
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          elif grep -q 'ImageNotFoundException' <<< "$salida"; then
+            echo "La imagen $GITHUB_SHA no está en ECR: se publicará."
+            echo "existe=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No se pudo consultar ECR:"
+            echo "$salida"
+            exit 1
+          fi
+
       - name: Preparar Buildx
+        if: steps.existe.outputs.existe == 'false'
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Construir y publicar
+        if: steps.existe.outputs.existe == 'false'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -63,3 +93,225 @@ jobs:
           tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Deploy: solo actúa si hay ventana (servicio ECS vivo). Las task definitions
+  # se leen de AWS, por eso no hace falta descargar el código.
+  deploy:
+    name: deploy
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Credenciales de AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::075367015000:role/francos-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      # La infra existe solo por ventanas. Fuera de ella el clúster ni existe, y
+      # eso es normal (run en verde, sin desplegar). Cualquier otro error, como
+      # AccessDenied, NO es "sin ventana": corta en rojo.
+      - name: Comprobar si hay ventana
+        id: ventana
+        run: |
+          if ! salida=$(aws ecs describe-services \
+              --cluster "$ECS_CLUSTER" \
+              --services "$ECS_SERVICE" \
+              --query 'services[0].status' \
+              --output text 2>&1); then
+            if grep -q 'ClusterNotFoundException' <<< "$salida"; then
+              salida="CLUSTER_AUSENTE"
+            else
+              echo "No se pudo consultar ECS:"
+              echo "$salida"
+              exit 1
+            fi
+          fi
+
+          if [ "$salida" = "ACTIVE" ]; then
+            echo "hay_ventana=true" >> "$GITHUB_OUTPUT"
+            echo "Hay ventana: el servicio $ECS_SERVICE está ACTIVE." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "hay_ventana=false" >> "$GITHUB_OUTPUT"
+            echo "Sin ventana (estado: $salida): la imagen quedó publicada y no se despliega nada." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # La task def de migración vive en Terraform con una imagen de referencia.
+      # Se registra una revisión nueva con la imagen de ESTE commit: si no, la
+      # migración correría con la imagen vieja y pasaría en verde sin aplicar nada.
+      - name: Registrar la tarea de migración con la imagen del commit
+        id: migracion_td
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        run: |
+          cuenta=$(aws sts get-caller-identity --query Account --output text)
+          imagen="${cuenta}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}"
+
+          aws ecs describe-task-definition \
+              --task-definition "$MIGRATE_FAMILY" \
+              --query taskDefinition --output json > actual.json
+
+          if ! jq -e '.containerDefinitions | any(.name == "backend")' actual.json > /dev/null; then
+            echo "La task def $MIGRATE_FAMILY no tiene un contenedor llamado backend."
+            exit 1
+          fi
+
+          jq --arg imagen "$imagen" '
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                .compatibilities, .registeredAt, .registeredBy)
+            | .containerDefinitions |= map(if .name == "backend" then .image = $imagen else . end)
+          ' actual.json > migracion.json
+
+          arn=$(aws ecs register-task-definition \
+              --cli-input-json file://migracion.json \
+              --query taskDefinition.taskDefinitionArn --output text)
+          echo "Registrada: $arn" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "arn=$arn" >> "$GITHUB_OUTPUT"
+
+      # La red (subredes y SG) se lee del servicio para usar la misma que la API.
+      # RunTask no falla con exit code: devuelve "failures" (p. ej. sin capacidad),
+      # así que se comprueba a mano que haya salido una tarea.
+      - name: Lanzar la migración
+        id: migracion_run
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        env:
+          TASK_DEF_ARN: ${{ steps.migracion_td.outputs.arn }}
+        run: |
+          red=$(aws ecs describe-services \
+              --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+              --query 'services[0].networkConfiguration.awsvpcConfiguration' --output json)
+
+          respuesta=$(aws ecs run-task \
+              --cluster "$ECS_CLUSTER_ARN" \
+              --launch-type FARGATE \
+              --task-definition "$TASK_DEF_ARN" \
+              --network-configuration "$(jq -c '{awsvpcConfiguration: .}' <<< "$red")" \
+              --output json)
+
+          tarea=$(jq -r '.tasks[0].taskArn // empty' <<< "$respuesta")
+          if [ -z "$tarea" ]; then
+            echo "RunTask no lanzó ninguna tarea:"
+            jq '.failures' <<< "$respuesta"
+            exit 1
+          fi
+          echo "Migración lanzada: $tarea" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "tarea=$tarea" >> "$GITHUB_OUTPUT"
+
+      # "wait tasks-stopped" solo dice que la tarea PARÓ, no que migró bien: el
+      # veredicto es el exitCode del contenedor. Si el wait se agota (la tarea
+      # sigue viva), se la detiene: una tarea colgada seguiría cobrando.
+      - name: Esperar y juzgar la migración
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        env:
+          TAREA: ${{ steps.migracion_run.outputs.tarea }}
+        run: |
+          if ! aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER_ARN" --tasks "$TAREA"; then
+            echo "No se confirmó que la migración terminara: se detiene la tarea."
+            aws ecs stop-task --cluster "$ECS_CLUSTER_ARN" --task "$TAREA" \
+                --reason "Migración sin terminar en el CD" > /dev/null
+            exit 1
+          fi
+
+          descripcion=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER_ARN" --tasks "$TAREA" --output json)
+          codigo=$(jq -r '[.tasks[0].containers[] | select(.name == "backend") | .exitCode][0] // "sin_codigo"' <<< "$descripcion")
+          motivo=$(jq -r '.tasks[0].stoppedReason // "sin motivo"' <<< "$descripcion")
+
+          # Stream: <prefijo>/<contenedor>/<id de la tarea>. Si no se pueden leer
+          # los logs no se tapa el veredicto de la migración.
+          echo "::group::Logs de la migración"
+          if logs=$(aws logs get-log-events \
+              --log-group-name /ecs/francos-backend \
+              --log-stream-name "migrate/backend/${TAREA##*/}" \
+              --limit 100 --query 'events[].message' --output json); then
+            jq -r '.[]' <<< "$logs"
+          else
+            echo "(no se pudieron leer los logs)"
+          fi
+          echo "::endgroup::"
+
+          if [ "$codigo" != "0" ]; then
+            echo "La migración falló (exitCode: $codigo; motivo: $motivo). No se toca el servicio." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Migración aplicada (exitCode 0)." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Se parte de la task def que el servicio usa AHORA y no de "la última
+      # registrada": tras un rollback, la última es justo la que falló.
+      - name: Registrar la tarea del servicio con la imagen del commit
+        id: api_td
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        run: |
+          cuenta=$(aws sts get-caller-identity --query Account --output text)
+          imagen="${cuenta}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}"
+
+          vigente=$(aws ecs describe-services \
+              --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+              --query 'services[0].taskDefinition' --output text)
+
+          aws ecs describe-task-definition \
+              --task-definition "$vigente" \
+              --query taskDefinition --output json > actual-api.json
+
+          if ! jq -e '.containerDefinitions | any(.name == "backend")' actual-api.json > /dev/null; then
+            echo "La task def $vigente no tiene un contenedor llamado backend."
+            exit 1
+          fi
+
+          jq --arg imagen "$imagen" '
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                .compatibilities, .registeredAt, .registeredBy)
+            | .containerDefinitions |= map(if .name == "backend" then .image = $imagen else . end)
+          ' actual-api.json > api.json
+
+          arn=$(aws ecs register-task-definition \
+              --cli-input-json file://api.json \
+              --query taskDefinition.taskDefinitionArn --output text)
+          echo "Registrada: $arn (partiendo de $vigente)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "arn=$arn" >> "$GITHUB_OUTPUT"
+
+      - name: Actualizar el servicio
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        env:
+          TASK_DEF_ARN: ${{ steps.api_td.outputs.arn }}
+        run: |
+          aws ecs update-service \
+              --cluster "$ECS_CLUSTER_ARN" \
+              --service "$ECS_SERVICE_ARN" \
+              --task-definition "$TASK_DEF_ARN" > /dev/null
+          echo "Servicio actualizado a $TASK_DEF_ARN" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # "services-stable" daría verde tras un rollback del circuit breaker (el
+      # servicio vuelve a la versión vieja y queda estable). Por eso se vigila el
+      # despliegue de ESTA revisión: debe quedar PRIMARY + COMPLETED. FAILED es el
+      # rollback. Hasta 10 minutos (40 x 15 s).
+      - name: Verificar que el despliegue completó
+        if: steps.ventana.outputs.hay_ventana == 'true'
+        env:
+          TASK_DEF_ARN: ${{ steps.api_td.outputs.arn }}
+        run: |
+          for intento in $(seq 1 40); do
+            salida=$(aws ecs describe-services \
+                --cluster "$ECS_CLUSTER_ARN" --services "$ECS_SERVICE" \
+                --query "services[0].deployments[?taskDefinition=='${TASK_DEF_ARN}'] | [0].[status, rolloutState]" \
+                --output text)
+            read -r estado rollout <<< "$salida"
+            echo "Intento $intento: estado=$estado rolloutState=$rollout"
+
+            if [ "$rollout" = "COMPLETED" ] && [ "$estado" = "PRIMARY" ]; then
+              echo "Despliegue completado: $TASK_DEF_ARN" | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ "$rollout" = "FAILED" ] || [ "$rollout" = "COMPLETED" ]; then
+              break
+            fi
+            sleep 15
+          done
+
+          echo "El despliegue NO completó (estado=$estado rolloutState=$rollout). Últimos eventos del servicio:"
+          aws ecs describe-services \
+              --cluster "$ECS_CLUSTER_ARN" --services "$ECS_SERVICE" \
+              --query 'services[0].events[:5].message' --output text
+          echo "El despliegue de $TASK_DEF_ARN no completó; ECS pudo haber revertido." >> "$GITHUB_STEP_SUMMARY"
+          exit 1

@@ -123,6 +123,22 @@ export class PrismaIniciativaRepository implements IniciativaRepository {
     return IniciativaMapper.toDomain(iniciativa);
   }
 
+  async cancelarActivasPorObjetivo(
+    objetivoEstrategicoId: number,
+    estadoCanceladaId: number,
+  ): Promise<void> {
+    await this.prisma.iniciativa.updateMany({
+      where: {
+        objetivo_estrategico_id: objetivoEstrategicoId,
+        estado: true,
+        estado_iniciativa: {
+          codigo: { in: ['PENDIENTE', 'EN_PROCESO'] },
+        },
+      },
+      data: { estado_iniciativa_id: estadoCanceladaId },
+    });
+  }
+
   async countByPlanYTipo(
     planId: number,
     tipoModuloId: number,

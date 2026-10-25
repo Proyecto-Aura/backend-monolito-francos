@@ -7,6 +7,10 @@ export abstract class PersonsDomainError extends Error {
   }
 }
 
+export class InvalidRequestError extends PersonsDomainError {
+  readonly statusCode = 400;
+}
+
 export class ResourceNotFoundError extends PersonsDomainError {
   readonly statusCode = 404;
 }

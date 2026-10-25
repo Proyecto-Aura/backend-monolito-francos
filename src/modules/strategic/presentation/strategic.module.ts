@@ -17,21 +17,43 @@ import { ListObjetivosEstrategicosUseCase } from '../application/use-cases/objet
 import { ListTodosObjetivosEstrategicosUseCase } from '../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos.use-case';
 import { UpdateObjetivoEstrategicoUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObtenerObjetivosPorPlanTiUseCase } from '../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan-ti.use-case';
 import { ValidarRelacionesOeService } from '../application/use-cases/objetivo-estrategico/validar-relaciones-oe.service';
+import { ActualizarEstadoObjetivoTiUseCase } from '../application/use-cases/objetivo-estrategico/actualizar-estado-objetivo-ti.use-case';
+import { CreateObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/create-objetivo-estrategico-ti.use-case';
+import { EliminarObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/eliminar-objetivo-estrategico-ti.use-case';
+import { GetObjetivoEstrategicoTiByIdUseCase } from '../application/use-cases/objetivo-estrategico/get-objetivo-estrategico-ti-by-id.use-case';
+import { ListObjetivosEstrategicosTiUseCase } from '../application/use-cases/objetivo-estrategico/list-objetivos-estrategicos-ti.use-case';
+import { ListTodosObjetivosEstrategicosTiUseCase } from '../application/use-cases/objetivo-estrategico/list-todos-objetivos-estrategicos-ti.use-case';
+import { UpdateObjetivoEstrategicoTiUseCase } from '../application/use-cases/objetivo-estrategico/update-objetivo-estrategico-ti.use-case';
+import { ValidarOeNegocioService } from '../application/use-cases/objetivo-estrategico/validar-oe-negocio.service';
 import { ListPerspectivasBscUseCase } from '../application/use-cases/perspectiva-bsc/list-perspectivas-bsc.use-case';
 import { EliminarDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/eliminar-documento-estrategico.use-case';
 import { ListarDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-documentos-estrategicos.use-case';
 import { ListarTodosDocumentosEstrategicosUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos.use-case';
 import { ObtenerDocumentoEstrategicoByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-by-id.use-case';
 import { SubirDocumentoEstrategicoUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico.use-case';
+import { EliminarDocumentoEstrategicoTiUseCase } from '../application/use-cases/documento-estrategico/eliminar-documento-estrategico-ti.use-case';
+import { ListarDocumentosEstrategicosTiUseCase } from '../application/use-cases/documento-estrategico/listar-documentos-estrategicos-ti.use-case';
+import { ListarTodosDocumentosEstrategicosTiUseCase } from '../application/use-cases/documento-estrategico/listar-todos-documentos-estrategicos-ti.use-case';
+import { ObtenerDocumentoEstrategicoTiByIdUseCase } from '../application/use-cases/documento-estrategico/obtener-documento-estrategico-ti-by-id.use-case';
+import { SubirDocumentoEstrategicoTiUseCase } from '../application/use-cases/documento-estrategico/subir-documento-estrategico-ti.use-case';
 import { CreateKpiUseCase } from '../application/use-cases/kpi/create-kpi.use-case';
 import { EliminarKpiUseCase } from '../application/use-cases/kpi/eliminar-kpi.use-case';
 import { ListarHistorialKpiValoresUseCase } from '../application/use-cases/kpi/listar-historial-kpi-valores.use-case';
 import { ListKpisPorObjetivoUseCase } from '../application/use-cases/kpi/list-kpis-por-objetivo.use-case';
 import { ObtenerKpisPorPlanUseCase } from '../application/use-cases/kpi/obtener-kpis-por-plan.use-case';
+import { ObtenerKpisPorPlanTiUseCase } from '../application/use-cases/kpi/obtener-kpis-por-plan-ti.use-case';
 import { ObtenerUltimoKpiValorUseCase } from '../application/use-cases/kpi/obtener-ultimo-kpi-valor.use-case';
 import { RegistrarKpiValorUseCase } from '../application/use-cases/kpi/registrar-kpi-valor.use-case';
 import { UpdateKpiUseCase } from '../application/use-cases/kpi/update-kpi.use-case';
+import { CreateKpiTiUseCase } from '../application/use-cases/kpi/create-kpi-ti.use-case';
+import { EliminarKpiTiUseCase } from '../application/use-cases/kpi/eliminar-kpi-ti.use-case';
+import { ListarHistorialKpiValoresTiUseCase } from '../application/use-cases/kpi/listar-historial-kpi-valores-ti.use-case';
+import { ListKpisPorObjetivoTiUseCase } from '../application/use-cases/kpi/list-kpis-por-objetivo-ti.use-case';
+import { ObtenerUltimoKpiValorTiUseCase } from '../application/use-cases/kpi/obtener-ultimo-kpi-valor-ti.use-case';
+import { RegistrarKpiValorTiUseCase } from '../application/use-cases/kpi/registrar-kpi-valor-ti.use-case';
+import { UpdateKpiTiUseCase } from '../application/use-cases/kpi/update-kpi-ti.use-case';
 import { ListFrecuenciasMedicionUseCase } from '../application/use-cases/frecuencia-medicion/list-frecuencias-medicion.use-case';
 import { ListPeriodosPorFrecuenciaUseCase } from '../application/use-cases/periodo/list-periodos-por-frecuencia.use-case';
 import { ListUnidadesMedidaKpiUseCase } from '../application/use-cases/unidad-medida-kpi/list-unidades-medida-kpi.use-case';
@@ -42,6 +64,7 @@ import { ListIniciativasPorObjetivoUseCase } from '../application/use-cases/inic
 import { ObtenerIniciativasPorPlanUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
 import { UpdateIniciativaUseCase } from '../application/use-cases/iniciativa/update-iniciativa.use-case';
 import { ObtenerTableroControlUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { ObtenerSeguimientoKpisUseCase } from '../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -71,9 +94,12 @@ import { PrismaUnidadMedidaKpiRepository } from '../infrastructure/repositories/
 import { PrismaEstadoIniciativaRepository } from '../infrastructure/repositories/prisma-estado-iniciativa.repository';
 import { PrismaIniciativaRepository } from '../infrastructure/repositories/prisma-iniciativa.repository';
 import { DocumentosEstrategicosController } from './controllers/documentos-estrategicos.controller';
+import { DocumentosEstrategicosTiController } from './controllers/documentos-estrategicos-ti.controller';
 import { FrecuenciasMedicionController } from './controllers/frecuencias-medicion.controller';
 import { KpisController } from './controllers/kpis.controller';
+import { KpisTiController } from './controllers/kpis-ti.controller';
 import { ObjetivosEstrategicosController } from './controllers/objetivos-estrategicos.controller';
+import { ObjetivosEstrategicosTiController } from './controllers/objetivos-estrategicos-ti.controller';
 import { PeriodosController } from './controllers/periodos.controller';
 import { PerspectivasBscController } from './controllers/perspectivas-bsc.controller';
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
@@ -85,9 +111,12 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
   controllers: [
     PlanesEstrategicosController,
     ObjetivosEstrategicosController,
+    ObjetivosEstrategicosTiController,
     PerspectivasBscController,
     DocumentosEstrategicosController,
+    DocumentosEstrategicosTiController,
     KpisController,
+    KpisTiController,
     FrecuenciasMedicionController,
     UnidadesMedidaKpiController,
     PeriodosController,
@@ -111,21 +140,43 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     EliminarRelacionOeUseCase,
     ActualizarEstadoObjetivoUseCase,
     ObtenerObjetivosPorPlanUseCase,
+    ObtenerObjetivosPorPlanTiUseCase,
     ValidarRelacionesOeService,
+    CreateObjetivoEstrategicoTiUseCase,
+    UpdateObjetivoEstrategicoTiUseCase,
+    EliminarObjetivoEstrategicoTiUseCase,
+    GetObjetivoEstrategicoTiByIdUseCase,
+    ListObjetivosEstrategicosTiUseCase,
+    ListTodosObjetivosEstrategicosTiUseCase,
+    ActualizarEstadoObjetivoTiUseCase,
+    ValidarOeNegocioService,
     ListPerspectivasBscUseCase,
     SubirDocumentoEstrategicoUseCase,
     ListarDocumentosEstrategicosUseCase,
     ListarTodosDocumentosEstrategicosUseCase,
     ObtenerDocumentoEstrategicoByIdUseCase,
     EliminarDocumentoEstrategicoUseCase,
+    SubirDocumentoEstrategicoTiUseCase,
+    ListarDocumentosEstrategicosTiUseCase,
+    ListarTodosDocumentosEstrategicosTiUseCase,
+    ObtenerDocumentoEstrategicoTiByIdUseCase,
+    EliminarDocumentoEstrategicoTiUseCase,
     CreateKpiUseCase,
     UpdateKpiUseCase,
     EliminarKpiUseCase,
     ListKpisPorObjetivoUseCase,
     ObtenerKpisPorPlanUseCase,
+    ObtenerKpisPorPlanTiUseCase,
     RegistrarKpiValorUseCase,
     ListarHistorialKpiValoresUseCase,
     ObtenerUltimoKpiValorUseCase,
+    CreateKpiTiUseCase,
+    UpdateKpiTiUseCase,
+    EliminarKpiTiUseCase,
+    ListKpisPorObjetivoTiUseCase,
+    RegistrarKpiValorTiUseCase,
+    ListarHistorialKpiValoresTiUseCase,
+    ObtenerUltimoKpiValorTiUseCase,
     ListFrecuenciasMedicionUseCase,
     ListUnidadesMedidaKpiUseCase,
     ListPeriodosPorFrecuenciaUseCase,
@@ -136,6 +187,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ListIniciativasPorObjetivoUseCase,
     ObtenerIniciativasPorPlanUseCase,
     ObtenerTableroControlUseCase,
+    ObtenerSeguimientoKpisUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,
