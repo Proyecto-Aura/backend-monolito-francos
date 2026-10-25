@@ -7,6 +7,7 @@ import {
   SendDefaultCredentialsEmailParams,
   SendPasswordResetEmailParams,
   FrontendDestino,
+  SendClienteBienvenidaEmailParams,
 } from '../../domain/services/types/email-service.types';
 
 @Injectable()
@@ -46,6 +47,21 @@ export class NodemailerEmailService implements EmailService {
       to: params.to,
       subject: "Tus credenciales de acceso — Franco's",
       html: `<p>Hola ${params.nombre}, tu usuario es <b>${params.username}</b> y tu contraseña temporal es <b>${params.contrasenaDefault}</b>. Deberás cambiarla al iniciar sesión.</p>`,
+    });
+  }
+
+  async sendClienteBienvenidaEmail(
+    params: SendClienteBienvenidaEmailParams,
+  ): Promise<void> {
+    const nombre = this.escapeHtml(params.nombre);
+    const username = this.escapeHtml(params.username);
+    const contrasena = this.escapeHtml(params.contrasenaDefault);
+    const url = `${this.getFrontendUrl('tienda')}/verify-email?token=${params.verificationToken}`;
+    await this.transporter.sendMail({
+      from: envs.smtpFrom,
+      to: params.to,
+      subject: "Bienvenido a Franco's — verifica tu correo",
+      html: `<p>Hola ${nombre}, tu usuario es <b>${username}</b> y tu contraseña temporal es <b>${contrasena}</b>. Deberás cambiarla al iniciar sesión.</p><p>Verifica tu correo aquí: <a href="${url}">${url}</a></p><p>El enlace vence en 24 horas.</p><p>Si no solicitaste esta cuenta, puedes ignorar este correo.</p>`,
     });
   }
 
