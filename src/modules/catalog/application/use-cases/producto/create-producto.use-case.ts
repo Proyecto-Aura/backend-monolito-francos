@@ -103,7 +103,8 @@ export class CreateProductoUseCase {
             createProductoPresentacionSlug(nombre, presentacion),
             (slug) => this.productoPresentacionRepository.existsBySlug(slug),
           ),
-          estado: productoPresentacion.estado ?? true,
+          // Nace desactivada: se activa a mano y recién ahí se ve en el Portal B.
+          estado: productoPresentacion.estado ?? false,
         };
       }),
     );
