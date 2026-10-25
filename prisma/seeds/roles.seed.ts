@@ -7,6 +7,7 @@ const ROLES_BASE = [
   'inventario',
   'produccion',
   'estrategico',
+  'despacho',
 ];
 
 export async function seedRoles(prisma: PrismaClient) {

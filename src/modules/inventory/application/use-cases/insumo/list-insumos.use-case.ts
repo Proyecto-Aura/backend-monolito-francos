@@ -17,6 +17,7 @@ export class ListInsumosUseCase {
       search: dto.search,
       estado: dto.estado,
       tipo: dto.tipo,
+      nivel: dto.nivel,
     });
   }
 }

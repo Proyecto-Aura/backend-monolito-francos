@@ -93,7 +93,7 @@ describe('Registrar cliente (e2e, HU-B-002)', () => {
         persona: { include: { cliente: true } },
       },
     });
-    expect(user.token_verificacion_email).not.toBeNull();
+    expect(user.token_verificacion_email).toMatch(/^[a-f0-9]{64}$/);
     expect(user.usuario_roles.map((ur) => ur.rol.nombre)).toEqual(['cliente']);
     expect(user.persona.cliente).toMatchObject({
       tipo_cliente: 'persona_natural',

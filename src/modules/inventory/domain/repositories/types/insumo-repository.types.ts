@@ -1,4 +1,4 @@
-import { TipoInsumo, UnidadMedidaInsumo } from '../../enums';
+import { NivelStockInsumo, TipoInsumo, UnidadMedidaInsumo } from '../../enums';
 import { PaginationParams } from '../../../../catalog/domain/repositories/types/pagination.types';
 
 export interface CreateInsumoParams {
@@ -25,6 +25,7 @@ export interface ListInsumosParams extends PaginationParams {
   search?: string;
   estado?: boolean;
   tipo?: TipoInsumo;
+  nivel?: NivelStockInsumo;
 }
 
 // Conteo de insumos activos por nivel de stock, para los KPI del dashboard.

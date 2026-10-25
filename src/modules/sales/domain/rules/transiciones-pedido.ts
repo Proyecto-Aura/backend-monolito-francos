@@ -15,3 +15,33 @@ export function esTransicionDeVentas(
 ): boolean {
   return TRANSICIONES_DE_VENTAS[desde]?.includes(hacia) ?? false;
 }
+
+// RN6: estados que ve el operador de despacho (HU-A-023, RF-A094). Los demás
+// son de ventas o de inventario.
+export const ESTADOS_DE_DESPACHO = [
+  EstadoPedido.PENDIENTE_ENTREGA,
+  EstadoPedido.EN_CAMINO,
+  EstadoPedido.ENTREGADO,
+] as const;
+
+export type EstadoDeDespacho = (typeof ESTADOS_DE_DESPACHO)[number];
+
+export function esEstadoDeDespacho(estado: EstadoPedido): boolean {
+  return (ESTADOS_DE_DESPACHO as readonly EstadoPedido[]).includes(estado);
+}
+
+// RN6: despacho saca el pedido a reparto y después lo marca como entregado
+// (RF-A096, RF-A098).
+export const TRANSICIONES_DE_DESPACHO: Partial<
+  Record<EstadoPedido, EstadoPedido[]>
+> = {
+  [EstadoPedido.PENDIENTE_ENTREGA]: [EstadoPedido.EN_CAMINO],
+  [EstadoPedido.EN_CAMINO]: [EstadoPedido.ENTREGADO],
+};
+
+export function esTransicionDeDespacho(
+  desde: EstadoPedido,
+  hacia: EstadoPedido,
+): boolean {
+  return TRANSICIONES_DE_DESPACHO[desde]?.includes(hacia) ?? false;
+}

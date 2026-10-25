@@ -19,6 +19,7 @@ const INICIATIVA_INCLUDE_ENRIQUECIDA = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -41,9 +42,10 @@ export class PrismaIniciativaRepository implements IniciativaRepository {
     params: CreateIniciativaParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<IniciativaEntityEnriquecido> {
     return this.prisma.$transaction(async (tx) => {
-      const codigo = `${codigoPlan}-INI-N-${correlativo}`;
+      const codigo = `${codigoPlan}-INI-${codigoInfijo}-${correlativo}`;
       const iniciativa = await tx.iniciativa.create({
         data: {
           ...params,

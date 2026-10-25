@@ -1,5 +1,9 @@
 import { InsumoEntity } from '../../../domain/entities';
-import { TipoInsumo, UnidadMedidaInsumo } from '../../../domain/enums';
+import {
+  NivelStockInsumo,
+  TipoInsumo,
+  UnidadMedidaInsumo,
+} from '../../../domain/enums';
 import { ResourceNotFoundError } from '../../../../catalog/domain/errors/catalog-domain.errors';
 import { InsumoRepository } from '../../../domain/repositories/insumo.repository';
 import { ChangeInsumoStatusUseCase } from './change-insumo-status.use-case';
@@ -68,6 +72,7 @@ describe('Consultas y estado de insumos', () => {
           search: 'harina',
           estado: true,
           tipo: TipoInsumo.MATERIA_PRIMA,
+          nivel: NivelStockInsumo.BAJO,
         }),
       ).resolves.toBe(resultado);
       expect(findMany).toHaveBeenCalledWith({
@@ -76,6 +81,7 @@ describe('Consultas y estado de insumos', () => {
         search: 'harina',
         estado: true,
         tipo: TipoInsumo.MATERIA_PRIMA,
+        nivel: NivelStockInsumo.BAJO,
       });
     });
   });
