@@ -170,6 +170,42 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'monitor',
     parent: 'estrategico',
   },
+  {
+    nombre: 'objetivos-estrategicos-ti',
+    etiqueta: 'Gestión de objetivos estratégicos de TI',
+    icono: 'flag',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'mapa-estrategico-ti',
+    etiqueta: 'Mapa estratégico de TI',
+    icono: 'map',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'gestionar-kpis-ti',
+    etiqueta: 'Gestionar KPIs de TI',
+    icono: 'bar-chart-3',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'gestionar-iniciativas-ti',
+    etiqueta: 'Gestionar iniciativas de TI',
+    icono: 'rocket',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'tablero-control-ti',
+    etiqueta: 'Tablero de control de TI',
+    icono: 'layout-dashboard',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'analisis-estrategico-ti',
+    etiqueta: 'Análisis estratégico de TI',
+    icono: 'folder-open',
+    parent: 'gestion-estrategica-ti',
+  },
 ];
 
 export async function seedRutas(prisma: PrismaClient) {

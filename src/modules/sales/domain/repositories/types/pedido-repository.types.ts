@@ -56,6 +56,7 @@ export interface ListPedidosParams extends PaginationParams {
   // Limita el listado a estos estados (despacho, RF-A094); `estado` afina dentro.
   estados?: readonly EstadoPedido[];
   origen?: OrigenPedido;
+  cliente_id?: string;
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;

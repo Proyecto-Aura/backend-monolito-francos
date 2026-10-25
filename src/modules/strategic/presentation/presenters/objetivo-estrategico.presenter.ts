@@ -46,6 +46,30 @@ export class ObjetivoEstrategicoPresenter {
     };
   }
 
+  static toHttpTi(objetivo: ObjetivoEstrategicoEntityEnriquecido) {
+    return {
+      ...this.toHttp(objetivo),
+      oe_negocio_id: objetivo.oe_negocio_id,
+      oe_negocio: objetivo.oe_negocio,
+    };
+  }
+
+  static paginatedGroupedToHttpTi(
+    result: PaginatedResult<ObjetivoEstrategicoEntityEnriquecido>,
+  ) {
+    return {
+      data: this.agruparPorPerspectiva(result.data, (objetivo) =>
+        this.toHttpTi(objetivo),
+      ),
+      meta: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        total_pages: Math.ceil(result.total / result.limit),
+      },
+    };
+  }
+
   static resumenPorPlanToHttp(
     plan: PlanEstrategicoEntityConEstado,
     objetivos: ObjetivoEstrategicoEntityEnriquecido[],
@@ -57,8 +81,25 @@ export class ObjetivoEstrategicoPresenter {
     };
   }
 
+  static resumenPorPlanToHttpTi(
+    plan: PlanEstrategicoEntityConEstado,
+    objetivos: ObjetivoEstrategicoEntityEnriquecido[],
+  ) {
+    return {
+      plan: PlanEstrategicoPresenter.toHttp(plan),
+      total_objetivos: objetivos.length,
+      perspectivas: this.agruparPorPerspectiva(objetivos, (objetivo) =>
+        this.toHttpTi(objetivo),
+      ),
+    };
+  }
+
   private static agruparPorPerspectiva(
     objetivos: ObjetivoEstrategicoEntityEnriquecido[],
+    presentar: (
+      objetivo: ObjetivoEstrategicoEntityEnriquecido,
+    ) => ReturnType<typeof ObjetivoEstrategicoPresenter.toHttp> = (objetivo) =>
+      this.toHttp(objetivo),
   ) {
     const grupos = new Map<
       number,
@@ -89,7 +130,7 @@ export class ObjetivoEstrategicoPresenter {
         grupos.set(objetivo.perspectiva_bsc.id, grupo);
       }
 
-      grupo.objetivos.push(this.toHttp(objetivo));
+      grupo.objetivos.push(presentar(objetivo));
     }
 
     return Array.from(grupos.values());

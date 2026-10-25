@@ -2,9 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
 import { RolRepository } from '../../../persons/domain/repositories/rol.repository';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
+import { UbigeoRepository } from '../../../persons/domain/repositories/ubigeo.repository';
 import { RegistroRepository } from '../../domain/repositories/registro.repository';
 import { EmailService } from '../../domain/services/email.service';
 import {
+  InvalidRequestError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
@@ -25,10 +27,17 @@ export class RegisterClienteByStaffUseCase {
     private readonly rolRepository: RolRepository,
     private readonly registroRepository: RegistroRepository,
     private readonly emailService: EmailService,
+    private readonly ubigeoRepository: UbigeoRepository,
   ) {}
   async execute(
     dto: RegisterClienteByStaffDto,
   ): Promise<RegistroClienteResult> {
+    if (
+      dto.distrito_id !== undefined &&
+      !(await this.ubigeoRepository.existsDistrito(dto.distrito_id))
+    ) {
+      throw new InvalidRequestError('El distrito indicado no existe');
+    }
     // validaciones para duplicados
     if (await this.personaRepository.existsByDocument(dto.numero_documento)) {
       throw new ResourceConflictError(
@@ -72,6 +81,7 @@ export class RegisterClienteByStaffUseCase {
           ? new Date(dto.fecha_nacimiento)
           : null,
         direccion: dto.direccion ?? null,
+        distrito_id: dto.distrito_id ?? null,
       },
       cliente: {
         tipo_cliente: dto.tipo_cliente,

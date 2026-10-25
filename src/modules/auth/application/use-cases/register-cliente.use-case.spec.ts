@@ -1,5 +1,6 @@
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
 import { RolRepository } from '../../../persons/domain/repositories/rol.repository';
+import { UbigeoRepository } from '../../../persons/domain/repositories/ubigeo.repository';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import {
   CategoriaCliente,
@@ -22,6 +23,7 @@ describe('RegisterClienteUseCase (HU-B-002)', () => {
   const findByName = jest.fn();
   const registerCliente = jest.fn();
   const sendVerificationEmail = jest.fn();
+  const existsDistrito = jest.fn();
 
   const useCase = new RegisterClienteUseCase(
     { existsByDocument } as unknown as jest.Mocked<PersonaRepository>,
@@ -32,6 +34,7 @@ describe('RegisterClienteUseCase (HU-B-002)', () => {
     { findByName } as unknown as jest.Mocked<RolRepository>,
     { registerCliente } as unknown as jest.Mocked<RegistroRepository>,
     { sendVerificationEmail } as unknown as jest.Mocked<EmailService>,
+    { existsDistrito } as unknown as jest.Mocked<UbigeoRepository>,
   );
 
   const dto = (
@@ -61,6 +64,7 @@ describe('RegisterClienteUseCase (HU-B-002)', () => {
       persona: { nombres: 'Ana' },
     });
     sendVerificationEmail.mockResolvedValue(undefined);
+    existsDistrito.mockResolvedValue(true);
   });
 
   it('registra a la persona sin verificar el correo y le envía la verificación', async () => {
@@ -166,5 +170,35 @@ describe('RegisterClienteUseCase (HU-B-002)', () => {
       new ResourceConflictError(mensaje),
     );
     expect(registerCliente).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un distrito que no existe en el catálogo', async () => {
+    existsDistrito.mockResolvedValue(false);
+
+    await expect(
+      useCase.execute(dto({ distrito_id: '999999' })),
+    ).rejects.toBeInstanceOf(InvalidRequestError);
+    expect(registerCliente).not.toHaveBeenCalled();
+  });
+
+  it('guarda el distrito de la persona cuando existe', async () => {
+    await useCase.execute(dto({ distrito_id: '150131' }));
+
+    expect(registerCliente).toHaveBeenCalledWith(
+      expect.objectContaining({
+        persona: expect.objectContaining({ distrito_id: '150131' }) as object,
+      }),
+    );
+  });
+
+  it('registra sin distrito y no consulta el catálogo', async () => {
+    await useCase.execute(dto());
+
+    expect(existsDistrito).not.toHaveBeenCalled();
+    expect(registerCliente).toHaveBeenCalledWith(
+      expect.objectContaining({
+        persona: expect.objectContaining({ distrito_id: null }) as object,
+      }),
+    );
   });
 });

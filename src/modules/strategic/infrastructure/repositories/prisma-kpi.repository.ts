@@ -30,6 +30,7 @@ const KPI_INCLUDE_ENRIQUECIDO = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -46,6 +47,7 @@ const KPI_INCLUDE_RESUMEN_PLAN = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -109,9 +111,10 @@ export class PrismaKpiRepository implements KpiRepository {
     params: CreateKpiParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<KpiEntityEnriquecido> {
     return this.prisma.$transaction(async (tx) => {
-      const codigo = `${codigoPlan}-KPI-N-${correlativo}`;
+      const codigo = `${codigoPlan}-KPI-${codigoInfijo}-${correlativo}`;
 
       const kpi = await tx.kpi.create({
         data: {
