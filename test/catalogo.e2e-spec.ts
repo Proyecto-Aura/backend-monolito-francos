@@ -209,11 +209,13 @@ describe('Catálogo (e2e)', () => {
       await request(app.getHttpServer()).get('/api/v1/categorias').expect(401);
     });
 
-    it('GET /api/v1/categorias con rol inventario devuelve 403', async () => {
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita poblar el select de categorías).
+    it('GET /api/v1/categorias con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/categorias')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('GET /api/v1/categorias con rol ventas devuelve 200', async () => {
@@ -280,11 +282,13 @@ describe('Catálogo (e2e)', () => {
         .expect(401);
     });
 
-    it('GET /api/v1/presentaciones con rol inventario devuelve 403', async () => {
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita poblar el select de presentaciones).
+    it('GET /api/v1/presentaciones con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/presentaciones')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('GET /api/v1/presentaciones con rol ventas devuelve 200', async () => {
@@ -743,14 +747,20 @@ describe('Catálogo (e2e)', () => {
       });
     });
 
-    it('sin token devuelve 401 y con rol inventario devuelve 403', async () => {
+    it('sin token devuelve 401', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/producto-presentaciones')
         .expect(401);
+    });
+
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita este listado, con categoría/presentación/stock
+    // embebidos).
+    it('con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/producto-presentaciones')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('cada fila trae producto, categoría, presentación, stock, visibilidad y precios', async () => {
