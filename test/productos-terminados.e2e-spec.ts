@@ -44,14 +44,14 @@ const TEST_USERS = {
     identificador: 'e2e-inventario-oft0258',
     password: 'InventarioE2e123',
     email: 'e2e-inventario-oft0258@francos.test',
-    documento: '99999970',
+    documento: '99999850',
     rol: 'inventario',
   },
   ventas_sin_stock: {
     identificador: 'e2e-ventas-oft0258',
     password: 'VentasE2e123',
     email: 'e2e-ventas-oft0258@francos.test',
-    documento: '99999971',
+    documento: '99999851',
     rol: 'ventas',
   },
 } as const;
@@ -341,6 +341,10 @@ describe('Productos terminados / stock (e2e)', () => {
               {
                 presentacion_id: presentacion.id,
                 precio_unitario: 10,
+                // Las presentaciones nuevas nacen desactivadas (HU-A-008);
+                // acá se necesitan activas para que el filtro
+                // pp.estado=true de /indicadores las cuente.
+                estado: true,
               },
             ],
           })

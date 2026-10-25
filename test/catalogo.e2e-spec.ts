@@ -771,6 +771,7 @@ describe('Catálogo (e2e)', () => {
     interface FilaListado {
       id: number;
       sku: string;
+      estado: boolean;
       visible_portal_b: boolean;
       producto: {
         id: number;
