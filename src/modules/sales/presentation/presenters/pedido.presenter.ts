@@ -16,6 +16,7 @@ export class PedidoPresenter {
       tipo_entrega: pedido.tipo_entrega,
       estado: pedido.estado,
       origen: pedido.origen,
+      fecha_entrega: pedido.fecha_entrega,
       created_at: pedido.created_at,
     };
   }
@@ -48,6 +49,7 @@ export class PedidoPresenter {
       tipo_entrega: pedido.tipo_entrega,
       direccion_entrega: pedido.direccion_entrega,
       total: pedido.total,
+      fecha_entrega: pedido.fecha_entrega,
       created_at: pedido.created_at,
       updated_at: pedido.updated_at,
       items: detalles.map(

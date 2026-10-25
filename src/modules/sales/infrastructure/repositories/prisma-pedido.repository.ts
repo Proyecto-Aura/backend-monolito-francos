@@ -11,6 +11,7 @@ import {
   ClienteParaPedido,
   CreatePedidoParams,
   ListPedidosParams,
+  NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
   PresentacionParaPedido,
@@ -129,6 +130,9 @@ export class PrismaPedidoRepository implements PedidoRepository {
     params: ListPedidosParams,
   ): Promise<PaginatedResult<PedidoResumen>> {
     const where: Prisma.PedidoWhereInput = {
+      ...(params.estados
+        ? { AND: [{ estado: { in: [...params.estados] } }] }
+        : {}),
       ...(params.estado ? { estado: params.estado } : {}),
       ...(params.origen ? { origen: params.origen } : {}),
       ...(params.cliente_id ? { cliente_id: params.cliente_id } : {}),
@@ -199,13 +203,56 @@ export class PrismaPedidoRepository implements PedidoRepository {
     return count === 1;
   }
 
+  async marcarEnCamino(
+    id: number,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      // Misma condición que cambiarEstado: no pisa un cambio simultáneo.
+      const { count } = await tx.pedido.updateMany({
+        where: { id, estado: EstadoPedido.PENDIENTE_ENTREGA },
+        data: { estado: EstadoPedido.EN_CAMINO },
+      });
+
+      if (count === 0) {
+        return false;
+      }
+
+      const { cliente } = await tx.pedido.findUniqueOrThrow({
+        where: { id },
+        select: {
+          cliente: {
+            select: { persona: { select: { user: { select: { id: true } } } } },
+          },
+        },
+      });
+      const userId = cliente.persona.user?.id;
+
+      // Pedidos manuales: el cliente puede no tener cuenta en el portal.
+      if (userId) {
+        await tx.notificacion.create({
+          data: {
+            tipo: 'pedido_en_camino',
+            titulo: notificacion.titulo,
+            mensaje: notificacion.mensaje,
+            referencia_tipo: 'pedido',
+            referencia_id: String(id),
+            notificacion_users: { create: { user_id: userId } },
+          },
+        });
+      }
+
+      return true;
+    });
+  }
+
   async marcarEntregado(id: number): Promise<PedidoEntity> {
     return this.prisma.$transaction(async (tx) => {
       // El cambio de estado va primero y con condición: si dos peticiones llegan
       // a la vez, solo una descuenta el stock.
       const { count } = await tx.pedido.updateMany({
         where: { id, estado: EstadoPedido.EN_CAMINO },
-        data: { estado: EstadoPedido.ENTREGADO },
+        data: { estado: EstadoPedido.ENTREGADO, fecha_entrega: new Date() },
       });
 
       if (count === 0) {
