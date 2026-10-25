@@ -31,6 +31,7 @@ export interface IniciativaObjetivoResumen {
   codigo: string;
   nombre: string;
   responsable: string;
+  tipo_modulo_id: number;
   perspectiva_bsc: {
     id: number;
     nombre: string;

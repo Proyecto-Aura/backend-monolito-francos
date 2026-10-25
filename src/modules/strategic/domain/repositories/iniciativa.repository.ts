@@ -12,6 +12,7 @@ export abstract class IniciativaRepository {
     params: CreateIniciativaParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<IniciativaEntityEnriquecido>;
   abstract existsByNombre(
     objetivoEstrategicoId: number,
