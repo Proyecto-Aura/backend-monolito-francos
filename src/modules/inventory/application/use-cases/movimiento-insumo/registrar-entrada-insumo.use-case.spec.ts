@@ -15,8 +15,10 @@ describe('RegistrarEntradaInsumoUseCase', () => {
   } as unknown as jest.Mocked<LoteInsumoRepository>;
 
   const create = jest.fn();
+  const createMany = jest.fn();
   const movimientoInsumoRepository = {
     create,
+    createMany,
   } as unknown as jest.Mocked<MovimientoInsumoRepository>;
 
   const useCase = new RegistrarEntradaInsumoUseCase(
@@ -43,6 +45,9 @@ describe('RegistrarEntradaInsumoUseCase', () => {
     jest.clearAllMocks();
     findByIdLote.mockResolvedValue(loteActivo);
     create.mockImplementation((params: object) => Promise.resolve(params));
+    createMany.mockImplementation((params: object[]) =>
+      Promise.resolve(params),
+    );
   });
 
   it('lanza 404 si el lote no existe', async () => {
@@ -83,6 +88,35 @@ describe('RegistrarEntradaInsumoUseCase', () => {
       tipo: 'entrada',
       cantidad: 40,
       razon: 'Segunda entrega del mismo lote',
+    });
+  });
+
+  describe('executeMany', () => {
+    it('crea varias entradas en una sola llamada a createMany', async () => {
+      await useCase.executeMany([
+        { lote_insumo_id: 4, cantidad: 10, razon: 'Fila 1' },
+        { lote_insumo_id: 4, cantidad: 20, razon: 'Fila 2' },
+      ]);
+
+      expect(createMany).toHaveBeenCalledWith([
+        { lote_insumo_id: 4, tipo: 'entrada', cantidad: 10, razon: 'Fila 1' },
+        { lote_insumo_id: 4, tipo: 'entrada', cantidad: 20, razon: 'Fila 2' },
+      ]);
+    });
+
+    it('no llama a createMany si una fila referencia un lote inexistente', async () => {
+      findByIdLote
+        .mockResolvedValueOnce(loteActivo)
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        useCase.executeMany([
+          { lote_insumo_id: 4, cantidad: 10, razon: 'Fila 1' },
+          { lote_insumo_id: 99, cantidad: 20, razon: 'Fila 2' },
+        ]),
+      ).rejects.toBeInstanceOf(ResourceNotFoundError);
+
+      expect(createMany).not.toHaveBeenCalled();
     });
   });
 });

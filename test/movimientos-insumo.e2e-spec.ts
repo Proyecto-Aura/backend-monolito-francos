@@ -379,4 +379,180 @@ describe('Movimientos de insumo (e2e)', () => {
       .set(auth(adminToken))
       .expect(404);
   });
+
+  // Batch: varias filas en un mismo POST, en una sola transacción (OFT-256,
+  // pedido por el front para el form de "Registrar movimiento" con varias
+  // líneas). Usan su propio insumo/lotes para no depender del estado
+  // acumulado de los tests anteriores.
+  describe('Batch (array de filas)', () => {
+    let insumoBatchId: number;
+    let loteBatchAId: number;
+    let loteBatchBId: number;
+
+    beforeAll(async () => {
+      const insumo = (
+        await request(app.getHttpServer())
+          .post(INSUMOS_URL)
+          .set(auth(adminToken))
+          .send({
+            nombre: `${MARCA} Batch`,
+            unidad_medida: 'kg',
+            stock_minimo: 10,
+            stock_maximo: 1000,
+            tipo: 'materia_prima',
+          })
+          .expect(201)
+      ).body as InsumoHttp;
+      insumoBatchId = insumo.id;
+
+      const loteA = (
+        await request(app.getHttpServer())
+          .post(LOTES_URL)
+          .set(auth(adminToken))
+          .send({
+            insumo_id: insumoBatchId,
+            codigo_lote: `${MARCA}-batch-a`,
+            fecha_ingreso: '2026-10-01',
+            fecha_vencimiento: '2026-11-01',
+            cantidad_inicial: 40,
+          })
+          .expect(201)
+      ).body as LoteHttp;
+      loteBatchAId = loteA.id;
+
+      const loteB = (
+        await request(app.getHttpServer())
+          .post(LOTES_URL)
+          .set(auth(adminToken))
+          .send({
+            insumo_id: insumoBatchId,
+            codigo_lote: `${MARCA}-batch-b`,
+            fecha_ingreso: '2026-10-01',
+            fecha_vencimiento: '2027-06-01',
+            cantidad_inicial: 40,
+          })
+          .expect(201)
+      ).body as LoteHttp;
+      loteBatchBId = loteB.id;
+    });
+
+    it('entrada con array crea una fila por lote en una sola transacción', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/entrada`)
+        .set(auth(inventarioToken))
+        .send([
+          {
+            lote_insumo_id: loteBatchAId,
+            cantidad: 10,
+            razon: `${MARCA}: fila 1`,
+          },
+          {
+            lote_insumo_id: loteBatchBId,
+            cantidad: 15,
+            razon: `${MARCA}: fila 2`,
+          },
+        ])
+        .expect(201);
+
+      const movimientos = res.body as MovimientoHttp[];
+      expect(movimientos).toHaveLength(2);
+      expect(movimientos[0].lote_insumo_id).toBe(loteBatchAId);
+      expect(Number(movimientos[0].stock_resultante)).toBe(50);
+      expect(movimientos[1].lote_insumo_id).toBe(loteBatchBId);
+      expect(Number(movimientos[1].stock_resultante)).toBe(55);
+    });
+
+    it('entrada con array no crea nada si una fila es inválida (todo o nada)', async () => {
+      await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/entrada`)
+        .set(auth(inventarioToken))
+        .send([
+          {
+            lote_insumo_id: loteBatchAId,
+            cantidad: 5,
+            razon: `${MARCA}: no debería aplicarse`,
+          },
+          {
+            lote_insumo_id: 999999,
+            cantidad: 5,
+            razon: `${MARCA}: lote inexistente`,
+          },
+        ])
+        .expect(404);
+
+      const lote = (
+        await request(app.getHttpServer())
+          .get(`${LOTES_URL}/${loteBatchAId}`)
+          .set(auth(adminToken))
+          .expect(200)
+      ).body as LoteHttp;
+      // Sigue en 50 (de la fila anterior): la fila válida del batch fallido
+      // no se guardó.
+      expect(Number(lote.cantidad_actual)).toBe(50);
+    });
+
+    it('array vacío devuelve 400', async () => {
+      await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/entrada`)
+        .set(auth(inventarioToken))
+        .send([])
+        .expect(400);
+    });
+
+    it('ajuste con array aplica varias filas sobre lotes distintos', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/ajuste`)
+        .set(auth(inventarioToken))
+        .send([
+          {
+            lote_insumo_id: loteBatchAId,
+            cantidad: -10,
+            razon: `${MARCA}: merma A`,
+          },
+          {
+            lote_insumo_id: loteBatchBId,
+            cantidad: 5,
+            razon: `${MARCA}: conteo B`,
+          },
+        ])
+        .expect(201);
+
+      const movimientos = res.body as MovimientoHttp[];
+      expect(movimientos).toHaveLength(2);
+      expect(Number(movimientos[0].stock_resultante)).toBe(40);
+      expect(Number(movimientos[1].stock_resultante)).toBe(60);
+    });
+
+    it('salida con array junta varias filas del mismo insumo sin pisarse el saldo', async () => {
+      // Tras el batch anterior: loteBatchA=40, loteBatchB=60. FEFO toma
+      // primero loteBatchA (vence antes).
+      const res = await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/salida`)
+        .set(auth(inventarioToken))
+        .send([
+          { insumo_id: insumoBatchId, cantidad: 30, razon: `${MARCA}: fila 1` },
+          { insumo_id: insumoBatchId, cantidad: 20, razon: `${MARCA}: fila 2` },
+        ])
+        .expect(201);
+
+      const movimientos = res.body as MovimientoHttp[];
+      // Fila 1 (30) sale completa de loteBatchA (quedan 10). Fila 2 (20) toma
+      // los 10 que quedan de loteBatchA y 10 de loteBatchB.
+      expect(movimientos).toHaveLength(3);
+      expect(movimientos[0].lote_insumo_id).toBe(loteBatchAId);
+      expect(Number(movimientos[0].cantidad)).toBe(30);
+      expect(movimientos[1].lote_insumo_id).toBe(loteBatchAId);
+      expect(Number(movimientos[1].cantidad)).toBe(10);
+      expect(movimientos[2].lote_insumo_id).toBe(loteBatchBId);
+      expect(Number(movimientos[2].cantidad)).toBe(10);
+
+      const insumoActualizado = (
+        await request(app.getHttpServer())
+          .get(`${INSUMOS_URL}/${insumoBatchId}`)
+          .set(auth(adminToken))
+          .expect(200)
+      ).body as InsumoHttp;
+      expect(Number(insumoActualizado.stock_actual)).toBe(50);
+    });
+  });
 });

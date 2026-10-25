@@ -128,4 +128,46 @@ describe('RegistrarSalidaInsumoUseCase', () => {
       { lote_insumo_id: 11, tipo: 'salida', cantidad: 90, razon: 'Consumo' },
     ]);
   });
+
+  describe('executeMany', () => {
+    it('junta varias filas del mismo insumo en una sola llamada a createMany', async () => {
+      await useCase.executeMany([
+        { insumo_id: 1, cantidad: 20, razon: 'Fila 1' },
+        { insumo_id: 1, cantidad: 30, razon: 'Fila 2' },
+      ]);
+
+      // loteA (60) cubre la fila 1 completa; sigue repartiendo FEFO sobre lo
+      // que le queda a loteA (40) para la fila 2, sin volver a contar lo ya
+      // reservado por la fila 1.
+      expect(createMany).toHaveBeenCalledWith([
+        { lote_insumo_id: 10, tipo: 'salida', cantidad: 20, razon: 'Fila 1' },
+        { lote_insumo_id: 10, tipo: 'salida', cantidad: 30, razon: 'Fila 2' },
+      ]);
+    });
+
+    it('no deja que una fila posterior pise el saldo ya reservado por otra', async () => {
+      // loteA tiene 60: la fila 1 se lo lleva entero; la fila 2 debe repartir
+      // desde loteB, no volver a leer los 60 originales de loteA.
+      await useCase.executeMany([
+        { insumo_id: 1, cantidad: 60, razon: 'Fila 1' },
+        { insumo_id: 1, cantidad: 50, razon: 'Fila 2' },
+      ]);
+
+      expect(createMany).toHaveBeenCalledWith([
+        { lote_insumo_id: 10, tipo: 'salida', cantidad: 60, razon: 'Fila 1' },
+        { lote_insumo_id: 11, tipo: 'salida', cantidad: 50, razon: 'Fila 2' },
+      ]);
+    });
+
+    it('lanza 409 si, descontando lo ya reservado, el stock no alcanza', async () => {
+      await expect(
+        useCase.executeMany([
+          { insumo_id: 1, cantidad: 60, razon: 'Fila 1' },
+          { insumo_id: 1, cantidad: 999, razon: 'Fila 2' },
+        ]),
+      ).rejects.toBeInstanceOf(ResourceConflictError);
+
+      expect(createMany).not.toHaveBeenCalled();
+    });
+  });
 });

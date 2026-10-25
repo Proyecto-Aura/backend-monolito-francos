@@ -15,8 +15,10 @@ describe('RegistrarAjusteInsumoUseCase', () => {
   } as unknown as jest.Mocked<LoteInsumoRepository>;
 
   const create = jest.fn();
+  const createMany = jest.fn();
   const movimientoInsumoRepository = {
     create,
+    createMany,
   } as unknown as jest.Mocked<MovimientoInsumoRepository>;
 
   const useCase = new RegistrarAjusteInsumoUseCase(
@@ -43,6 +45,9 @@ describe('RegistrarAjusteInsumoUseCase', () => {
     jest.clearAllMocks();
     findByIdLote.mockResolvedValue(loteActivo);
     create.mockImplementation((params: object) => Promise.resolve(params));
+    createMany.mockImplementation((params: object[]) =>
+      Promise.resolve(params),
+    );
   });
 
   it('lanza 409 si la cantidad es 0', async () => {
@@ -98,5 +103,35 @@ describe('RegistrarAjusteInsumoUseCase', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ tipo: 'ajuste', cantidad: 8 }),
     );
+  });
+
+  describe('executeMany', () => {
+    it('crea varios ajustes en una sola llamada a createMany', async () => {
+      await useCase.executeMany([
+        { lote_insumo_id: 4, cantidad: -5, razon: 'Merma' },
+        { lote_insumo_id: 4, cantidad: 8, razon: 'Conteo físico' },
+      ]);
+
+      expect(createMany).toHaveBeenCalledWith([
+        { lote_insumo_id: 4, tipo: 'ajuste', cantidad: -5, razon: 'Merma' },
+        {
+          lote_insumo_id: 4,
+          tipo: 'ajuste',
+          cantidad: 8,
+          razon: 'Conteo físico',
+        },
+      ]);
+    });
+
+    it('no llama a createMany si una fila es inválida', async () => {
+      await expect(
+        useCase.executeMany([
+          { lote_insumo_id: 4, cantidad: -5, razon: 'Merma' },
+          { lote_insumo_id: 4, cantidad: 0, razon: 'Inválido' },
+        ]),
+      ).rejects.toBeInstanceOf(ResourceConflictError);
+
+      expect(createMany).not.toHaveBeenCalled();
+    });
   });
 });
