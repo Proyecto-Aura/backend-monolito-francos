@@ -209,11 +209,13 @@ describe('Catálogo (e2e)', () => {
       await request(app.getHttpServer()).get('/api/v1/categorias').expect(401);
     });
 
-    it('GET /api/v1/categorias con rol inventario devuelve 403', async () => {
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita poblar el select de categorías).
+    it('GET /api/v1/categorias con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/categorias')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('GET /api/v1/categorias con rol ventas devuelve 200', async () => {
@@ -280,11 +282,13 @@ describe('Catálogo (e2e)', () => {
         .expect(401);
     });
 
-    it('GET /api/v1/presentaciones con rol inventario devuelve 403', async () => {
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita poblar el select de presentaciones).
+    it('GET /api/v1/presentaciones con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/presentaciones')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('GET /api/v1/presentaciones con rol ventas devuelve 200', async () => {
@@ -455,6 +459,42 @@ describe('Catálogo (e2e)', () => {
       });
       // Nace desactivada: no se ve en el Portal B hasta que se active a mano.
       expect(presentacion.estado).toBe(false);
+    });
+
+    // OFT0-258: el rol inventario (pantalla de stock de producto terminado)
+    // puede activar/desactivar una producto-presentación, mismo interruptor
+    // que usa el catálogo.
+    it('DELETE y PATCH :id/activate con rol inventario desactivan y reactivan', async () => {
+      const presentacionPropia = await prisma.presentacion.create({
+        data: {
+          cantidad: 7779,
+          unidad_medida: 'gr',
+          descripcion: PRESENTACION_DESCRIPCION,
+        },
+      });
+      const creada = (
+        await request(app.getHttpServer())
+          .post('/api/v1/producto-presentaciones')
+          .set('Authorization', `Bearer ${ventasToken}`)
+          .send({
+            producto_id: productoId,
+            presentacion_id: presentacionPropia.id,
+            precio_unitario: 5,
+          })
+          .expect(201)
+      ).body as { id: number };
+
+      const desactivada = await request(app.getHttpServer())
+        .delete(`/api/v1/producto-presentaciones/${creada.id}`)
+        .set('Authorization', `Bearer ${inventarioToken}`)
+        .expect(200);
+      expect((desactivada.body as { estado: boolean }).estado).toBe(false);
+
+      const reactivada = await request(app.getHttpServer())
+        .patch(`/api/v1/producto-presentaciones/${creada.id}/activate`)
+        .set('Authorization', `Bearer ${inventarioToken}`)
+        .expect(200);
+      expect((reactivada.body as { estado: boolean }).estado).toBe(true);
     });
 
     it('POST /api/v1/producto-presentaciones con una presentación repetida devuelve 409 y no crea nada', async () => {
@@ -731,6 +771,7 @@ describe('Catálogo (e2e)', () => {
     interface FilaListado {
       id: number;
       sku: string;
+      estado: boolean;
       visible_portal_b: boolean;
       producto: {
         id: number;
@@ -782,14 +823,20 @@ describe('Catálogo (e2e)', () => {
       });
     });
 
-    it('sin token devuelve 401 y con rol inventario devuelve 403', async () => {
+    it('sin token devuelve 401', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/producto-presentaciones')
         .expect(401);
+    });
+
+    // Lectura abierta a inventario (OFT0-258: pantalla de stock de producto
+    // terminado necesita este listado, con categoría/presentación/stock
+    // embebidos).
+    it('con rol inventario devuelve 200', async () => {
       await request(app.getHttpServer())
         .get('/api/v1/producto-presentaciones')
         .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(403);
+        .expect(200);
     });
 
     it('cada fila trae producto, categoría, presentación, stock, visibilidad y precios', async () => {
@@ -911,6 +958,25 @@ describe('Catálogo (e2e)', () => {
       expect(agotadas.map(({ id }) => id)).not.toContain(
         productoPresentacionId,
       );
+    });
+
+    it('filtra por nivel de stock (mismo criterio que /productos-terminados/indicadores)', async () => {
+      // stock_actual=12, stock_minimo=1 (default), stock_maximo=null => "normal".
+      const normales = filas(
+        (await listar({ nivel: 'normal' }).expect(200)).body,
+      );
+      expect(normales.map(({ id }) => id)).toContain(productoPresentacionId);
+
+      const agotados = filas(
+        (await listar({ nivel: 'agotado' }).expect(200)).body,
+      );
+      expect(agotados.map(({ id }) => id)).not.toContain(
+        productoPresentacionId,
+      );
+    });
+
+    it('rechaza un nivel inválido (400)', async () => {
+      await listar({ nivel: 'inexistente' }).expect(400);
     });
 
     it('busca por nombre del producto, sin distinguir mayúsculas', async () => {

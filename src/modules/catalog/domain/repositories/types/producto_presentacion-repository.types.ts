@@ -1,5 +1,8 @@
 import { ProductoPresentacionEntity, PromocionEntity } from '../../entities';
-import { UnidadMedidaPresentacion } from '../../enums';
+import {
+  NivelStockProductoTerminado,
+  UnidadMedidaPresentacion,
+} from '../../enums';
 import { PaginationParams } from './pagination.types';
 
 export interface CreateProductoPresentacionParams {
@@ -37,6 +40,9 @@ export interface ListProductoPresentacionesParams extends PaginationParams {
   presentacion_id?: number;
   // true: solo con stock disponible; false: agotadas (sin stock).
   con_stock?: boolean;
+  // Mismo criterio que /productos-terminados/indicadores (90%, sin tope
+  // definido nunca cuenta como "alto").
+  nivel?: NivelStockProductoTerminado;
 
   // Día (medianoche UTC) con el que se decide qué promoción está vigente.
   fecha_referencia: Date;

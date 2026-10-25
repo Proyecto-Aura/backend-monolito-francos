@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
@@ -41,4 +42,14 @@ export class ListLoteInsumosQueryDto extends PaginationQueryDto {
   })
   @IsBoolean()
   activo?: boolean;
+
+  @ApiPropertyOptional({ example: '2026-11-01' })
+  @IsOptional()
+  @IsDateString()
+  vence_desde?: string;
+
+  @ApiPropertyOptional({ example: '2026-11-30' })
+  @IsOptional()
+  @IsDateString()
+  vence_hasta?: string;
 }

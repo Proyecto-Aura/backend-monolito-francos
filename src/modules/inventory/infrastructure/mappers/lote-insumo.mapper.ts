@@ -2,21 +2,35 @@ import { LoteInsumo as PrismaLoteInsumo } from '@prisma/client';
 import { LoteInsumoEntity } from '../../domain/entities';
 import { EstadoLoteInsumo } from '../../domain/enums';
 
-export class LoteInsumoMapper {
-  // 'vencido' no se persiste en la columna estado (no hay cron ni trigger
-  // que lo actualice solo con el paso del tiempo): se deriva acá, al leer,
-  // comparando fecha_vencimiento contra hoy. 'agotado' tiene prioridad sobre
-  // 'vencido' porque ya refleja algo más específico (cantidad_actual en 0) y
-  // sí lo mantiene al día el trigger de stock.
-  private static calcularEstado(lote: PrismaLoteInsumo): EstadoLoteInsumo {
-    const vencido =
-      lote.fecha_vencimiento !== null && lote.fecha_vencimiento < new Date();
+// Ventana de alerta temprana para "por_vencer": un lote activo entra acá
+// cuando le quedan DIAS_POR_VENCER días o menos para su fecha_vencimiento
+// (y todavía no venció). Mismo valor que usa el filtro `estado` del listado
+// (PrismaLoteInsumoRepository) para que ambos lados calculen lo mismo.
+export const DIAS_POR_VENCER = 15;
 
-    if (lote.estado === 'activo' && vencido) {
+export class LoteInsumoMapper {
+  // 'vencido' y 'por_vencer' no se persisten en la columna estado (no hay
+  // cron ni trigger que los actualice solo con el paso del tiempo): se
+  // derivan acá, al leer, comparando fecha_vencimiento contra hoy. 'agotado'
+  // tiene prioridad sobre ambos porque ya refleja algo más específico
+  // (cantidad_actual en 0) y sí lo mantiene al día el trigger de stock.
+  private static calcularEstado(lote: PrismaLoteInsumo): EstadoLoteInsumo {
+    if (lote.estado !== 'activo' || lote.fecha_vencimiento === null) {
+      return lote.estado as EstadoLoteInsumo;
+    }
+
+    const hoy = new Date();
+    if (lote.fecha_vencimiento < hoy) {
       return EstadoLoteInsumo.VENCIDO;
     }
 
-    return lote.estado as EstadoLoteInsumo;
+    const limitePorVencer = new Date(hoy);
+    limitePorVencer.setDate(limitePorVencer.getDate() + DIAS_POR_VENCER);
+    if (lote.fecha_vencimiento <= limitePorVencer) {
+      return EstadoLoteInsumo.POR_VENCER;
+    }
+
+    return EstadoLoteInsumo.ACTIVO;
   }
 
   static toDomain(lote: PrismaLoteInsumo): LoteInsumoEntity {

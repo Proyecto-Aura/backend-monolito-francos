@@ -14,15 +14,20 @@ import { RegistrarSalidaInsumoUseCase } from '../application/use-cases/movimient
 import { RegistrarAjusteInsumoUseCase } from '../application/use-cases/movimiento-insumo/registrar-ajuste-insumo.use-case';
 import { GetMovimientoByIdUseCase } from '../application/use-cases/movimiento-insumo/get-movimiento-by-id.use-case';
 import { ListMovimientosUseCase } from '../application/use-cases/movimiento-insumo/list-movimientos.use-case';
+import { GetIndicadoresProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/get-indicadores-producto-terminado.use-case';
+import { UpdateProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/update-producto-terminado.use-case';
 import { InsumoRepository } from '../domain/repositories/insumo.repository';
 import { LoteInsumoRepository } from '../domain/repositories/lote-insumo.repository';
 import { MovimientoInsumoRepository } from '../domain/repositories/movimiento-insumo.repository';
+import { ProductoTerminadoRepository } from '../domain/repositories/producto-terminado.repository';
 import { PrismaInsumoRepository } from '../infrastructure/repositories/prisma-insumo.repository';
 import { PrismaLoteInsumoRepository } from '../infrastructure/repositories/prisma-lote-insumo.repository';
 import { PrismaMovimientoInsumoRepository } from '../infrastructure/repositories/prisma-movimiento-insumo.repository';
+import { PrismaProductoTerminadoRepository } from '../infrastructure/repositories/prisma-producto-terminado.repository';
 import { InsumosController } from './controllers/insumos.controller';
 import { LotesInsumoController } from './controllers/lotes-insumo.controller';
 import { MovimientosInsumoController } from './controllers/movimientos-insumo.controller';
+import { ProductosTerminadosController } from './controllers/productos-terminados.controller';
 
 // El filtro de errores de dominio (CatalogDomainExceptionFilter) sigue
 // registrado como APP_FILTER en CatalogModule; al ser global, también
@@ -32,6 +37,7 @@ import { MovimientosInsumoController } from './controllers/movimientos-insumo.co
     InsumosController,
     LotesInsumoController,
     MovimientosInsumoController,
+    ProductosTerminadosController,
   ],
   providers: [
     CreateInsumoUseCase,
@@ -54,6 +60,12 @@ import { MovimientosInsumoController } from './controllers/movimientos-insumo.co
     {
       provide: MovimientoInsumoRepository,
       useClass: PrismaMovimientoInsumoRepository,
+    },
+    UpdateProductoTerminadoUseCase,
+    GetIndicadoresProductoTerminadoUseCase,
+    {
+      provide: ProductoTerminadoRepository,
+      useClass: PrismaProductoTerminadoRepository,
     },
   ],
 })
