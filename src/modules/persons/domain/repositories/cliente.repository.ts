@@ -10,6 +10,10 @@ export abstract class ClienteRepository {
   // Solo el cliente: sirve para comprobar que existe antes de editarlo o cambiar su estado.
   abstract findById(id: string): Promise<ClienteEntity | null>;
   abstract findByIdConPersona(id: string): Promise<ClienteConPersona | null>;
+  abstract findByPersonaId(personaId: string): Promise<ClienteEntity | null>;
+  abstract findMany(
+    params: ListClientesParams,
+  ): Promise<PaginatedResult<ClienteConPersona>>;
   abstract findManyConPersona(
     params: ListClientesParams,
   ): Promise<PaginatedResult<ClienteConPersona>>;

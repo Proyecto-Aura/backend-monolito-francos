@@ -87,6 +87,19 @@ export class PrismaClienteRepository implements ClienteRepository {
     return cliente ? ClienteConPersonaMapper.toDomain(cliente) : null;
   }
 
+  async findByPersonaId(personaId: string): Promise<ClienteEntity | null> {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { persona_id: personaId },
+    });
+    return cliente ? ClienteMapper.toDomain(cliente) : null;
+  }
+
+  async findMany(
+    params: ListClientesParams,
+  ): Promise<PaginatedResult<ClienteConPersona>> {
+    return this.findManyConPersona(params);
+  }
+
   async findManyConPersona(
     params: ListClientesParams,
   ): Promise<PaginatedResult<ClienteConPersona>> {
