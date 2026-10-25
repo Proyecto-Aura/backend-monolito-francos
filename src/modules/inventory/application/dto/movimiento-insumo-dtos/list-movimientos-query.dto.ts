@@ -5,12 +5,24 @@ import {
   IsInt,
   IsOptional,
   IsPositive,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoMovimientoInsumo } from '../../../domain/enums';
 import { PaginationQueryDto } from '../../../../catalog/application/dto/common/pagination-query-dto';
 
 export class ListMovimientosQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    example: 'harina',
+    maxLength: 150,
+    description: 'Texto libre contra nombre o sku del insumo',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  search?: string;
+
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)

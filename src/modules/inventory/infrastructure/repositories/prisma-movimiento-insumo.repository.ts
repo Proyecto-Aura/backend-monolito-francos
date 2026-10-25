@@ -61,9 +61,37 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
         ? {}
         : { lote_insumo_id: params.lote_insumo_id }),
       ...(params.tipo ? { tipo: params.tipo } : {}),
-      ...(params.insumo_id === undefined
+      // insumo_id y search filtran por el mismo camino (lote_insumo.insumo),
+      // así que van juntos en un único objeto para no pisarse entre sí.
+      ...(params.insumo_id === undefined && !params.search
         ? {}
-        : { lote_insumo: { insumo_id: params.insumo_id } }),
+        : {
+            lote_insumo: {
+              ...(params.insumo_id === undefined
+                ? {}
+                : { insumo_id: params.insumo_id }),
+              ...(params.search
+                ? {
+                    insumo: {
+                      OR: [
+                        {
+                          nombre: {
+                            contains: params.search,
+                            mode: 'insensitive',
+                          },
+                        },
+                        {
+                          sku: {
+                            contains: params.search,
+                            mode: 'insensitive',
+                          },
+                        },
+                      ],
+                    },
+                  }
+                : {}),
+            },
+          }),
       ...(params.fecha_desde || params.fecha_hasta
         ? {
             fecha: {

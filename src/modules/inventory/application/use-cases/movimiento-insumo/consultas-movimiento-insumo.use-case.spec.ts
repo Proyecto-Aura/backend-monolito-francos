@@ -61,6 +61,7 @@ describe('Consultas de movimientos de insumo', () => {
         useCase.execute({
           page: 1,
           limit: 10,
+          search: 'harina',
           insumo_id: 1,
           lote_insumo_id: 4,
           tipo: TipoMovimientoInsumo.SALIDA,
@@ -72,6 +73,7 @@ describe('Consultas de movimientos de insumo', () => {
       expect(findMany).toHaveBeenCalledWith({
         page: 1,
         limit: 10,
+        search: 'harina',
         insumo_id: 1,
         lote_insumo_id: 4,
         tipo: TipoMovimientoInsumo.SALIDA,

@@ -380,6 +380,26 @@ describe('Movimientos de insumo (e2e)', () => {
       .expect(404);
   });
 
+  it('filtra por search (nombre o sku del insumo, vía lote_insumo.insumo)', async () => {
+    const porNombre = await request(app.getHttpServer())
+      .get(MOVIMIENTOS_URL)
+      .query({ search: 'Harina', limit: 100 })
+      .set(auth(adminToken))
+      .expect(200);
+    const dataPorNombre = (porNombre.body as { data: MovimientoHttp[] }).data;
+    expect(dataPorNombre.length).toBeGreaterThan(0);
+    expect(dataPorNombre.every((m) => m.lote_insumo_id !== undefined)).toBe(
+      true,
+    );
+
+    const sinMatch = await request(app.getHttpServer())
+      .get(MOVIMIENTOS_URL)
+      .query({ search: 'Ingrediente que no existe', limit: 100 })
+      .set(auth(adminToken))
+      .expect(200);
+    expect((sinMatch.body as { data: MovimientoHttp[] }).data).toHaveLength(0);
+  });
+
   // Batch: varias filas en un mismo POST, en una sola transacción (OFT-256,
   // pedido por el front para el form de "Registrar movimiento" con varias
   // líneas). Usan su propio insumo/lotes para no depender del estado

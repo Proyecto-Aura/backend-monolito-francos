@@ -11,6 +11,8 @@ export interface CreateMovimientoInsumoParams {
 }
 
 export interface ListMovimientoInsumoParams extends PaginationParams {
+  // Texto libre contra nombre o sku del insumo (vía lote_insumo.insumo).
+  search?: string;
   insumo_id?: number;
   lote_insumo_id?: number;
   tipo?: TipoMovimientoInsumo;

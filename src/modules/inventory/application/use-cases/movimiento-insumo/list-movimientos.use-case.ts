@@ -16,6 +16,7 @@ export class ListMovimientosUseCase {
     return this.movimientoInsumoRepository.findMany({
       page: dto.page,
       limit: dto.limit,
+      search: dto.search,
       insumo_id: dto.insumo_id,
       lote_insumo_id: dto.lote_insumo_id,
       tipo: dto.tipo,
