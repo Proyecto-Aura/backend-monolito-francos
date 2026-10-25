@@ -23,6 +23,7 @@ import { UpdatePlanEstrategicoDto } from '../../application/dto/plan-estrategico
 import { ObtenerKpisPorPlanUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan.use-case';
 import { ObtenerKpisPorPlanTiUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan-ti.use-case';
 import { ObtenerIniciativasPorPlanUseCase } from '../../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
+import { ObtenerIniciativasPorPlanTiUseCase } from '../../application/use-cases/iniciativa/obtener-iniciativas-por-plan-ti.use-case';
 import { ActivarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/activar-plan-estrategico.use-case';
 import { CerrarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/cerrar-plan-estrategico.use-case';
 import { CreatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/create-plan-estrategico.use-case';
@@ -62,6 +63,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
     private readonly obtenerKpisPorPlanTi: ObtenerKpisPorPlanTiUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
+    private readonly obtenerIniciativasPorPlanTi: ObtenerIniciativasPorPlanTiUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
     private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
   ) {}
@@ -146,6 +148,16 @@ export class PlanesEstrategicosController {
   async kpisTiDelPlan(@Param('id', ParseIntPipe) id: number) {
     return KpiPresenter.resumenPorPlanToHttp(
       await this.obtenerKpisPorPlanTi.execute(id),
+    );
+  }
+
+  @Get(':id/iniciativas-ti')
+  @ApiOperation({ summary: 'Resumen de iniciativas de TI del plan' })
+  @ApiOkResponse({ description: 'Lista de iniciativas del plan (TI)' })
+  @ApiParam({ name: 'id', type: Number })
+  async iniciativasTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return IniciativaPresenter.resumenPorPlanToHttp(
+      await this.obtenerIniciativasPorPlanTi.execute(id),
     );
   }
 

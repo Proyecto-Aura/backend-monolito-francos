@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { InsumoEntity } from '../../domain/entities';
+import { NivelStockInsumo } from '../../domain/enums';
 import { InsumoRepository } from '../../domain/repositories/insumo.repository';
 import {
   CreateInsumoParams,
@@ -43,12 +44,38 @@ export class PrismaInsumoRepository implements InsumoRepository {
     return insumo ? InsumoMapper.toDomain(insumo) : null;
   }
 
+  // Mismo criterio de /insumos/indicadores (getIndicadores más abajo), pero
+  // por fila: stock_actual/stock_minimo/stock_maximo no se pueden comparar
+  // entre columnas con el query builder de Prisma, así que se resuelven los
+  // ids por SQL y se filtra por ellos en el findMany normal.
+  private nivelCondition(nivel: NivelStockInsumo): Prisma.Sql {
+    switch (nivel) {
+      case NivelStockInsumo.AGOTADO:
+        return Prisma.sql`stock_actual <= 0`;
+      case NivelStockInsumo.BAJO:
+        return Prisma.sql`stock_actual > 0 AND stock_actual < stock_minimo`;
+      case NivelStockInsumo.ALTO:
+        return Prisma.sql`stock_actual >= stock_minimo AND (stock_actual / stock_maximo) * 100 > ${UMBRAL_ALTO_PORCENTAJE}`;
+      case NivelStockInsumo.NORMAL:
+        return Prisma.sql`stock_actual >= stock_minimo AND (stock_actual / stock_maximo) * 100 <= ${UMBRAL_ALTO_PORCENTAJE}`;
+    }
+  }
+
   async findMany(
     params: ListInsumosParams,
   ): Promise<PaginatedResult<InsumoEntity>> {
+    let idsPorNivel: number[] | undefined;
+    if (params.nivel) {
+      const filas = await this.prisma.$queryRaw<{ id: number }[]>`
+        SELECT id FROM commerce.insumo WHERE ${this.nivelCondition(params.nivel)}
+      `;
+      idsPorNivel = filas.map((fila) => fila.id);
+    }
+
     const where: Prisma.InsumoWhereInput = {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
       ...(params.tipo ? { tipo: params.tipo } : {}),
+      ...(idsPorNivel ? { id: { in: idsPorNivel } } : {}),
       ...(params.search
         ? {
             OR: [

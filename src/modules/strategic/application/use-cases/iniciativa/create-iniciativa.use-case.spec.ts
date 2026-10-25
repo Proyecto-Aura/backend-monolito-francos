@@ -28,9 +28,9 @@ describe('CreateIniciativaUseCase', () => {
   const planEstrategicoRepository = {
     findActivoById: findPlanActivoById,
   } as unknown as jest.Mocked<PlanEstrategicoRepository>;
-  const findTipoModuloByCodigo = jest.fn();
+  const findTipoModuloById = jest.fn();
   const tipoModuloRepository = {
-    findByCodigo: findTipoModuloByCodigo,
+    findById: findTipoModuloById,
   } as unknown as jest.Mocked<TipoModuloRepository>;
   const useCase = new CreateIniciativaUseCase(
     iniciativaRepository,
@@ -49,6 +49,7 @@ describe('CreateIniciativaUseCase', () => {
   } as PlanEstrategicoEntityConEstado;
   const objetivo = {
     id: 10,
+    tipo_modulo_id: 7,
     plan_estrategico_id: plan.id,
     estado: true,
   } as ObjetivoEstrategicoEntityEnriquecido;
@@ -72,7 +73,7 @@ describe('CreateIniciativaUseCase', () => {
     findObjetivoActivoById.mockResolvedValue(objetivo);
     findPlanActivoById.mockResolvedValue(plan);
     existsByNombre.mockResolvedValue(false);
-    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findTipoModuloById.mockResolvedValue(tipoModulo);
     countByPlanYTipo.mockResolvedValue(3);
     create.mockResolvedValue(iniciativa);
   };
@@ -157,7 +158,7 @@ describe('CreateIniciativaUseCase', () => {
     await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
       ResourceConflictError,
     );
-    expect(findTipoModuloByCodigo).not.toHaveBeenCalled();
+    expect(findTipoModuloById).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -165,7 +166,7 @@ describe('CreateIniciativaUseCase', () => {
     'lanza 404 si el tipo de módulo NEG no existe o está inactivo',
     async (resultado) => {
       prepararBase();
-      findTipoModuloByCodigo.mockResolvedValue(resultado);
+      findTipoModuloById.mockResolvedValue(resultado);
 
       await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
         ResourceNotFoundError,
@@ -187,6 +188,7 @@ describe('CreateIniciativaUseCase', () => {
         iniciativa,
       );
       expect(countByPlanYTipo).toHaveBeenCalledWith(plan.id, tipoModulo.id);
+      expect(findTipoModuloById).toHaveBeenCalledWith(objetivo.tipo_modulo_id);
       expect(create).toHaveBeenCalledWith(
         {
           objetivo_estrategico_id: objetivo.id,
@@ -199,6 +201,7 @@ describe('CreateIniciativaUseCase', () => {
         },
         plan.codigo,
         '004',
+        'N',
       );
     },
   );

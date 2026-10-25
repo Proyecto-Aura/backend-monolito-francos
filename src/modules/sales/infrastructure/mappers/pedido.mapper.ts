@@ -38,6 +38,7 @@ export class PedidoMapper {
       pedido.total.toNumber(),
       pedido.created_at,
       pedido.updated_at,
+      pedido.fecha_entrega,
     );
   }
 

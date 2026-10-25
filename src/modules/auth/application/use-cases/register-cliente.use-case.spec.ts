@@ -15,6 +15,7 @@ import { RegistroRepository } from '../../domain/repositories/registro.repositor
 import { EmailService } from '../../domain/services/email.service';
 import { RegisterClienteDto } from '../dto/register-cliente.dto';
 import { RegisterClienteUseCase } from './register-cliente.use-case';
+import { hashToken } from '../utils/token.util';
 
 describe('RegisterClienteUseCase (HU-B-002)', () => {
   const existsByDocument = jest.fn();
@@ -84,6 +85,15 @@ describe('RegisterClienteUseCase (HU-B-002)', () => {
     );
     expect(sendVerificationEmail).toHaveBeenCalledWith(
       expect.objectContaining({ to: 'ana@francos.test', frontend: 'tienda' }),
+    );
+    const [registro] = registerCliente.mock.calls[0] as [
+      { user: { token_verificacion_email: string } },
+    ];
+    const [correo] = sendVerificationEmail.mock.calls[0] as [
+      { verificationToken: string },
+    ];
+    expect(registro.user.token_verificacion_email).toBe(
+      hashToken(correo.verificationToken),
     );
   });
 

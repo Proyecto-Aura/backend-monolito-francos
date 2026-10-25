@@ -26,3 +26,11 @@ export class InvalidCredentialsError extends AuthDomainError {
 export class InvalidResetTokenError extends AuthDomainError {
   readonly statusCode = 400;
 }
+
+export class InvalidVerificationTokenError extends AuthDomainError {
+  readonly statusCode = 400;
+}
+
+export class EmailNotVerifiedError extends AuthDomainError {
+  readonly statusCode = 403;
+}

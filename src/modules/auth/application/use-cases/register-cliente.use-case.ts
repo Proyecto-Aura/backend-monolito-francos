@@ -16,13 +16,12 @@ import {
   esFechaFutura,
   tipoClienteSegunDocumento,
 } from '../utils/registro-cliente.util';
-import { generateRandomToken } from '../utils/token.util';
+import { buildEmailVerificationToken } from '../utils/email-verification.util';
 import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
 
 // por el momento
 const ROL_CLIENTE = 'cliente';
-const HORAS_EXPIRACION_TOKEN_EMAIL = 24;
 
 @Injectable()
 export class RegisterClienteUseCase {
@@ -95,10 +94,7 @@ export class RegisterClienteUseCase {
 
     // Preparar credenciales
     const contrasenaHash = await hashPassword(dto.password);
-    const tokenVerificacion = generateRandomToken();
-    const expiracionToken = new Date(
-      Date.now() + HORAS_EXPIRACION_TOKEN_EMAIL * 60 * 60 * 1000,
-    );
+    const verification = buildEmailVerificationToken();
 
     //transaccion atomica
     const resultado = await this.registroRepository.registerCliente({
@@ -126,8 +122,8 @@ export class RegisterClienteUseCase {
         contrasena_hash: contrasenaHash,
         email_verificado: false,
         debe_cambiar_contrasena: false,
-        token_verificacion_email: tokenVerificacion,
-        token_verificacion_email_expiracion: expiracionToken,
+        token_verificacion_email: verification.tokenHash,
+        token_verificacion_email_expiracion: verification.expiresAt,
       },
       rol_id: rolCliente.id,
     });
@@ -137,12 +133,12 @@ export class RegisterClienteUseCase {
       await this.emailService.sendVerificationEmail({
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
-        verificationToken: tokenVerificacion,
+        verificationToken: verification.token,
         frontend: 'tienda',
       });
     } catch (error) {
       this.logger.warn(
-        `No se pudo enviar el correo de verificación a ${resultado.user.email}`,
+        'No se pudo enviar el correo de verificación',
         error instanceof Error ? error.stack : undefined,
       );
     }

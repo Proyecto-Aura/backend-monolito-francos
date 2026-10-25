@@ -102,4 +102,25 @@ describe('NodemailerEmailService', () => {
     );
     expect(message.html).not.toContain('https://tienda.test');
   });
+
+  it('envía una sola bienvenida de cliente con credenciales y enlace escapados', async () => {
+    const service = new NodemailerEmailService();
+    await service.sendClienteBienvenidaEmail({
+      to: 'cliente@francos.test',
+      nombre: '<script>alert(1)</script>',
+      username: '<cliente>',
+      contrasenaDefault: '<temporal>',
+      verificationToken: 'token-bienvenida',
+    });
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const [message] = mockSendMail.mock.calls[0] as [{ html: string }];
+    expect(message.html).toContain(
+      'https://tienda.test/verify-email?token=token-bienvenida',
+    );
+    expect(message.html).toContain('El enlace vence en 24 horas');
+    expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(message.html).toContain('&lt;cliente&gt;');
+    expect(message.html).toContain('&lt;temporal&gt;');
+    expect(message.html).not.toContain('<script>');
+  });
 });

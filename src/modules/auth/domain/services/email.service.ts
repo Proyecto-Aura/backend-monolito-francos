@@ -2,6 +2,7 @@ import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
   SendPasswordResetEmailParams,
+  SendClienteBienvenidaEmailParams,
 } from './types/email-service.types';
 
 export abstract class EmailService {
@@ -10,6 +11,9 @@ export abstract class EmailService {
   ): Promise<void>;
   abstract sendDefaultCredentialsEmail(
     params: SendDefaultCredentialsEmailParams,
+  ): Promise<void>;
+  abstract sendClienteBienvenidaEmail(
+    params: SendClienteBienvenidaEmailParams,
   ): Promise<void>;
   abstract sendPasswordResetEmail(
     params: SendPasswordResetEmailParams,

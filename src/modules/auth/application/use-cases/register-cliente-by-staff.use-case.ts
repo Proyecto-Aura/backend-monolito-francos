@@ -94,7 +94,8 @@ export class RegisterClienteByStaffUseCase {
         contrasena_hash: default_credentials.contrasenaHash,
         email_verificado: default_credentials.emailVerificado,
         debe_cambiar_contrasena: default_credentials.debeCambiarContrasena,
-        token_verificacion_email: default_credentials.tokenVerificacionEmail,
+        token_verificacion_email:
+          default_credentials.tokenVerificacionEmailHash,
         token_verificacion_email_expiracion:
           default_credentials.tokenVerificacionEmailExpiracion,
       },
@@ -102,21 +103,16 @@ export class RegisterClienteByStaffUseCase {
     });
 
     try {
-      await this.emailService.sendDefaultCredentialsEmail({
+      await this.emailService.sendClienteBienvenidaEmail({
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
         username: default_credentials.username,
         contrasenaDefault: default_credentials.contrasenaPlana,
-      });
-      await this.emailService.sendVerificationEmail({
-        to: resultado.user.email,
-        nombre: resultado.persona.nombres,
-        verificationToken: default_credentials.tokenVerificacionEmail,
-        frontend: 'tienda',
+        verificationToken: default_credentials.tokenVerificacionEmailPlano,
       });
     } catch (error) {
       this.logger.warn(
-        `No se pudo enviar el correo de verificación a ${resultado.user.email}`,
+        'No se pudo enviar el correo de verificación',
         error instanceof Error ? error.stack : undefined,
       );
     }

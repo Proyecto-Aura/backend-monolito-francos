@@ -3,7 +3,10 @@ import { APP_FILTER } from '@nestjs/core';
 import { ActualizarEstadoPedidoUseCase } from '../application/use-cases/pedido/actualizar-estado-pedido.use-case';
 import { CompletarPedidoUseCase } from '../application/use-cases/pedido/completar-pedido.use-case';
 import { CreatePedidoUseCase } from '../application/use-cases/pedido/create-pedido.use-case';
+import { DespacharPedidoUseCase } from '../application/use-cases/pedido/despachar-pedido.use-case';
 import { GetPedidoByIdUseCase } from '../application/use-cases/pedido/get-pedido-by-id.use-case';
+import { GetPedidoDespachoUseCase } from '../application/use-cases/pedido/get-pedido-despacho.use-case';
+import { ListPedidosDespachoUseCase } from '../application/use-cases/pedido/list-pedidos-despacho.use-case';
 import { ListPedidosUseCase } from '../application/use-cases/pedido/list-pedidos.use-case';
 import { ResumirPedidoPortalUseCase } from '../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { AprobarReembolsoUseCase } from '../application/use-cases/reembolso/aprobar-reembolso.use-case';
@@ -28,6 +31,7 @@ import { PrismaPedidoRepository } from '../infrastructure/repositories/prisma-pe
 import { PrismaReembolsoRepository } from '../infrastructure/repositories/prisma-reembolso.repository';
 import { PrismaSerieComprobanteRepository } from '../infrastructure/repositories/prisma-serie-comprobante.repository';
 import { S3EvidenciaReembolsoService } from '../infrastructure/storage/s3-evidencia-reembolso.service';
+import { DespachoPedidosController } from './controllers/despacho-pedidos.controller';
 import { PedidosController } from './controllers/pedidos.controller';
 import { PortalPedidosController } from './controllers/portal-pedidos.controller';
 import { ReembolsosController } from './controllers/reembolsos.controller';
@@ -38,6 +42,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
   controllers: [
     PedidosController,
     SeriesComprobanteController,
+    DespachoPedidosController,
     ReembolsosController,
     PortalPedidosController,
   ],
@@ -48,6 +53,9 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     ActualizarEstadoPedidoUseCase,
     CompletarPedidoUseCase,
     ResumirPedidoPortalUseCase,
+    ListPedidosDespachoUseCase,
+    GetPedidoDespachoUseCase,
+    DespacharPedidoUseCase,
     ListReembolsosUseCase,
     GetReembolsoByIdUseCase,
     AprobarReembolsoUseCase,
@@ -76,9 +84,9 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
       useClass: SalesDomainExceptionFilter,
     },
   ],
-  // La HU de despacho (HU-A-023) marcará los pedidos como entregados con
-  // CompletarPedidoUseCase; ReservarCorrelativoUseCase es el servicio interno para
-  // la emisión de comprobantes (OFT0-541), sin HTTP.
+  // DespachoPedidosController (HU-A-023) marca con él los pedidos como entregados;
+  // ReservarCorrelativoUseCase es el servicio interno para la emisión de
+  // comprobantes (OFT0-541), sin HTTP.
   exports: [CompletarPedidoUseCase, ReservarCorrelativoUseCase],
 })
 export class SalesModule {}

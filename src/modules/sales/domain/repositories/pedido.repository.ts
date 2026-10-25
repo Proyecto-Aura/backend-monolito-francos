@@ -6,6 +6,7 @@ import {
   ClienteParaResumen,
   CreatePedidoParams,
   ListPedidosParams,
+  NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
   PresentacionParaPedido,
@@ -37,7 +38,16 @@ export abstract class PedidoRepository {
     desde: EstadoPedido,
     hacia: EstadoPedido,
   ): Promise<boolean>;
-  // Pasa el pedido a `entregado` y descuenta el stock de cada presentación en la
-  // misma transacción (RF-A036). Falla si alguna no tiene stock suficiente.
+  // Pasa el pedido de `pendiente_entrega` a `en_camino` y, en la misma
+  // transacción, deja la notificación al usuario del cliente (RF-A096, RF-A097).
+  // Si el cliente no tiene usuario no hay a quién notificar y se omite. Devuelve
+  // false si en el camino otro usuario ya lo cambió.
+  abstract marcarEnCamino(
+    id: number,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<boolean>;
+  // Pasa el pedido a `entregado`, guarda la fecha de entrega y descuenta el stock
+  // de cada presentación en la misma transacción (RF-A036, RF-A098). Falla si
+  // alguna no tiene stock suficiente.
   abstract marcarEntregado(id: number): Promise<PedidoEntity>;
 }
