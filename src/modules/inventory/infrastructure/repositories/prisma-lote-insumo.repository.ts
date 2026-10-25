@@ -2,17 +2,57 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { LoteInsumoEntity } from '../../domain/entities';
+import { EstadoLoteInsumo } from '../../domain/enums';
 import { LoteInsumoRepository } from '../../domain/repositories/lote-insumo.repository';
 import {
   CreateLoteInsumoParams,
   ListLoteInsumosParams,
 } from '../../domain/repositories/types/lote-insumo-repository.types';
 import { PaginatedResult } from '../../../catalog/domain/repositories/types/pagination.types';
-import { LoteInsumoMapper } from '../mappers/lote-insumo.mapper';
+import {
+  DIAS_POR_VENCER,
+  LoteInsumoMapper,
+} from '../mappers/lote-insumo.mapper';
 
 @Injectable()
 export class PrismaLoteInsumoRepository implements LoteInsumoRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  // 'vencido' y 'por_vencer' no están en la columna estado (se calculan al
+  // leer, ver LoteInsumoMapper), así que filtrar por ellos no puede ser un
+  // simple `where: { estado }`: hay que traducirlos a la misma condición de
+  // fecha que usa el mapper. 'activo' también se ajusta para no incluir los
+  // que en realidad ya muestran como vencido/por_vencer.
+  private estadoCondition(
+    estado: EstadoLoteInsumo,
+  ): Prisma.LoteInsumoWhereInput {
+    if (estado === EstadoLoteInsumo.AGOTADO) {
+      return { estado: 'agotado' };
+    }
+
+    const hoy = new Date();
+    const limitePorVencer = new Date(hoy);
+    limitePorVencer.setDate(limitePorVencer.getDate() + DIAS_POR_VENCER);
+
+    if (estado === EstadoLoteInsumo.VENCIDO) {
+      return { estado: 'activo', fecha_vencimiento: { lt: hoy } };
+    }
+    if (estado === EstadoLoteInsumo.POR_VENCER) {
+      return {
+        estado: 'activo',
+        fecha_vencimiento: { gte: hoy, lte: limitePorVencer },
+      };
+    }
+    // ACTIVO: sin fecha de vencimiento, o vence después de la ventana de
+    // "por vencer".
+    return {
+      estado: 'activo',
+      OR: [
+        { fecha_vencimiento: null },
+        { fecha_vencimiento: { gt: limitePorVencer } },
+      ],
+    };
+  }
 
   async create(params: CreateLoteInsumoParams): Promise<LoteInsumoEntity> {
     const { razon, cantidad_inicial, ...loteParams } = params;
@@ -51,13 +91,28 @@ export class PrismaLoteInsumoRepository implements LoteInsumoRepository {
   ): Promise<PaginatedResult<LoteInsumoEntity>> {
     const where: Prisma.LoteInsumoWhereInput = {
       ...(params.activo === undefined ? {} : { activo: params.activo }),
-      ...(params.estado ? { estado: params.estado } : {}),
       ...(params.insumo_id === undefined
         ? {}
         : { insumo_id: params.insumo_id }),
       ...(params.search
         ? { codigo_lote: { contains: params.search, mode: 'insensitive' } }
         : {}),
+      // Cada condición sobre fecha_vencimiento va en su propio AND para que
+      // estado (vencido/por_vencer) y el rango vence_desde/vence_hasta no se
+      // pisen entre sí.
+      AND: [
+        ...(params.estado ? [this.estadoCondition(params.estado)] : []),
+        ...(params.vence_desde || params.vence_hasta
+          ? [
+              {
+                fecha_vencimiento: {
+                  ...(params.vence_desde ? { gte: params.vence_desde } : {}),
+                  ...(params.vence_hasta ? { lte: params.vence_hasta } : {}),
+                },
+              } satisfies Prisma.LoteInsumoWhereInput,
+            ]
+          : []),
+      ],
     };
 
     const [lotes, total] = await this.prisma.$transaction([

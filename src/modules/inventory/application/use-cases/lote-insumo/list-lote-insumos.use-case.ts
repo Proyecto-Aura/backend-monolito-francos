@@ -18,6 +18,8 @@ export class ListLoteInsumosUseCase {
       insumo_id: dto.insumo_id,
       estado: dto.estado,
       activo: dto.activo,
+      vence_desde: dto.vence_desde ? new Date(dto.vence_desde) : undefined,
+      vence_hasta: dto.vence_hasta ? new Date(dto.vence_hasta) : undefined,
     });
   }
 }

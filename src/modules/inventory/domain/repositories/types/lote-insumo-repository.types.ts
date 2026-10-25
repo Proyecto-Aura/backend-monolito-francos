@@ -7,7 +7,9 @@ export interface CreateLoteInsumoParams {
   fecha_ingreso: Date;
   fecha_vencimiento: Date | null;
   cantidad_inicial: number;
-  estado: EstadoLoteInsumo;
+  // 'por_vencer' no es un valor real de la columna (se deriva al leer, ver
+  // LoteInsumoMapper): nunca se puede crear un lote con ese estado.
+  estado: Exclude<EstadoLoteInsumo, EstadoLoteInsumo.POR_VENCER>;
   activo: boolean;
   // Motivo del movimiento "entrada" que se crea junto con el lote. No se
   // pide cantidad_actual: nace en 0 y el propio movimiento "entrada" (vía
@@ -20,4 +22,6 @@ export interface ListLoteInsumosParams extends PaginationParams {
   insumo_id?: number;
   estado?: EstadoLoteInsumo;
   activo?: boolean;
+  vence_desde?: Date;
+  vence_hasta?: Date;
 }

@@ -507,6 +507,83 @@ describe('Insumos y lotes de insumo (e2e)', () => {
       expect(leido.estado).toBe('vencido');
     });
 
+    it('muestra "por_vencer" dentro de la ventana de 15 días y filtra por estado/fechas de vencimiento correctamente', async () => {
+      // Insumo propio para no mezclar con otras pruebas de este describe.
+      const insumo = (
+        await request(app.getHttpServer())
+          .post(INSUMOS_URL)
+          .set(auth(adminToken))
+          .send({
+            nombre: `${MARCA} Insumo para por_vencer`,
+            unidad_medida: 'kg',
+            stock_minimo: 10,
+            stock_maximo: 1000,
+            tipo: 'materia_prima',
+          })
+          .expect(201)
+      ).body as InsumoHttp;
+
+      const crearLote = async (sufijo: string, fecha_vencimiento?: string) =>
+        (
+          await request(app.getHttpServer())
+            .post(LOTES_URL)
+            .set(auth(adminToken))
+            .send({
+              insumo_id: insumo.id,
+              codigo_lote: `${MARCA}-porvencer-${sufijo}`,
+              fecha_ingreso: '2026-01-01',
+              ...(fecha_vencimiento ? { fecha_vencimiento } : {}),
+              cantidad_inicial: 10,
+            })
+            .expect(201)
+        ).body as LoteHttp;
+
+      // "Hoy" en los tests es 2026-10-25 (ver fecha del sistema).
+      const vencido = await crearLote('vencido', '2026-10-01');
+      const porVencer = await crearLote('por-vencer', '2026-11-05'); // 11 días
+      const activo = await crearLote('activo', '2027-06-01'); // muy lejos
+      const sinVencimiento = await crearLote('sin-vencimiento');
+
+      expect(vencido.estado).toBe('vencido');
+      expect(porVencer.estado).toBe('por_vencer');
+      expect(activo.estado).toBe('activo');
+      expect(sinVencimiento.estado).toBe('activo');
+
+      const idsConEstado = async (estado: string) => {
+        const res = await request(app.getHttpServer())
+          .get(LOTES_URL)
+          .query({ insumo_id: insumo.id, estado, limit: 100 })
+          .set(auth(adminToken))
+          .expect(200);
+        return (res.body as { data: LoteHttp[] }).data.map((l) => l.id);
+      };
+
+      // El filtro estado=activo NO debe traer los que en realidad muestran
+      // vencido/por_vencer, aunque la columna real diga 'activo' en los tres.
+      expect(await idsConEstado('activo')).toEqual(
+        expect.arrayContaining([activo.id, sinVencimiento.id]),
+      );
+      expect(await idsConEstado('activo')).not.toEqual(
+        expect.arrayContaining([vencido.id, porVencer.id]),
+      );
+      expect(await idsConEstado('vencido')).toEqual([vencido.id]);
+      expect(await idsConEstado('por_vencer')).toEqual([porVencer.id]);
+
+      const porRangoFecha = await request(app.getHttpServer())
+        .get(LOTES_URL)
+        .query({
+          insumo_id: insumo.id,
+          vence_desde: '2026-11-01',
+          vence_hasta: '2026-11-10',
+          limit: 100,
+        })
+        .set(auth(adminToken))
+        .expect(200);
+      expect(
+        (porRangoFecha.body as { data: LoteHttp[] }).data.map((l) => l.id),
+      ).toEqual([porVencer.id]);
+    });
+
     it('ordena el listado por fecha de vencimiento más próxima primero (sin fecha al final)', async () => {
       await request(app.getHttpServer())
         .post(LOTES_URL)

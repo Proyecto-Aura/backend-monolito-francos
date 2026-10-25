@@ -68,6 +68,8 @@ describe('Consultas y estado de lotes de insumo', () => {
           insumo_id: 1,
           estado: EstadoLoteInsumo.ACTIVO,
           activo: true,
+          vence_desde: '2026-11-01',
+          vence_hasta: '2026-11-30',
         }),
       ).resolves.toBe(resultado);
       expect(findMany).toHaveBeenCalledWith({
@@ -77,7 +79,22 @@ describe('Consultas y estado de lotes de insumo', () => {
         insumo_id: 1,
         estado: EstadoLoteInsumo.ACTIVO,
         activo: true,
+        vence_desde: new Date('2026-11-01'),
+        vence_hasta: new Date('2026-11-30'),
       });
+    });
+
+    it('deja vence_desde/vence_hasta undefined si no se mandan', async () => {
+      findMany.mockResolvedValue({ data: [], total: 0, page: 1, limit: 10 });
+
+      await useCase.execute({ page: 1, limit: 10 });
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          vence_desde: undefined,
+          vence_hasta: undefined,
+        }),
+      );
     });
   });
 
