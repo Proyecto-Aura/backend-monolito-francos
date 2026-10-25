@@ -64,6 +64,10 @@ export class UpdateIniciativaUseCase {
         throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
       }
 
+      if (nuevoObjetivo.tipo_modulo_id !== objetivo.tipo_modulo_id) {
+        throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
+      }
+
       if (nuevoObjetivo.plan_estrategico_id !== objetivo.plan_estrategico_id) {
         throw new ResourceConflictError(
           'No se puede reasignar la iniciativa a un objetivo estratégico de otro plan',
