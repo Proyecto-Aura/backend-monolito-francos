@@ -10,6 +10,19 @@ import {
 import { PaginatedResult } from '../../../catalog/domain/repositories/types/pagination.types';
 import { MovimientoInsumoMapper } from '../mappers/movimiento-insumo.mapper';
 
+// Embebido en cada movimiento (codigo_lote, insumo_*) para que el front no
+// tenga que resolver el lote ni el insumo aparte en listados.
+const INCLUDE_LOTE_E_INSUMO = {
+  lote_insumo: {
+    select: {
+      codigo_lote: true,
+      insumo: {
+        select: { id: true, nombre: true, sku: true, unidad_medida: true },
+      },
+    },
+  },
+} satisfies Prisma.MovimientoInsumoInclude;
+
 @Injectable()
 export class PrismaMovimientoInsumoRepository implements MovimientoInsumoRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -19,7 +32,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
   ): Promise<MovimientoInsumoEntity> {
     const movimiento = await this.prisma.movimientoInsumo.create({
       data: params,
-      include: { lote_insumo: { select: { codigo_lote: true } } },
+      include: INCLUDE_LOTE_E_INSUMO,
     });
 
     return MovimientoInsumoMapper.toDomain(movimiento);
@@ -33,7 +46,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
         paramsList.map((params) =>
           this.prisma.movimientoInsumo.create({
             data: params,
-            include: { lote_insumo: { select: { codigo_lote: true } } },
+            include: INCLUDE_LOTE_E_INSUMO,
           }),
         ),
       )
@@ -47,7 +60,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
   async findById(id: number): Promise<MovimientoInsumoEntity | null> {
     const movimiento = await this.prisma.movimientoInsumo.findUnique({
       where: { id },
-      include: { lote_insumo: { select: { codigo_lote: true } } },
+      include: INCLUDE_LOTE_E_INSUMO,
     });
 
     return movimiento ? MovimientoInsumoMapper.toDomain(movimiento) : null;
@@ -108,7 +121,7 @@ export class PrismaMovimientoInsumoRepository implements MovimientoInsumoReposit
         skip: (params.page - 1) * params.limit,
         take: params.limit,
         orderBy: { fecha: 'desc' },
-        include: { lote_insumo: { select: { codigo_lote: true } } },
+        include: INCLUDE_LOTE_E_INSUMO,
       }),
       this.prisma.movimientoInsumo.count({ where }),
     ]);

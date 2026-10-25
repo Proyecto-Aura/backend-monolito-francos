@@ -1,5 +1,8 @@
 import { MovimientoInsumoEntity } from '../../../domain/entities';
-import { TipoMovimientoInsumo } from '../../../domain/enums';
+import {
+  TipoMovimientoInsumo,
+  UnidadMedidaInsumo,
+} from '../../../domain/enums';
 import { ResourceNotFoundError } from '../../../../catalog/domain/errors/catalog-domain.errors';
 import { MovimientoInsumoRepository } from '../../../domain/repositories/movimiento-insumo.repository';
 import { GetMovimientoByIdUseCase } from './get-movimiento-by-id.use-case';
@@ -19,6 +22,10 @@ describe('Consultas de movimientos de insumo', () => {
     'FR-MV-001-261017-INS1',
     4,
     'LOTE-2026-004',
+    1,
+    'Harina de trigo',
+    'FR-INS-001',
+    UnidadMedidaInsumo.KG,
     TipoMovimientoInsumo.SALIDA,
     20,
     60,
