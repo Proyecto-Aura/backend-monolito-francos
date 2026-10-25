@@ -877,6 +877,25 @@ describe('Catálogo (e2e)', () => {
       );
     });
 
+    it('filtra por nivel de stock (mismo criterio que /productos-terminados/indicadores)', async () => {
+      // stock_actual=12, stock_minimo=1 (default), stock_maximo=null => "normal".
+      const normales = filas(
+        (await listar({ nivel: 'normal' }).expect(200)).body,
+      );
+      expect(normales.map(({ id }) => id)).toContain(productoPresentacionId);
+
+      const agotados = filas(
+        (await listar({ nivel: 'agotado' }).expect(200)).body,
+      );
+      expect(agotados.map(({ id }) => id)).not.toContain(
+        productoPresentacionId,
+      );
+    });
+
+    it('rechaza un nivel inválido (400)', async () => {
+      await listar({ nivel: 'inexistente' }).expect(400);
+    });
+
     it('busca por nombre del producto, sin distinguir mayúsculas', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/v1/producto-presentaciones')

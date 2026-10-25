@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsPositive,
@@ -9,6 +10,7 @@ import {
 } from 'class-validator';
 import { PaginationQueryDto } from '../common/pagination-query-dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { NivelStockProductoTerminado } from '../../../domain/enums';
 
 const aBoolean = ({ value }: { value: unknown }) =>
   value === 'true' ? true : value === 'false' ? false : String(value);
@@ -60,4 +62,13 @@ export class ListProductoPresentacionQueryDto extends PaginationQueryDto {
   @Transform(aBoolean)
   @IsBoolean()
   con_stock?: boolean;
+
+  @ApiPropertyOptional({
+    enum: NivelStockProductoTerminado,
+    example: 'bajo',
+    description: 'Mismo criterio que /productos-terminados/indicadores',
+  })
+  @IsOptional()
+  @IsEnum(NivelStockProductoTerminado)
+  nivel?: NivelStockProductoTerminado;
 }

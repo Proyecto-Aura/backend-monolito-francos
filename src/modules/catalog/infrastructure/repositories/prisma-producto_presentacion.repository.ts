@@ -1,5 +1,6 @@
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { ProductoPresentacionEntity } from '../../domain/entities';
+import { NivelStockProductoTerminado } from '../../domain/enums';
 import { ProductoPresentacionRepository } from '../../domain/repositories/producto_presentacion.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import {
@@ -15,9 +16,29 @@ import {
 } from '../mappers/producto_presentacion.mapper';
 import { Prisma } from '@prisma/client';
 
+// Mismo umbral que /productos-terminados/indicadores (módulo inventory).
+const UMBRAL_ALTO_PORCENTAJE = 90;
+
 @Injectable()
 export class PrismaProductoPresentacionRepository implements ProductoPresentacionRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  // stock_actual/stock_minimo/stock_maximo no se pueden comparar entre
+  // columnas con el query builder de Prisma, así que se resuelven los
+  // producto_presentacion_id por SQL y se filtra por ellos en el findMany
+  // normal (mismo patrón que el filtro "nivel" de /insumos).
+  private nivelCondition(nivel: NivelStockProductoTerminado): Prisma.Sql {
+    switch (nivel) {
+      case NivelStockProductoTerminado.AGOTADO:
+        return Prisma.sql`stock_actual <= 0`;
+      case NivelStockProductoTerminado.BAJO:
+        return Prisma.sql`stock_actual > 0 AND stock_actual < stock_minimo`;
+      case NivelStockProductoTerminado.ALTO:
+        return Prisma.sql`stock_actual >= stock_minimo AND stock_maximo IS NOT NULL AND (stock_actual / stock_maximo) * 100 > ${UMBRAL_ALTO_PORCENTAJE}`;
+      case NivelStockProductoTerminado.NORMAL:
+        return Prisma.sql`stock_actual >= stock_minimo AND (stock_maximo IS NULL OR (stock_actual / stock_maximo) * 100 <= ${UMBRAL_ALTO_PORCENTAJE})`;
+    }
+  }
 
   async create(
     params: CreateProductoPresentacionParams,
@@ -42,6 +63,17 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
   async findMany(
     params: ListProductoPresentacionesParams,
   ): Promise<PaginatedResult<ProductoPresentacionCatalogo>> {
+    let idsPorNivel: number[] | undefined;
+    if (params.nivel) {
+      const filas = await this.prisma.$queryRaw<
+        { producto_presentacion_id: number }[]
+      >`
+        SELECT producto_presentacion_id FROM commerce.producto_terminado
+        WHERE ${this.nivelCondition(params.nivel)}
+      `;
+      idsPorNivel = filas.map((fila) => fila.producto_presentacion_id);
+    }
+
     const where: Prisma.ProductoPresentacionWhereInput = {
       ...(params.estado === undefined ? {} : { estado: params.estado }),
       ...(params.presentacion_id === undefined
@@ -50,6 +82,7 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
       ...(params.categoria_id === undefined
         ? {}
         : { producto: { categoria_id: params.categoria_id } }),
+      ...(idsPorNivel === undefined ? {} : { id: { in: idsPorNivel } }),
       // Cada condición con OR va en su propio AND para que no se pisen entre sí.
       AND: [
         ...(params.search
