@@ -296,4 +296,127 @@ describe('Productos terminados / stock (e2e)', () => {
       .send({ stock_minimo: 5 })
       .expect(404);
   });
+
+  describe('GET /productos-terminados/indicadores', () => {
+    // Mismo criterio que /insumos/indicadores, pero no hay movimientos de
+    // producto todavía (esa HU es aparte): se fuerza stock_actual directo en
+    // la base para cubrir cada nivel, como ya se hace en los e2e de insumos.
+    const crearEnNivel = async (
+      sufijo: string,
+      datos: {
+        stock_actual: number;
+        stock_minimo: number;
+        stock_maximo: number | null;
+      },
+    ) => {
+      const categoria = (
+        await request(app.getHttpServer())
+          .post(CATEGORIAS_URL)
+          .set(auth(adminToken))
+          .send({ nombre: `${MARCA} Categoría ${sufijo}` })
+          .expect(201)
+      ).body as { id: number };
+
+      const presentacion = (
+        await request(app.getHttpServer())
+          .post(PRESENTACIONES_URL)
+          .set(auth(adminToken))
+          .send({
+            cantidad: 9100 + sufijo.charCodeAt(0),
+            unidad_medida: 'gr',
+            descripcion: `${MARCA} Presentación ${sufijo}`,
+          })
+          .expect(201)
+      ).body as { id: number };
+
+      const producto = (
+        await request(app.getHttpServer())
+          .post(PRODUCTOS_URL)
+          .set(auth(adminToken))
+          .send({
+            categoria_id: categoria.id,
+            nombre: `${MARCA} Producto nivel ${sufijo}`,
+            destacado: false,
+            producto_presentaciones: [
+              {
+                presentacion_id: presentacion.id,
+                precio_unitario: 10,
+              },
+            ],
+          })
+          .expect(201)
+      ).body as ProductoHttp;
+
+      const ppId = producto.producto_presentaciones[0].id;
+      await prisma.productoTerminado.update({
+        where: { producto_presentacion_id: ppId },
+        data: datos,
+      });
+      return ppId;
+    };
+
+    it('cuenta agotado/bajo/normal/alto correctamente', async () => {
+      const antes = (
+        await request(app.getHttpServer())
+          .get(`${PRODUCTOS_TERMINADOS_URL}/indicadores`)
+          .set(auth(inventarioToken))
+          .expect(200)
+      ).body as {
+        agotado: number;
+        bajo: number;
+        normal: number;
+        alto: number;
+        total: number;
+      };
+
+      await crearEnNivel('A', {
+        stock_actual: 0,
+        stock_minimo: 10,
+        stock_maximo: 100,
+      }); // agotado
+      await crearEnNivel('B', {
+        stock_actual: 5,
+        stock_minimo: 10,
+        stock_maximo: 100,
+      }); // bajo
+      await crearEnNivel('C', {
+        stock_actual: 50,
+        stock_minimo: 10,
+        stock_maximo: 100,
+      }); // normal (50% de 100)
+      await crearEnNivel('D', {
+        stock_actual: 95,
+        stock_minimo: 10,
+        stock_maximo: 100,
+      }); // alto (95% de 100, > 90%)
+
+      const despues = (
+        await request(app.getHttpServer())
+          .get(`${PRODUCTOS_TERMINADOS_URL}/indicadores`)
+          .set(auth(inventarioToken))
+          .expect(200)
+      ).body as typeof antes;
+
+      // >= y no === : el conteo es un agregado global (igual que
+      // /insumos/indicadores), y otros archivos e2e corren en paralelo
+      // creando/editando sus propios productos al mismo tiempo. Lo que
+      // importa acá es que cada uno de los 4 que creamos haya sumado a su
+      // categoría correspondiente, no el total exacto del sistema.
+      expect(despues.agotado - antes.agotado).toBeGreaterThanOrEqual(1);
+      expect(despues.bajo - antes.bajo).toBeGreaterThanOrEqual(1);
+      expect(despues.normal - antes.normal).toBeGreaterThanOrEqual(1);
+      expect(despues.alto - antes.alto).toBeGreaterThanOrEqual(1);
+      expect(despues.total - antes.total).toBeGreaterThanOrEqual(4);
+    });
+
+    it('sin token devuelve 401 y con rol ventas (sin acceso) devuelve 403', async () => {
+      await request(app.getHttpServer())
+        .get(`${PRODUCTOS_TERMINADOS_URL}/indicadores`)
+        .expect(401);
+      await request(app.getHttpServer())
+        .get(`${PRODUCTOS_TERMINADOS_URL}/indicadores`)
+        .set(auth(ventasToken))
+        .expect(403);
+    });
+  });
 });

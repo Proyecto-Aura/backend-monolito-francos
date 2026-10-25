@@ -14,6 +14,7 @@ import { RegistrarSalidaInsumoUseCase } from '../application/use-cases/movimient
 import { RegistrarAjusteInsumoUseCase } from '../application/use-cases/movimiento-insumo/registrar-ajuste-insumo.use-case';
 import { GetMovimientoByIdUseCase } from '../application/use-cases/movimiento-insumo/get-movimiento-by-id.use-case';
 import { ListMovimientosUseCase } from '../application/use-cases/movimiento-insumo/list-movimientos.use-case';
+import { GetIndicadoresProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/get-indicadores-producto-terminado.use-case';
 import { UpdateProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/update-producto-terminado.use-case';
 import { InsumoRepository } from '../domain/repositories/insumo.repository';
 import { LoteInsumoRepository } from '../domain/repositories/lote-insumo.repository';
@@ -61,6 +62,7 @@ import { ProductosTerminadosController } from './controllers/productos-terminado
       useClass: PrismaMovimientoInsumoRepository,
     },
     UpdateProductoTerminadoUseCase,
+    GetIndicadoresProductoTerminadoUseCase,
     {
       provide: ProductoTerminadoRepository,
       useClass: PrismaProductoTerminadoRepository,

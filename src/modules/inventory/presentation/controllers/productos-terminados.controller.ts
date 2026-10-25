@@ -1,4 +1,11 @@
-import { Body, Controller, Param, ParseIntPipe, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -8,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import { UpdateProductoTerminadoDto } from '../../application/dto/producto-terminado-dtos/update-producto-terminado.dto';
+import { GetIndicadoresProductoTerminadoUseCase } from '../../application/use-cases/producto-terminado/get-indicadores-producto-terminado.use-case';
 import { UpdateProductoTerminadoUseCase } from '../../application/use-cases/producto-terminado/update-producto-terminado.use-case';
 import { ProductoTerminadoPresenter } from '../presenters/producto-terminado.presenter';
 
@@ -25,7 +33,18 @@ import { ProductoTerminadoPresenter } from '../presenters/producto-terminado.pre
 export class ProductosTerminadosController {
   constructor(
     private readonly updateProductoTerminado: UpdateProductoTerminadoUseCase,
+    private readonly getIndicadoresProductoTerminado: GetIndicadoresProductoTerminadoUseCase,
   ) {}
+
+  @Roles('admin', 'inventario', 'produccion')
+  @Get('indicadores')
+  @ApiOperation({
+    summary: 'Conteo de productos terminados activos por nivel de stock',
+  })
+  @ApiOkResponse({ description: 'KPIs: agotado, bajo, normal, alto, total' })
+  async indicadores() {
+    return this.getIndicadoresProductoTerminado.execute();
+  }
 
   @Patch(':producto_presentacion_id')
   @ApiOperation({

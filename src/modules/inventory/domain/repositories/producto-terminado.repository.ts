@@ -1,5 +1,8 @@
 import { ProductoTerminadoEntity } from '../entities';
-import { UpdateProductoTerminadoParams } from './types/producto-terminado-repository.types';
+import {
+  IndicadoresProductoTerminado,
+  UpdateProductoTerminadoParams,
+} from './types/producto-terminado-repository.types';
 
 // Crear y listar productos terminados no viven acá: el catálogo
 // (Producto/ProductoPresentacion, módulo catalog) ya crea la fila de stock
@@ -20,4 +23,5 @@ export abstract class ProductoTerminadoRepository {
   abstract existeProductoPresentacion(
     productoPresentacionId: number,
   ): Promise<boolean>;
+  abstract getIndicadores(): Promise<IndicadoresProductoTerminado>;
 }
