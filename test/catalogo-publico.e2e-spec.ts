@@ -132,7 +132,6 @@ describe('Catálogo público (e2e)', () => {
     sufijo: string;
     precio: number;
     estado?: boolean;
-    visible_portal_b?: boolean;
     stock?: number;
   }) => {
     const pp = await prisma.productoPresentacion.create({
@@ -142,9 +141,8 @@ describe('Catálogo público (e2e)', () => {
         precio_unitario: params.precio,
         producto_id: params.producto_id,
         presentacion_id: params.presentacion_id,
+        // Lo único que decide si se ve en el Portal B es el estado (HU-A-008).
         estado: params.estado ?? true,
-        // El toggle de visibilidad aún no tiene endpoint (HU-A-007).
-        visible_portal_b: params.visible_portal_b ?? true,
         producto_terminado: { create: { stock_actual: params.stock ?? 5 } },
       },
     });
@@ -249,7 +247,7 @@ describe('Catálogo público (e2e)', () => {
       ).id,
       sufijo: 'alfa-1kg-oculta',
       precio: 5,
-      visible_portal_b: false,
+      estado: false,
     });
     await crearPresentacionProducto({
       producto_id: ids.productoInactivo,
@@ -275,7 +273,7 @@ describe('Catálogo público (e2e)', () => {
       presentacion_id: p200.id,
       sufijo: 'zeta-200',
       precio: 14,
-      visible_portal_b: false,
+      estado: false,
     });
 
     const hoy = parseFechaDia(fechaHoy());

@@ -453,7 +453,8 @@ describe('Catálogo (e2e)', () => {
       const presentacion = await prisma.productoPresentacion.findUniqueOrThrow({
         where: { id },
       });
-      expect(presentacion.visible_portal_b).toBe(false);
+      // Nace desactivada: no se ve en el Portal B hasta que se active a mano.
+      expect(presentacion.estado).toBe(false);
     });
 
     it('POST /api/v1/producto-presentaciones con una presentación repetida devuelve 409 y no crea nada', async () => {
@@ -882,12 +883,19 @@ describe('Catálogo (e2e)', () => {
         ),
       ).toBe(true);
 
-      expect(
-        filas((await listar({ estado: true }).expect(200)).body).length,
-      ).toBeGreaterThanOrEqual(1);
-      expect(
-        filas((await listar({ estado: false }).expect(200)).body),
-      ).toHaveLength(0);
+      // Las presentaciones nuevas nacen desactivadas, así que pueden aparecer
+      // en el filtro "inactivas"; la de este bloque está activa.
+      const activas = filas((await listar({ estado: true }).expect(200)).body);
+      expect(activas.map(({ id }) => id)).toContain(productoPresentacionId);
+      expect(activas.every(({ estado }) => estado)).toBe(true);
+
+      const inactivas = filas(
+        (await listar({ estado: false }).expect(200)).body,
+      );
+      expect(inactivas.map(({ id }) => id)).not.toContain(
+        productoPresentacionId,
+      );
+      expect(inactivas.every(({ estado }) => !estado)).toBe(true);
     });
 
     it('filtra por disponibilidad (con stock o agotado)', async () => {
