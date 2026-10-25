@@ -42,6 +42,7 @@ describe('UpdateIniciativaUseCase', () => {
   } as PlanEstrategicoEntityConEstado;
   const objetivo = {
     id: 10,
+    tipo_modulo_id: 7,
     plan_estrategico_id: plan.id,
     estado: true,
   } as ObjetivoEstrategicoEntityEnriquecido;
@@ -129,6 +130,27 @@ describe('UpdateIniciativaUseCase', () => {
     await expect(
       useCase.execute(iniciativa.id, { objetivo_estrategico_id: 99 }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    expect(existsByNombre).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('rechaza reasignar a un objetivo de otro tipo de módulo (TI)', async () => {
+    prepararBase();
+    const nuevoObjetivo = { ...objetivoDestino, tipo_modulo_id: 8 };
+    findObjetivoActivoById
+      .mockResolvedValueOnce(objetivo)
+      .mockResolvedValueOnce(nuevoObjetivo);
+
+    const resultado = useCase.execute(iniciativa.id, {
+      objetivo_estrategico_id: nuevoObjetivo.id,
+    });
+
+    await expect(resultado).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(resultado).rejects.toMatchObject({
+      statusCode: 404,
+      message: 'Objetivo estratégico no encontrado',
+    });
+    expect(findObjetivoActivoById).toHaveBeenNthCalledWith(2, nuevoObjetivo.id);
     expect(existsByNombre).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
   });

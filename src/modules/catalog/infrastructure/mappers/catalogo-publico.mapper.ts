@@ -8,10 +8,10 @@ import {
 import { PromocionMapper } from './promocion.mapper';
 
 // Condiciones fijas para que una presentación se vea en el Portal B. El
-// producto y la categoría se filtran aparte, desde donde se consulte.
+// producto y la categoría se filtran aparte, desde donde se consulte. Lo único
+// que decide si aparece es el estado Activo/Desactivado (HU-A-008).
 export const PRESENTACION_VISIBLE_WHERE = {
   estado: true,
-  visible_portal_b: true,
 } satisfies Prisma.ProductoPresentacionWhereInput;
 
 export const PRODUCTO_VISIBLE_WHERE = {

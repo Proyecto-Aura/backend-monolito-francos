@@ -457,7 +457,8 @@ describe('Catálogo (e2e)', () => {
       const presentacion = await prisma.productoPresentacion.findUniqueOrThrow({
         where: { id },
       });
-      expect(presentacion.visible_portal_b).toBe(false);
+      // Nace desactivada: no se ve en el Portal B hasta que se active a mano.
+      expect(presentacion.estado).toBe(false);
     });
 
     // OFT0-258: el rol inventario (pantalla de stock de producto terminado)
@@ -590,6 +591,44 @@ describe('Catálogo (e2e)', () => {
         .expect(200);
 
       expect(response.body).toMatchObject({ id: productoId, destacado: true });
+    });
+
+    it('no deja desactivar el producto ni su presentación mientras tengan stock (HU-A-008)', async () => {
+      const presentacion = await prisma.productoPresentacion.findFirstOrThrow({
+        where: { producto_id: productoId },
+      });
+      await prisma.productoTerminado.update({
+        where: { producto_presentacion_id: presentacion.id },
+        data: { stock_actual: 5 },
+      });
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/productos/${productoId}`)
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .expect(409);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/producto-presentaciones/${presentacion.id}`)
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .expect(409);
+
+      const producto = await prisma.producto.findUniqueOrThrow({
+        where: { id: productoId },
+      });
+      expect(producto.estado).toBe(true);
+
+      // Con el stock en cero ya se puede desactivar y reactivar.
+      await prisma.productoTerminado.update({
+        where: { producto_presentacion_id: presentacion.id },
+        data: { stock_actual: 0 },
+      });
+      await request(app.getHttpServer())
+        .delete(`/api/v1/producto-presentaciones/${presentacion.id}`)
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/api/v1/producto-presentaciones/${presentacion.id}/activate`)
+        .set('Authorization', `Bearer ${ventasToken}`)
+        .expect(200);
     });
 
     it('DELETE /api/v1/productos/:id desactiva y PATCH :id/activate reactiva', async () => {
@@ -890,12 +929,19 @@ describe('Catálogo (e2e)', () => {
         ),
       ).toBe(true);
 
-      expect(
-        filas((await listar({ estado: true }).expect(200)).body).length,
-      ).toBeGreaterThanOrEqual(1);
-      expect(
-        filas((await listar({ estado: false }).expect(200)).body),
-      ).toHaveLength(0);
+      // Las presentaciones nuevas nacen desactivadas, así que pueden aparecer
+      // en el filtro "inactivas"; la de este bloque está activa.
+      const activas = filas((await listar({ estado: true }).expect(200)).body);
+      expect(activas.map(({ id }) => id)).toContain(productoPresentacionId);
+      expect(activas.every(({ estado }) => estado)).toBe(true);
+
+      const inactivas = filas(
+        (await listar({ estado: false }).expect(200)).body,
+      );
+      expect(inactivas.map(({ id }) => id)).not.toContain(
+        productoPresentacionId,
+      );
+      expect(inactivas.every(({ estado }) => !estado)).toBe(true);
     });
 
     it('filtra por disponibilidad (con stock o agotado)', async () => {

@@ -110,7 +110,7 @@ describe('CreateProductoUseCase', () => {
             umbral_mayorista: null,
             imagen_key: null,
             slug: 'chifles-clasicos-100-gr-p1',
-            estado: true,
+            estado: false,
           },
         ],
       });

@@ -76,7 +76,9 @@ export class CreateProductoPresentacionUseCase {
         createProductoPresentacionSlug(producto.nombre, presentacion),
         (slug) => this.productoPresentacionRepository.existsBySlug(slug),
       ),
-      estado: dto.estado ?? true,
+      // Una presentación nueva nace desactivada: se activa a mano con el botón
+      // Activar (HU-A-008) y recién ahí aparece en el Portal B.
+      estado: dto.estado ?? false,
     });
   }
 }

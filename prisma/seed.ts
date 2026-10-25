@@ -20,6 +20,7 @@ import { seedFrecuenciaMedicion } from './seeds/frecuencia-medicion.seed';
 import { seedPeriodo } from './seeds/periodo.seed';
 import { seedEstadoIniciativa } from './seeds/estado-iniciativa.seed';
 import { seedDemoReembolsos } from './seeds/demo-reembolsos.seed';
+import { seedDemoStockProductos } from './seeds/demo-stock-productos.seed';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -45,6 +46,7 @@ async function main() {
   await seedUsuarioPruebaCliente(prisma);
   // Solo con SEED_DEMO=true (desarrollo).
   await seedDemoReembolsos(prisma);
+  await seedDemoStockProductos(prisma);
 }
 
 main()

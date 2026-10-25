@@ -63,6 +63,12 @@ import { EliminarIniciativaUseCase } from '../application/use-cases/iniciativa/e
 import { ListIniciativasPorObjetivoUseCase } from '../application/use-cases/iniciativa/list-iniciativas-por-objetivo.use-case';
 import { ObtenerIniciativasPorPlanUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
 import { UpdateIniciativaUseCase } from '../application/use-cases/iniciativa/update-iniciativa.use-case';
+import { ActualizarEstadoIniciativaTiUseCase } from '../application/use-cases/iniciativa/actualizar-estado-iniciativa-ti.use-case';
+import { CreateIniciativaTiUseCase } from '../application/use-cases/iniciativa/create-iniciativa-ti.use-case';
+import { EliminarIniciativaTiUseCase } from '../application/use-cases/iniciativa/eliminar-iniciativa-ti.use-case';
+import { ListIniciativasPorObjetivoTiUseCase } from '../application/use-cases/iniciativa/list-iniciativas-por-objetivo-ti.use-case';
+import { ObtenerIniciativasPorPlanTiUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan-ti.use-case';
+import { UpdateIniciativaTiUseCase } from '../application/use-cases/iniciativa/update-iniciativa-ti.use-case';
 import { ObtenerTableroControlUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
@@ -105,6 +111,7 @@ import { PerspectivasBscController } from './controllers/perspectivas-bsc.contro
 import { PlanesEstrategicosController } from './controllers/planes-estrategicos.controller';
 import { UnidadesMedidaKpiController } from './controllers/unidades-medida-kpi.controller';
 import { IniciativasController } from './controllers/iniciativas.controller';
+import { IniciativasTiController } from './controllers/iniciativas-ti.controller';
 import { StrategicDomainExceptionFilter } from './filters/strategic-domain-exception.filter';
 
 @Module({
@@ -121,6 +128,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     UnidadesMedidaKpiController,
     PeriodosController,
     IniciativasController,
+    IniciativasTiController,
   ],
   providers: [
     CreatePlanEstrategicoUseCase,
@@ -186,6 +194,12 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ActualizarEstadoIniciativaUseCase,
     ListIniciativasPorObjetivoUseCase,
     ObtenerIniciativasPorPlanUseCase,
+    CreateIniciativaTiUseCase,
+    UpdateIniciativaTiUseCase,
+    EliminarIniciativaTiUseCase,
+    ActualizarEstadoIniciativaTiUseCase,
+    ListIniciativasPorObjetivoTiUseCase,
+    ObtenerIniciativasPorPlanTiUseCase,
     ObtenerTableroControlUseCase,
     ObtenerSeguimientoKpisUseCase,
     {
