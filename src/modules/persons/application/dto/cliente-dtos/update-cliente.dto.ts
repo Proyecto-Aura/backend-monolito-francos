@@ -69,6 +69,14 @@ export class UpdateClienteDto {
   @IsString()
   direccion?: string;
 
+  @ApiPropertyOptional({
+    example: '150131',
+    description: 'Código del distrito (ubigeo INEI, 6 dígitos)',
+  })
+  @IsOptional()
+  @Matches(/^\d{6}$/, { message: 'distrito_id debe tener 6 dígitos' })
+  distrito_id?: string;
+
   // --- datos de Cliente ---
   @ApiPropertyOptional({
     enum: TipoCliente,

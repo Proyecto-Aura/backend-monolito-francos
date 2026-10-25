@@ -39,6 +39,7 @@ export interface KpiObjetivoResumen {
   codigo: string;
   nombre: string;
   responsable: string;
+  tipo_modulo_id: number;
   perspectiva_bsc: {
     id: number;
     nombre: string;
@@ -63,5 +64,11 @@ export type KpiObjetivoResumenConResponsable = KpiObjetivoResumen;
 
 export interface KpiResumenPlanEntidad extends KpiEntityEnriquecido {
   objetivo_estrategico: KpiObjetivoResumenConResponsable;
+  ultimo_valor: KpiValorEntityEnriquecido | null;
+}
+
+export interface KpiSeguimientoEntidad extends KpiEntityEnriquecido {
+  objetivo_estrategico: KpiObjetivoResumenConResponsable;
+  historial: KpiValorEntityEnriquecido[];
   ultimo_valor: KpiValorEntityEnriquecido | null;
 }

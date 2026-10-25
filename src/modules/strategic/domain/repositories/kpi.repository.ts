@@ -2,6 +2,7 @@ import {
   CreateKpiParams,
   KpiEntityEnriquecido,
   KpiResumenPlanEntidad,
+  KpiSeguimientoEntidad,
   ListKpisPorObjetivoParams,
   UpdateKpiParams,
 } from './types/kpi-repository.types';
@@ -13,6 +14,7 @@ export abstract class KpiRepository {
     params: CreateKpiParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<KpiEntityEnriquecido>;
   abstract existsByNombre(
     objetivoEstrategicoId: number,
@@ -42,6 +44,10 @@ export abstract class KpiRepository {
     planId: number,
     tipoModuloId: number,
   ): Promise<KpiEntityEnriquecido[]>;
+  abstract findSeguimientoPorPlan(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<KpiSeguimientoEntidad[]>;
   abstract existeKpiIncompletoEnPlan(
     planId: number,
     anioInicio: number,

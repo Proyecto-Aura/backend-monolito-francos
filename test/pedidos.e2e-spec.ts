@@ -617,6 +617,33 @@ describe('Pedidos (e2e)', () => {
       expect(body.data.map((p) => p.id)).not.toContain(pedidoEfectivoId);
     });
 
+    it('filtra por cliente y no mezcla pedidos de otros clientes', async () => {
+      const response = await listar({
+        cliente_id: clienteId,
+        limit: 100,
+      }).expect(200);
+      const body = response.body as unknown as ListadoBody;
+
+      expect(body.data.every((p) => p.cliente.id === clienteId)).toBe(true);
+      expect(body.data.map((p) => p.id)).toEqual(
+        expect.arrayContaining([pedidoEfectivoId, pedidoCulqiId]),
+      );
+    });
+
+    it('con un cliente sin pedidos devuelve una lista vacía', async () => {
+      const response = await listar({
+        cliente_id: 'a1b2c3d4-0000-4000-8000-000000000001',
+      }).expect(200);
+      const body = response.body as unknown as ListadoBody;
+
+      expect(body.data).toEqual([]);
+      expect(body.meta.total).toBe(0);
+    });
+
+    it('con un cliente_id mal formado devuelve 400', async () => {
+      await listar({ cliente_id: 'no-es-un-uuid' }).expect(400);
+    });
+
     it('excluye los pedidos fuera del rango de fechas', async () => {
       const response = await listar({
         fecha_desde: '2000-01-01',

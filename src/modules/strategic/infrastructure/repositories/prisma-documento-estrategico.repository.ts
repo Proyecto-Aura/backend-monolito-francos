@@ -20,7 +20,7 @@ export class PrismaDocumentoEstrategicoRepository implements DocumentoEstrategic
   ): Promise<PaginatedResult<DocumentoEstrategicoEntity>> {
     const where: Prisma.DocumentoEstrategicoWhereInput = {
       plan_estrategico_id: params.plan_estrategico_id,
-      tipo_modulo: { codigo: 'NEG' },
+      tipo_modulo_id: params.tipo_modulo_id,
       ...(soloActivos ? { estado: true } : {}),
       ...(params.search
         ? { nombre: { contains: params.search, mode: 'insensitive' } }

@@ -44,9 +44,9 @@ describe('CreateKpiUseCase', () => {
     findById: findUnidadById,
   } as unknown as jest.Mocked<UnidadMedidaKpiRepository>;
 
-  const findTipoModuloByCodigo = jest.fn();
+  const findTipoModuloById = jest.fn();
   const tipoModuloRepository = {
-    findByCodigo: findTipoModuloByCodigo,
+    findById: findTipoModuloById,
   } as unknown as jest.Mocked<TipoModuloRepository>;
 
   const useCase = new CreateKpiUseCase(
@@ -66,14 +66,15 @@ describe('CreateKpiUseCase', () => {
     estado: true,
     estado_plan: { id: 1, codigo: 'BORRADOR', estado: true },
   } as PlanEstrategicoEntityConEstado;
+  const tipoModulo = { id: 7, codigo: 'NEG', estado: true };
   const objetivo = {
     id: 10,
     plan_estrategico_id: plan.id,
+    tipo_modulo_id: tipoModulo.id,
     estado: true,
   } as ObjetivoEstrategicoEntityEnriquecido;
   const frecuencia = { id: 3, estado: true };
   const unidad = { id: 4, estado: true };
-  const tipoModulo = { id: 7, codigo: 'NEG', estado: true };
   const metas = [
     {
       anio: 2026,
@@ -184,7 +185,7 @@ describe('CreateKpiUseCase', () => {
     await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
       ResourceConflictError,
     );
-    expect(findTipoModuloByCodigo).not.toHaveBeenCalled();
+    expect(findTipoModuloById).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -201,7 +202,7 @@ describe('CreateKpiUseCase', () => {
     await expect(
       useCase.execute({ ...dto, metas_por_anio: metasInvalidas }),
     ).rejects.toBeInstanceOf(ResourceConflictError);
-    expect(findTipoModuloByCodigo).not.toHaveBeenCalled();
+    expect(findTipoModuloById).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -223,7 +224,7 @@ describe('CreateKpiUseCase', () => {
         ],
       }),
     ).rejects.toBeInstanceOf(ResourceConflictError);
-    expect(findTipoModuloByCodigo).not.toHaveBeenCalled();
+    expect(findTipoModuloById).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -237,20 +238,21 @@ describe('CreateKpiUseCase', () => {
         metas_por_anio: [{ ...metas[0], valor_amarillo: 120 }, metas[1]],
       }),
     ).rejects.toBeInstanceOf(ResourceConflictError);
-    expect(findTipoModuloByCodigo).not.toHaveBeenCalled();
+    expect(findTipoModuloById).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
 
   it.each([null, { ...tipoModulo, estado: false }])(
-    'lanza 404 si el tipo de módulo NEG no existe o está inactivo',
+    'lanza 404 si el tipo de módulo del objetivo no existe o está inactivo',
     async (resultado) => {
       prepararHastaUnidad();
       existsByNombre.mockResolvedValue(false);
-      findTipoModuloByCodigo.mockResolvedValue(resultado);
+      findTipoModuloById.mockResolvedValue(resultado);
 
       await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
         ResourceNotFoundError,
       );
+      expect(findTipoModuloById).toHaveBeenCalledWith(objetivo.tipo_modulo_id);
       expect(countByPlanYTipo).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
     },
@@ -259,7 +261,7 @@ describe('CreateKpiUseCase', () => {
   it('crea correctamente normalizando el nombre y calculando el correlativo', async () => {
     prepararHastaUnidad();
     existsByNombre.mockResolvedValue(false);
-    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findTipoModuloById.mockResolvedValue(tipoModulo);
     countByPlanYTipo.mockResolvedValue(4);
     create.mockResolvedValue(kpi);
 
@@ -270,7 +272,11 @@ describe('CreateKpiUseCase', () => {
       objetivo.id,
       'Margen operativo',
     );
-    expect(countByPlanYTipo).toHaveBeenCalledWith(plan.id, tipoModulo.id);
+    expect(findTipoModuloById).toHaveBeenCalledWith(objetivo.tipo_modulo_id);
+    expect(countByPlanYTipo).toHaveBeenCalledWith(
+      plan.id,
+      objetivo.tipo_modulo_id,
+    );
     expect(create).toHaveBeenCalledWith(
       {
         objetivo_estrategico_id: objetivo.id,
@@ -282,6 +288,7 @@ describe('CreateKpiUseCase', () => {
       },
       plan.codigo,
       '005',
+      'N',
     );
   });
 });

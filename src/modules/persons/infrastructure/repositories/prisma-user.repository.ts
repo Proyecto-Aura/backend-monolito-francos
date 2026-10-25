@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UserEntity } from '../../domain/entities';
+import { UpdatePersonaParams } from '../../domain/repositories/types/persona-repository.types';
 import {
   CreateUserParams,
   UpdateUserParams,
@@ -71,5 +72,16 @@ export class PrismaUserRepository implements UserRepository {
       where: { id },
     });
     return UserMapper.toDomain(user);
+  }
+  async updateWithPersona(
+    id: string,
+    user: UpdateUserParams,
+    persona: UpdatePersonaParams,
+  ): Promise<UserEntity> {
+    const actualizado = await this.prisma.user.update({
+      data: { ...user, persona: { update: persona } },
+      where: { id },
+    });
+    return UserMapper.toDomain(actualizado);
   }
 }

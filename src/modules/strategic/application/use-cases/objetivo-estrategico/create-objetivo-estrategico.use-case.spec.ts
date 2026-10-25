@@ -254,6 +254,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
         relaciones_destino_ids: [20, 30],
       },
       tipoModulo.id,
+      'N',
     );
   });
 
@@ -278,6 +279,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ descripcion: null }),
       tipoModulo.id,
+      'N',
     );
   });
 
@@ -313,6 +315,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
         relaciones_destino_ids: [],
       },
       tipoModulo.id,
+      'N',
     );
   });
 });

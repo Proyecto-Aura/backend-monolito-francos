@@ -10,6 +10,7 @@ import {
   CreateKpiParams,
   KpiEntityEnriquecido,
   KpiResumenPlanEntidad,
+  KpiSeguimientoEntidad,
   ListKpisPorObjetivoParams,
   SemaforoAnualInput,
   UpdateKpiParams,
@@ -29,6 +30,7 @@ const KPI_INCLUDE_ENRIQUECIDO = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -45,6 +47,7 @@ const KPI_INCLUDE_RESUMEN_PLAN = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -108,9 +111,10 @@ export class PrismaKpiRepository implements KpiRepository {
     params: CreateKpiParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<KpiEntityEnriquecido> {
     return this.prisma.$transaction(async (tx) => {
-      const codigo = `${codigoPlan}-KPI-N-${correlativo}`;
+      const codigo = `${codigoPlan}-KPI-${codigoInfijo}-${correlativo}`;
 
       const kpi = await tx.kpi.create({
         data: {
@@ -373,6 +377,58 @@ export class PrismaKpiRepository implements KpiRepository {
       entidad.valores_anuales = valoresPorAnio
         .filter((valor) => valor.kpi_id === kpi.id)
         .map((valor) => KpiValorMapper.toDomain(valor));
+      return entidad;
+    });
+  }
+
+  async findSeguimientoPorPlan(
+    planId: number,
+    tipoModuloId: number,
+  ): Promise<KpiSeguimientoEntidad[]> {
+    const kpis = await this.prisma.kpi.findMany({
+      where: {
+        estado: true,
+        objetivo_estrategico: {
+          plan_estrategico_id: planId,
+          tipo_modulo_id: tipoModuloId,
+          estado: true,
+        },
+      },
+      include: KPI_INCLUDE_RESUMEN_PLAN,
+      orderBy: { codigo: 'asc' },
+    });
+
+    if (kpis.length === 0) {
+      return [];
+    }
+
+    const historial = await this.prisma.kpiValor.findMany({
+      where: { kpi_id: { in: kpis.map((kpi) => kpi.id) }, estado: true },
+      include: { periodo: true },
+      orderBy: [
+        { kpi_id: 'asc' },
+        { anio: 'asc' },
+        { periodo: { numero: 'asc' } },
+      ],
+    });
+
+    return kpis.map((kpi) => {
+      const entidad = KpiMapper.toDomain(kpi) as KpiSeguimientoEntidad;
+      entidad.objetivo_estrategico = {
+        ...entidad.objetivo_estrategico,
+        responsable: kpi.objetivo_estrategico.responsable,
+      };
+
+      const historialDelKpi = historial
+        .filter((valor) => valor.kpi_id === kpi.id)
+        .map((valor) => KpiValorMapper.toDomain(valor));
+
+      entidad.historial = historialDelKpi;
+      entidad.ultimo_valor =
+        historialDelKpi.length > 0
+          ? historialDelKpi[historialDelKpi.length - 1]
+          : null;
+
       return entidad;
     });
   }
