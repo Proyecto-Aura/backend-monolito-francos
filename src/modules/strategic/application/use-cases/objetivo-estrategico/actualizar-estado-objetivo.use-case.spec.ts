@@ -2,7 +2,9 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/strategic-domain.errors';
+import { EstadoIniciativaRepository } from '../../../domain/repositories/estado-iniciativa.repository';
 import { EstadoObjetivoRepository } from '../../../domain/repositories/estado-objetivo.repository';
+import { IniciativaRepository } from '../../../domain/repositories/iniciativa.repository';
 import { ObjetivoEstrategicoRepository } from '../../../domain/repositories/objetivo-estrategico.repository';
 import { PlanEstrategicoRepository } from '../../../domain/repositories/plan-estrategico.repository';
 import { TipoModuloRepository } from '../../../domain/repositories/tipo-modulo.repository';
@@ -33,11 +35,23 @@ describe('ActualizarEstadoObjetivoUseCase', () => {
     findByCodigo: findEstadoObjetivoByCodigo,
   } as unknown as jest.Mocked<EstadoObjetivoRepository>;
 
+  const findEstadoIniciativaByCodigo = jest.fn();
+  const estadoIniciativaRepository = {
+    findByCodigo: findEstadoIniciativaByCodigo,
+  } as unknown as jest.Mocked<EstadoIniciativaRepository>;
+
+  const cancelarActivasPorObjetivo = jest.fn();
+  const iniciativaRepository = {
+    cancelarActivasPorObjetivo,
+  } as unknown as jest.Mocked<IniciativaRepository>;
+
   const useCase = new ActualizarEstadoObjetivoUseCase(
     objetivoEstrategicoRepository,
     planEstrategicoRepository,
     tipoModuloRepository,
     estadoObjetivoRepository,
+    estadoIniciativaRepository,
+    iniciativaRepository,
   );
 
   const tipoModulo = {
@@ -79,6 +93,14 @@ describe('ActualizarEstadoObjetivoUseCase', () => {
     estado: true,
   };
 
+  const estadoCancelada = {
+    id: 4,
+    codigo: 'CANCELADA',
+    nombre: 'Cancelada',
+    orden: 4,
+    estado: true,
+  };
+
   const objetivo = {
     id: 10,
     codigo: 'PE-0001-OE-N-001',
@@ -86,6 +108,7 @@ describe('ActualizarEstadoObjetivoUseCase', () => {
     perspectiva_bsc_id: 1,
     tipo_modulo_id: tipoModulo.id,
     oe_negocio_id: null,
+    oe_negocio: null,
     estado_objetivo_id: estadoPendiente.id,
     responsable: 'Ana Torres',
     nombre: 'Incrementar la rentabilidad',
@@ -277,6 +300,7 @@ describe('ActualizarEstadoObjetivoUseCase', () => {
     findPlanActivoById.mockResolvedValue(plan);
     findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
     updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+    findEstadoIniciativaByCodigo.mockResolvedValue(null);
 
     await expect(
       useCase.execute(10, { estado_codigo: 'CANCELADO' }),
@@ -325,11 +349,162 @@ describe('ActualizarEstadoObjetivoUseCase', () => {
     findPlanActivoById.mockResolvedValue(plan);
     findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
     updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+    findEstadoIniciativaByCodigo.mockResolvedValue(null);
 
     await expect(
       useCase.execute(10, { estado_codigo: 'CANCELADO' }),
     ).resolves.toBe(objetivoActualizado);
 
     expect(updateEstadoObjetivo).toHaveBeenCalledWith(10, estadoCancelado.id);
+  });
+
+  it('cancela las iniciativas activas después de cancelar el objetivo', async () => {
+    const objetivoActualizado = {
+      ...objetivo,
+      estado_objetivo_id: estadoCancelado.id,
+      estado_objetivo: estadoCancelado,
+    };
+    findObjetivoActivoById.mockResolvedValue(objetivo);
+    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findPlanActivoById.mockResolvedValue(plan);
+    findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
+    updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+    findEstadoIniciativaByCodigo.mockResolvedValue(estadoCancelada);
+    cancelarActivasPorObjetivo.mockResolvedValue(undefined);
+
+    await expect(
+      useCase.execute(10, { estado_codigo: 'CANCELADO' }),
+    ).resolves.toBe(objetivoActualizado);
+
+    expect(updateEstadoObjetivo).toHaveBeenCalledWith(10, estadoCancelado.id);
+    expect(findEstadoIniciativaByCodigo).toHaveBeenCalledWith('CANCELADA');
+    expect(cancelarActivasPorObjetivo).toHaveBeenCalledWith(
+      10,
+      estadoCancelada.id,
+    );
+    expect(updateEstadoObjetivo.mock.invocationCallOrder[0]).toBeLessThan(
+      cancelarActivasPorObjetivo.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('cancela las iniciativas activas al cancelar desde EN_PROCESO', async () => {
+    const objetivoEnProceso = {
+      ...objetivo,
+      estado_objetivo_id: estadoEnProceso.id,
+      estado_objetivo: estadoEnProceso,
+    };
+    const objetivoActualizado = {
+      ...objetivoEnProceso,
+      estado_objetivo_id: estadoCancelado.id,
+      estado_objetivo: estadoCancelado,
+    };
+    findObjetivoActivoById.mockResolvedValue(objetivoEnProceso);
+    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findPlanActivoById.mockResolvedValue(plan);
+    findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
+    updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+    findEstadoIniciativaByCodigo.mockResolvedValue(estadoCancelada);
+    cancelarActivasPorObjetivo.mockResolvedValue(undefined);
+
+    await expect(
+      useCase.execute(10, { estado_codigo: 'CANCELADO' }),
+    ).resolves.toBe(objetivoActualizado);
+
+    expect(updateEstadoObjetivo).toHaveBeenCalledWith(10, estadoCancelado.id);
+    expect(findEstadoIniciativaByCodigo).toHaveBeenCalledWith('CANCELADA');
+    expect(cancelarActivasPorObjetivo).toHaveBeenCalledWith(
+      10,
+      estadoCancelada.id,
+    );
+    expect(updateEstadoObjetivo.mock.invocationCallOrder[0]).toBeLessThan(
+      cancelarActivasPorObjetivo.mock.invocationCallOrder[0],
+    );
+  });
+
+  it.each([
+    { origen: estadoPendiente, destino: estadoEnProceso },
+    { origen: estadoEnProceso, destino: estadoCumplido },
+  ])(
+    'no busca ni cancela iniciativas para un estado distinto de CANCELADO ($origen.codigo a $destino.codigo)',
+    async ({ origen, destino }) => {
+      const objetivoInicial = {
+        ...objetivo,
+        estado_objetivo_id: origen.id,
+        estado_objetivo: origen,
+      };
+      const objetivoActualizado = {
+        ...objetivoInicial,
+        estado_objetivo_id: destino.id,
+        estado_objetivo: destino,
+      };
+      findObjetivoActivoById.mockResolvedValue(objetivoInicial);
+      findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+      findPlanActivoById.mockResolvedValue(plan);
+      findEstadoObjetivoByCodigo.mockResolvedValue(destino);
+      updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+      findEstadoIniciativaByCodigo.mockResolvedValue(estadoCancelada);
+      cancelarActivasPorObjetivo.mockResolvedValue(undefined);
+
+      await expect(
+        useCase.execute(10, {
+          estado_codigo: destino.codigo as 'EN_PROCESO' | 'CUMPLIDO',
+        }),
+      ).resolves.toBe(objetivoActualizado);
+
+      expect(updateEstadoObjetivo).toHaveBeenCalledWith(10, destino.id);
+      expect(findEstadoIniciativaByCodigo).not.toHaveBeenCalled();
+      expect(cancelarActivasPorObjetivo).not.toHaveBeenCalled();
+    },
+  );
+
+  it('devuelve el objetivo cancelado si no existe el estado CANCELADA de iniciativa', async () => {
+    const objetivoActualizado = {
+      ...objetivo,
+      estado_objetivo_id: estadoCancelado.id,
+      estado_objetivo: estadoCancelado,
+    };
+    findObjetivoActivoById.mockResolvedValue(objetivo);
+    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findPlanActivoById.mockResolvedValue(plan);
+    findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
+    updateEstadoObjetivo.mockResolvedValue(objetivoActualizado);
+    findEstadoIniciativaByCodigo.mockResolvedValue(null);
+    cancelarActivasPorObjetivo.mockResolvedValue(undefined);
+
+    await expect(
+      useCase.execute(10, { estado_codigo: 'CANCELADO' }),
+    ).resolves.toBe(objetivoActualizado);
+
+    expect(updateEstadoObjetivo).toHaveBeenCalledWith(10, estadoCancelado.id);
+    expect(findEstadoIniciativaByCodigo).toHaveBeenCalledWith('CANCELADA');
+    expect(cancelarActivasPorObjetivo).not.toHaveBeenCalled();
+  });
+
+  it('no cancela iniciativas si la transición no está permitida', async () => {
+    const objetivoCumplido = {
+      ...objetivo,
+      estado_objetivo_id: estadoCumplido.id,
+      estado_objetivo: estadoCumplido,
+    };
+    findObjetivoActivoById.mockResolvedValue(objetivoCumplido);
+    findTipoModuloByCodigo.mockResolvedValue(tipoModulo);
+    findPlanActivoById.mockResolvedValue(plan);
+    findEstadoObjetivoByCodigo.mockResolvedValue(estadoCancelado);
+    updateEstadoObjetivo.mockResolvedValue({
+      ...objetivoCumplido,
+      estado_objetivo_id: estadoCancelado.id,
+      estado_objetivo: estadoCancelado,
+    });
+    findEstadoIniciativaByCodigo.mockResolvedValue(estadoCancelada);
+    cancelarActivasPorObjetivo.mockResolvedValue(undefined);
+
+    await expect(
+      useCase.execute(10, { estado_codigo: 'CANCELADO' }),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
+
+    expect(findEstadoObjetivoByCodigo).not.toHaveBeenCalled();
+    expect(updateEstadoObjetivo).not.toHaveBeenCalled();
+    expect(findEstadoIniciativaByCodigo).not.toHaveBeenCalled();
+    expect(cancelarActivasPorObjetivo).not.toHaveBeenCalled();
   });
 });
