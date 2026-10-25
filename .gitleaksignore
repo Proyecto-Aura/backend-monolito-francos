@@ -68,3 +68,9 @@ fec8ee926329c518da65e95f7645fb9662035fa0:test/seguimiento-kpis.e2e-spec.ts:gener
 # arriba.
 c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-api-key:17
 c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-api-key:21
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba "inventario"
+# en el e2e de productos terminados / stock (OFT0-258). Usuario desechable
+# que el propio test crea y borra; no es un secreto real. Mismo caso que el
+# de objetivo_estrategico de arriba.
+139263abd49d28d6f25134fbd5d827ea2d8af29f:test/productos-terminados.e2e-spec.ts:generic-api-key:45
