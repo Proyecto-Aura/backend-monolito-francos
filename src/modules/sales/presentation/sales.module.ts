@@ -8,6 +8,7 @@ import { GetPedidoByIdUseCase } from '../application/use-cases/pedido/get-pedido
 import { GetPedidoDespachoUseCase } from '../application/use-cases/pedido/get-pedido-despacho.use-case';
 import { ListPedidosDespachoUseCase } from '../application/use-cases/pedido/list-pedidos-despacho.use-case';
 import { ListPedidosUseCase } from '../application/use-cases/pedido/list-pedidos.use-case';
+import { ResumirPedidoPortalUseCase } from '../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { AprobarReembolsoUseCase } from '../application/use-cases/reembolso/aprobar-reembolso.use-case';
 import { ConfirmarDevolucionReembolsoUseCase } from '../application/use-cases/reembolso/confirmar-devolucion-reembolso.use-case';
 import { GetReembolsoByIdUseCase } from '../application/use-cases/reembolso/get-reembolso-by-id.use-case';
@@ -32,6 +33,7 @@ import { PrismaSerieComprobanteRepository } from '../infrastructure/repositories
 import { S3EvidenciaReembolsoService } from '../infrastructure/storage/s3-evidencia-reembolso.service';
 import { DespachoPedidosController } from './controllers/despacho-pedidos.controller';
 import { PedidosController } from './controllers/pedidos.controller';
+import { PortalPedidosController } from './controllers/portal-pedidos.controller';
 import { ReembolsosController } from './controllers/reembolsos.controller';
 import { SeriesComprobanteController } from './controllers/series-comprobante.controller';
 import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.filter';
@@ -42,6 +44,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     SeriesComprobanteController,
     DespachoPedidosController,
     ReembolsosController,
+    PortalPedidosController,
   ],
   providers: [
     CreatePedidoUseCase,
@@ -49,6 +52,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     GetPedidoByIdUseCase,
     ActualizarEstadoPedidoUseCase,
     CompletarPedidoUseCase,
+    ResumirPedidoPortalUseCase,
     ListPedidosDespachoUseCase,
     GetPedidoDespachoUseCase,
     DespacharPedidoUseCase,
