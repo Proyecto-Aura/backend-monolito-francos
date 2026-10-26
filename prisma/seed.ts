@@ -10,6 +10,7 @@ import { seedPerspectivaBsc } from './seeds/perspectiva-bsc.seed';
 import { seedTipoModulo } from './seeds/tipo-modulo.seed';
 import { seedEstadoObjetivo } from './seeds/estado-objetivo.seed';
 import { seedProductoTerminado } from './seeds/producto-terminado.seed';
+import { seedLotesProductoTerminado } from './seeds/lotes-producto-terminado.seed';
 import { seedInsumos } from './seeds/insumo.seed';
 import { seedRutas } from './seeds/rutas.seed';
 import { seedAccesos } from './seeds/accesos.seed';
@@ -39,6 +40,7 @@ async function main() {
   await seedEstadoIniciativa(prisma);
   await seedPresentaciones(prisma);
   await seedProductoTerminado(prisma);
+  await seedLotesProductoTerminado(prisma);
   await seedInsumos(prisma);
   await seedRutas(prisma);
   await seedAccesos(prisma);

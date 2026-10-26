@@ -19,6 +19,7 @@ const INCLUDE_CATALOGO = {
   producto_presentacion: {
     select: {
       sku: true,
+      estado: true,
       producto_id: true,
       presentacion_id: true,
       producto: {
@@ -36,6 +37,17 @@ const INCLUDE_CATALOGO = {
 @Injectable()
 export class PrismaProductoTerminadoRepository implements ProductoTerminadoRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: number): Promise<ProductoTerminadoEntity | null> {
+    const productoTerminado = await this.prisma.productoTerminado.findUnique({
+      where: { id },
+      include: INCLUDE_CATALOGO,
+    });
+
+    return productoTerminado
+      ? ProductoTerminadoMapper.toDomain(productoTerminado)
+      : null;
+  }
 
   async findByProductoPresentacionId(
     productoPresentacionId: number,

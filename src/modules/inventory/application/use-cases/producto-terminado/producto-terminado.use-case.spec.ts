@@ -32,6 +32,7 @@ describe('Producto terminado', () => {
     7,
     500,
     UnidadMedidaPresentacion.GR,
+    true,
     20,
     10,
     100,
