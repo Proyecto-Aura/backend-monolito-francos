@@ -17,6 +17,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { TipoEntrega } from '../../../domain/enums';
+import { DatosComprobanteDto } from './datos-comprobante.dto';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -70,4 +71,13 @@ export class ResumenPedidoPortalDto {
   @IsNotEmpty()
   @MaxLength(255)
   direccion_entrega?: string;
+
+  @ApiPropertyOptional({
+    type: DatosComprobanteDto,
+    description: 'Tipo de comprobante (HU-B-009); si no viene, boleta',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DatosComprobanteDto)
+  comprobante?: DatosComprobanteDto;
 }

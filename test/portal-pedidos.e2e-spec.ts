@@ -19,7 +19,13 @@ type TestUser = {
   // Registro Cliente vinculado: activo, inactivo o ninguno.
   cliente: 'activo' | 'inactivo' | null;
   direccion: string | null;
+  // Empresa identificada con RUC (HU-B-009); por defecto persona natural con DNI.
+  razon_social?: string;
 };
+
+const RUC_EMPRESA = '20555555556';
+const RAZON_SOCIAL_EMPRESA = 'E2E Distribuidora Andina S.A.C.';
+const RUC_FACTURA = '20601234565';
 
 // `cliente` confirma su carrito; `ventas` es un rol interno sin acceso al portal.
 const TEST_USERS = {
@@ -30,6 +36,15 @@ const TEST_USERS = {
     rol: 'cliente',
     cliente: 'activo',
     direccion: DIRECCION_PERFIL,
+  },
+  empresa: {
+    identificador: 'e2e-cliente-resumen-em',
+    email: 'e2e-cliente-resumen-em@francos.test',
+    documento: RUC_EMPRESA,
+    rol: 'cliente',
+    cliente: 'activo',
+    direccion: DIRECCION_PERFIL,
+    razon_social: RAZON_SOCIAL_EMPRESA,
   },
   sinDireccion: {
     identificador: 'e2e-cliente-resumen-sd',
@@ -74,6 +89,12 @@ interface ResumenBody {
   tipo_entrega: string;
   direccion_perfil: string | null;
   direccion_entrega: string | null;
+  comprobante: {
+    tipo_comprobante: string;
+    ruc: string | null;
+    razon_social: string | null;
+  };
+  comprobante_sugerido: { ruc: string; razon_social: string } | null;
   items: {
     producto_presentacion_id: number;
     cantidad: number;
@@ -181,7 +202,7 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
         nombres: 'Rosa Elena',
         apellido_paterno: testUser.rol,
         apellido_materno: 'Resumen E2E',
-        tipo_documento: 'dni',
+        tipo_documento: testUser.razon_social ? 'ruc' : 'dni',
         numero_documento: testUser.documento,
         direccion: testUser.direccion,
       },
@@ -204,7 +225,8 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
       await prisma.cliente.create({
         data: {
           persona_id: persona.id,
-          tipo_cliente: 'persona_natural',
+          tipo_cliente: testUser.razon_social ? 'empresa' : 'persona_natural',
+          razon_social: testUser.razon_social,
           categoria_cliente: 'minorista',
           estado: testUser.cliente === 'activo',
         },
@@ -338,6 +360,12 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
         tipo_entrega: 'delivery',
         direccion_perfil: DIRECCION_PERFIL,
         direccion_entrega: DIRECCION_PERFIL,
+        comprobante: {
+          tipo_comprobante: 'boleta',
+          ruc: null,
+          razon_social: null,
+        },
+        comprobante_sugerido: null,
         items: [
           {
             producto_presentacion_id: presentacionMayoristaId,
@@ -419,6 +447,107 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
         },
       });
       expect(pedidos).toBe(0);
+    });
+  });
+
+  describe('tipo de comprobante (HU-B-009)', () => {
+    it('con factura válida devuelve el RUC y la razón social', async () => {
+      const response = await resumen(
+        payload({
+          comprobante: {
+            tipo_comprobante: 'factura',
+            ruc: RUC_FACTURA,
+            razon_social: '  Comercial Huallaga E.I.R.L.  ',
+          },
+        }),
+        tokens.cliente,
+      ).expect(200);
+
+      expect((response.body as ResumenBody).comprobante).toEqual({
+        tipo_comprobante: 'factura',
+        ruc: RUC_FACTURA,
+        razon_social: 'Comercial Huallaga E.I.R.L.',
+      });
+    });
+
+    it('con boleta ignora el RUC y la razón social aunque sean inválidos', async () => {
+      const response = await resumen(
+        payload({
+          comprobante: {
+            tipo_comprobante: 'boleta',
+            ruc: '123',
+            razon_social: '',
+          },
+        }),
+        tokens.cliente,
+      ).expect(200);
+
+      expect((response.body as ResumenBody).comprobante).toEqual({
+        tipo_comprobante: 'boleta',
+        ruc: null,
+        razon_social: null,
+      });
+    });
+
+    it('propone el RUC y la razón social del perfil de una empresa', async () => {
+      const response = await resumen(payload(), tokens.empresa).expect(200);
+      const body = response.body as ResumenBody;
+
+      expect(body.comprobante_sugerido).toEqual({
+        ruc: RUC_EMPRESA,
+        razon_social: RAZON_SOCIAL_EMPRESA,
+      });
+      expect(body.comprobante.tipo_comprobante).toBe('boleta');
+    });
+
+    it.each([
+      ['tipo de comprobante desconocido', { tipo_comprobante: 'ticket' }],
+      [
+        'factura sin RUC',
+        { tipo_comprobante: 'factura', razon_social: 'Comercial Huallaga' },
+      ],
+      [
+        'factura con RUC de 10 dígitos',
+        {
+          tipo_comprobante: 'factura',
+          ruc: '2060123456',
+          razon_social: 'Comercial Huallaga',
+        },
+      ],
+      [
+        'factura con prefijo de RUC inválido',
+        {
+          tipo_comprobante: 'factura',
+          ruc: '30601234565',
+          razon_social: 'Comercial Huallaga',
+        },
+      ],
+      [
+        'factura con dígito verificador incorrecto',
+        {
+          tipo_comprobante: 'factura',
+          ruc: '20601234566',
+          razon_social: 'Comercial Huallaga',
+        },
+      ],
+      [
+        'factura sin razón social',
+        { tipo_comprobante: 'factura', ruc: RUC_FACTURA },
+      ],
+      [
+        'factura con razón social vacía',
+        { tipo_comprobante: 'factura', ruc: RUC_FACTURA, razon_social: '   ' },
+      ],
+      [
+        'factura con razón social de más de 200 caracteres',
+        {
+          tipo_comprobante: 'factura',
+          ruc: RUC_FACTURA,
+          razon_social: 'A'.repeat(201),
+        },
+      ],
+    ])('%s devuelve 400', async (_, comprobante) => {
+      await resumen(payload({ comprobante }), tokens.cliente).expect(400);
     });
   });
 
