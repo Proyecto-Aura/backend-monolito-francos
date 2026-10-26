@@ -206,6 +206,25 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'folder-open',
     parent: 'gestion-estrategica-ti',
   },
+  // --- Configuración ---
+  {
+    nombre: 'configuracion',
+    etiqueta: 'Configuración',
+    icono: 'settings',
+    descripcion: 'Datos de la empresa, usuarios y permisos',
+  },
+  {
+    nombre: 'empresa',
+    etiqueta: 'Datos de la empresa',
+    icono: 'building-2',
+    parent: 'configuracion',
+  },
+  {
+    nombre: 'usuarios',
+    etiqueta: 'Usuarios internos',
+    icono: 'users',
+    parent: 'configuracion',
+  },
 ];
 
 export async function seedRutas(prisma: PrismaClient) {
