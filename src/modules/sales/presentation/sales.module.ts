@@ -14,6 +14,9 @@ import { ConfirmarDevolucionReembolsoUseCase } from '../application/use-cases/re
 import { GetReembolsoByIdUseCase } from '../application/use-cases/reembolso/get-reembolso-by-id.use-case';
 import { ListReembolsosUseCase } from '../application/use-cases/reembolso/list-reembolsos.use-case';
 import { RechazarReembolsoUseCase } from '../application/use-cases/reembolso/rechazar-reembolso.use-case';
+import { SolicitarReembolsoUseCase } from '../application/use-cases/reembolso/solicitar-reembolso.use-case';
+import { ListMisReembolsosUseCase } from '../application/use-cases/reembolso/list-mis-reembolsos.use-case';
+import { GetMiReembolsoUseCase } from '../application/use-cases/reembolso/get-mi-reembolso.use-case';
 import { ChangeSerieComprobanteStatusUseCase } from '../application/use-cases/series-comprobante/change-serie-comprobante-status.use-case';
 import { CreateSerieComprobanteUseCase } from '../application/use-cases/series-comprobante/create-serie-comprobante.use-case';
 import { GetSerieComprobanteByIdUseCase } from '../application/use-cases/series-comprobante/get-serie-comprobante-by-id.use-case';
@@ -34,6 +37,7 @@ import { S3EvidenciaReembolsoService } from '../infrastructure/storage/s3-eviden
 import { DespachoPedidosController } from './controllers/despacho-pedidos.controller';
 import { PedidosController } from './controllers/pedidos.controller';
 import { PortalPedidosController } from './controllers/portal-pedidos.controller';
+import { PortalReembolsosController } from './controllers/portal-reembolsos.controller';
 import { ReembolsosController } from './controllers/reembolsos.controller';
 import { SeriesComprobanteController } from './controllers/series-comprobante.controller';
 import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.filter';
@@ -45,6 +49,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     DespachoPedidosController,
     ReembolsosController,
     PortalPedidosController,
+    PortalReembolsosController,
   ],
   providers: [
     CreatePedidoUseCase,
@@ -61,6 +66,9 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     AprobarReembolsoUseCase,
     RechazarReembolsoUseCase,
     ConfirmarDevolucionReembolsoUseCase,
+    SolicitarReembolsoUseCase,
+    ListMisReembolsosUseCase,
+    GetMiReembolsoUseCase,
     { provide: PedidoRepository, useClass: PrismaPedidoRepository },
     { provide: ReembolsoRepository, useClass: PrismaReembolsoRepository },
     { provide: PasarelaPagoService, useClass: CulqiPasarelaPagoService },

@@ -48,6 +48,15 @@ class FakeEvidenciaReembolso implements EvidenciaReembolsoService {
   urlDescarga(key: string): Promise<string> {
     return Promise.resolve(`https://docs.e2e.test/${key}?firma=e2e`);
   }
+
+  // Este archivo no sube evidencias: las solicitudes se siembran por Prisma.
+  subir(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  borrar(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 interface ReembolsoBody {

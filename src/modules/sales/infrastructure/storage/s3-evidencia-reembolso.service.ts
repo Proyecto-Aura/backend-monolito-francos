@@ -11,4 +11,12 @@ export class S3EvidenciaReembolsoService implements EvidenciaReembolsoService {
   urlDescarga(key: string): Promise<string> {
     return this.s3.getPresignedUrl('docs', key);
   }
+
+  subir(key: string, contenido: Buffer, tipo: string): Promise<void> {
+    return this.s3.upload('docs', key, contenido, tipo);
+  }
+
+  borrar(key: string): Promise<void> {
+    return this.s3.delete('docs', key);
+  }
 }
