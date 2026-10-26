@@ -104,6 +104,30 @@ describe('RegisterClienteByStaffUseCase', () => {
     expect(sendDefaultCredentialsEmail).not.toHaveBeenCalled();
   });
 
+  it('registra como minorista si no se indica la categoría', async () => {
+    const sinCategoria = dto();
+    delete sinCategoria.categoria_cliente;
+
+    await useCase.execute(sinCategoria);
+
+    const [saved] = registerCliente.mock.calls[0] as [
+      { cliente: { categoria_cliente: CategoriaCliente } },
+    ];
+    expect(saved.cliente.categoria_cliente).toBe(CategoriaCliente.MINORISTA);
+  });
+
+  it('respeta la categoría cuando sí se indica', async () => {
+    await useCase.execute({
+      ...dto(),
+      categoria_cliente: CategoriaCliente.MAYORISTA,
+    });
+
+    const [saved] = registerCliente.mock.calls[0] as [
+      { cliente: { categoria_cliente: CategoriaCliente } },
+    ];
+    expect(saved.cliente.categoria_cliente).toBe(CategoriaCliente.MAYORISTA);
+  });
+
   it('no revierte si SMTP falla', async () => {
     sendClienteBienvenidaEmail.mockRejectedValue(new Error('SMTP'));
 
