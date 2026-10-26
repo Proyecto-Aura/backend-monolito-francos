@@ -67,6 +67,10 @@ export interface ProductoPresentacionCatalogo extends ProductoPresentacionEntity
     descripcion: string | null;
   };
   producto_terminado: {
+    // Id propio de producto_terminado (no es producto_presentacion_id): lo
+    // necesita el front para los endpoints de lotes/movimientos de producto
+    // terminado (OFT0-259), que identifican el producto por este id.
+    id: number;
     stock_actual: number;
     stock_minimo: number;
     stock_maximo: number | null;

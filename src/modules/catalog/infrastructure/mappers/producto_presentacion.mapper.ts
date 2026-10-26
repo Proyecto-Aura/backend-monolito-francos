@@ -79,6 +79,7 @@ export class ProductoPresentacionMapper {
       },
       producto_terminado: fila.producto_terminado
         ? {
+            id: fila.producto_terminado.id,
             stock_actual: fila.producto_terminado.stock_actual.toNumber(),
             stock_minimo: fila.producto_terminado.stock_minimo.toNumber(),
             stock_maximo: fila.producto_terminado.stock_maximo
