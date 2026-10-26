@@ -11,7 +11,10 @@ import {
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
 import { RegisterClienteByStaffDto } from '../dto/register-cliente-by-staff.dto';
-import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
+import {
+  CategoriaCliente,
+  TipoCliente,
+} from '../../../../modules/persons/domain/enums/persons.enums';
 import { buildDefaultCredentials } from '../utils/default-credentials.util';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
 
@@ -86,7 +89,7 @@ export class RegisterClienteByStaffUseCase {
       cliente: {
         tipo_cliente: dto.tipo_cliente,
         razon_social: dto.razon_social ?? null,
-        categoria_cliente: dto.categoria_cliente,
+        categoria_cliente: dto.categoria_cliente ?? CategoriaCliente.MINORISTA,
       },
       user: {
         email: dto.email,
