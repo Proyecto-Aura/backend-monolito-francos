@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TipoDocumento } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { formatCodigoPedido } from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
@@ -82,7 +82,14 @@ export class PrismaPedidoRepository implements PedidoRepository {
       select: {
         id: true,
         estado: true,
-        persona: { select: { direccion: true } },
+        razon_social: true,
+        persona: {
+          select: {
+            direccion: true,
+            tipo_documento: true,
+            numero_documento: true,
+          },
+        },
       },
     });
 
@@ -91,6 +98,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
           id: cliente.id,
           estado: cliente.estado,
           direccion: cliente.persona.direccion,
+          ruc:
+            cliente.persona.tipo_documento === TipoDocumento.ruc
+              ? cliente.persona.numero_documento
+              : null,
+          razon_social: cliente.razon_social,
         }
       : null;
   }

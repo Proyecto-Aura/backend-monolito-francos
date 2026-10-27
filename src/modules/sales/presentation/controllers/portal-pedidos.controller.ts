@@ -29,12 +29,12 @@ export class PortalPedidosController {
   @ApiOperation({
     summary: 'Confirmar el carrito y calcular el resumen del pedido',
     description:
-      'Recalcula en el servidor el subtotal por línea y el total con el precio mayorista cuando la cantidad supera el umbral (RN17). Devuelve la dirección del perfil y la de entrega. No registra el pedido ni cobra.',
+      'Recalcula en el servidor el subtotal por línea y el total con el precio mayorista cuando la cantidad supera el umbral (RN17). Devuelve la dirección del perfil y la de entrega, y el tipo de comprobante elegido (boleta por defecto; factura con RUC y razón social). Si el perfil tiene RUC, propone sus datos en comprobante_sugerido. No registra el pedido ni cobra.',
   })
   @ApiOkResponse({ description: 'Resumen del pedido con sus montos' })
   @ApiBadRequestResponse({
     description:
-      'Datos inválidos: sin productos, presentación repetida, cantidad menor a 1 o delivery sin dirección',
+      'Datos inválidos: sin productos, presentación repetida, cantidad menor a 1, delivery sin dirección, tipo de comprobante desconocido, o factura sin RUC válido o sin razón social',
   })
   @ApiNotFoundResponse({
     description: 'El usuario no tiene un cliente o una presentación no existe',

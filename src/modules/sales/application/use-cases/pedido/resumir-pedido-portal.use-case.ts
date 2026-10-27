@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { TipoEntrega } from '../../../domain/enums';
+import { esRucValido } from '../../../../../common/validators/ruc.validator';
+import { TipoComprobante, TipoEntrega } from '../../../domain/enums';
 import {
   InvalidRequestError,
   ResourceConflictError,
@@ -18,10 +19,25 @@ export interface LineaResumenPedido {
   subtotal: number;
 }
 
+export interface DatosFactura {
+  ruc: string;
+  razon_social: string;
+}
+
+export interface ComprobanteResumen {
+  tipo_comprobante: TipoComprobante;
+  // Solo con factura; con boleta van en null.
+  ruc: string | null;
+  razon_social: string | null;
+}
+
 export interface ResumenPedidoPortal {
   tipo_entrega: TipoEntrega;
   direccion_perfil: string | null;
   direccion_entrega: string | null;
+  comprobante: ComprobanteResumen;
+  // Datos del perfil para prellenar la factura, si el cliente tiene RUC válido.
+  comprobante_sugerido: DatosFactura | null;
   items: LineaResumenPedido[];
   subtotal: number;
   total: number;
@@ -61,6 +77,11 @@ export class ResumirPedidoPortalUseCase {
       tipo_entrega: dto.tipo_entrega,
       direccion_perfil: cliente.direccion,
       direccion_entrega: direccionEntrega,
+      comprobante: this.comprobante(dto),
+      comprobante_sugerido: this.comprobanteSugerido(
+        cliente.ruc,
+        cliente.razon_social,
+      ),
       items,
       // Sin costo de delivery, el subtotal y el total coinciden.
       subtotal: total,
@@ -87,6 +108,35 @@ export class ResumirPedidoPortalUseCase {
     }
 
     return direccion;
+  }
+
+  // RF-B29: boleta por defecto. El DTO ya exige RUC y razón social con factura;
+  // con boleta se descartan aunque vengan.
+  private comprobante(dto: ResumenPedidoPortalDto): ComprobanteResumen {
+    const tipo = dto.comprobante?.tipo_comprobante ?? TipoComprobante.BOLETA;
+
+    if (tipo !== TipoComprobante.FACTURA) {
+      return { tipo_comprobante: tipo, ruc: null, razon_social: null };
+    }
+
+    return {
+      tipo_comprobante: tipo,
+      ruc: dto.comprobante?.ruc ?? null,
+      razon_social: dto.comprobante?.razon_social ?? null,
+    };
+  }
+
+  // Solo se propone si el perfil tiene un RUC que pasaría la validación del
+  // body y una razón social; si no, el cliente la ingresa a mano.
+  private comprobanteSugerido(
+    ruc: string | null | undefined,
+    razonSocial: string | null | undefined,
+  ): DatosFactura | null {
+    const razon = razonSocial?.trim();
+
+    return ruc && esRucValido(ruc) && razon
+      ? { ruc, razon_social: razon }
+      : null;
   }
 
   private async armarLineas(
