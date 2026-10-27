@@ -1,4 +1,4 @@
-import { TipoEntrega } from '../../../domain/enums';
+import { TipoComprobante, TipoEntrega } from '../../../domain/enums';
 import {
   InvalidRequestError,
   ResourceConflictError,
@@ -86,6 +86,12 @@ describe('ResumirPedidoPortalUseCase', () => {
       tipo_entrega: TipoEntrega.DELIVERY,
       direccion_perfil: DIRECCION_PERFIL,
       direccion_entrega: DIRECCION_PERFIL,
+      comprobante: {
+        tipo_comprobante: TipoComprobante.BOLETA,
+        ruc: null,
+        razon_social: null,
+      },
+      comprobante_sugerido: null,
       items: [
         {
           producto_presentacion_id: 10,
@@ -210,6 +216,86 @@ describe('ResumirPedidoPortalUseCase', () => {
     await expect(useCase.execute(dto(), USER_ID)).rejects.toBeInstanceOf(
       ResourceConflictError,
     );
+  });
+
+  describe('tipo de comprobante (HU-B-009)', () => {
+    const RUC = '20601234565';
+    const RAZON_SOCIAL = 'Distribuidora Andina S.A.C.';
+
+    it('con factura devuelve el RUC y la razón social del body', async () => {
+      const resumen = await useCase.execute(
+        dto({
+          comprobante: {
+            tipo_comprobante: TipoComprobante.FACTURA,
+            ruc: RUC,
+            razon_social: RAZON_SOCIAL,
+          },
+        }),
+        USER_ID,
+      );
+
+      expect(resumen.comprobante).toEqual({
+        tipo_comprobante: TipoComprobante.FACTURA,
+        ruc: RUC,
+        razon_social: RAZON_SOCIAL,
+      });
+    });
+
+    it('con boleta ignora el RUC y la razón social aunque vengan', async () => {
+      const resumen = await useCase.execute(
+        dto({
+          comprobante: {
+            tipo_comprobante: TipoComprobante.BOLETA,
+            ruc: RUC,
+            razon_social: RAZON_SOCIAL,
+          },
+        }),
+        USER_ID,
+      );
+
+      expect(resumen.comprobante).toEqual({
+        tipo_comprobante: TipoComprobante.BOLETA,
+        ruc: null,
+        razon_social: null,
+      });
+    });
+
+    it('sin tipo de comprobante usa boleta', async () => {
+      const resumen = await useCase.execute(dto({ comprobante: {} }), USER_ID);
+
+      expect(resumen.comprobante.tipo_comprobante).toBe(TipoComprobante.BOLETA);
+    });
+
+    it('propone los datos del perfil cuando tiene RUC válido y razón social', async () => {
+      findClienteParaResumenPorUser.mockResolvedValue(
+        cliente({ ruc: RUC, razon_social: `  ${RAZON_SOCIAL} ` }),
+      );
+
+      const resumen = await useCase.execute(dto(), USER_ID);
+
+      expect(resumen.comprobante_sugerido).toEqual({
+        ruc: RUC,
+        razon_social: RAZON_SOCIAL,
+      });
+      // Proponer no cambia lo elegido: sigue en boleta.
+      expect(resumen.comprobante.tipo_comprobante).toBe(TipoComprobante.BOLETA);
+    });
+
+    it.each([
+      ['no tiene RUC', { ruc: null, razon_social: RAZON_SOCIAL }],
+      [
+        'el RUC no es válido',
+        { ruc: '20601234566', razon_social: RAZON_SOCIAL },
+      ],
+      ['no tiene razón social', { ruc: RUC, razon_social: null }],
+      ['la razón social está vacía', { ruc: RUC, razon_social: '   ' }],
+    ])('no propone nada si el perfil %s', async (_, overrides) => {
+      findClienteParaResumenPorUser.mockResolvedValue(cliente(overrides));
+
+      const resumen = await useCase.execute(dto(), USER_ID);
+
+      expect(resumen.comprobante_sugerido).toBeNull();
+    });
   });
 
   it('no registra ningún pedido', async () => {
