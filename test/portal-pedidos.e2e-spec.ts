@@ -326,7 +326,7 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
       });
     }
     tokens.admin = await login(ADMIN_CREDENTIALS);
-  });
+  }, 30_000);
 
   afterAll(async () => {
     await deleteTestData();
@@ -337,7 +337,7 @@ describe('Resumen del pedido del portal (e2e, HU-B-007)', () => {
       },
     });
     await app.close();
-  });
+  }, 30_000);
 
   describe('autorización', () => {
     it('sin token devuelve 401', async () => {
