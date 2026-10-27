@@ -50,6 +50,7 @@ describe('TableroControlPresenter', () => {
     perspectiva = financiera,
     metasAnuales: KpiMetaAnualEntity[] = [],
     valoresAnuales: KpiValorEntityEnriquecido[] = [],
+    oeNegocio: { id: number; codigo: string; nombre: string } | null = null,
   ): KpiEntityEnriquecido =>
     Object.assign(
       new KpiEntity(
@@ -91,6 +92,9 @@ describe('TableroControlPresenter', () => {
           codigo: objetivoCodigo,
           nombre: `Objetivo ${objetivoCodigo}`,
           responsable: `Responsable ${objetivoCodigo}`,
+          tipo_modulo_id: 1,
+          oe_negocio_id: oeNegocio?.id ?? null,
+          oe_negocio: oeNegocio,
           perspectiva_bsc: {
             id: perspectiva.id,
             nombre: perspectiva.nombre,
@@ -103,6 +107,7 @@ describe('TableroControlPresenter', () => {
     objetivoId: number,
     objetivoCodigo: string,
     perspectiva = financiera,
+    oeNegocio: { id: number; codigo: string; nombre: string } | null = null,
   ): IniciativaEntityEnriquecido =>
     Object.assign(
       new IniciativaEntity(
@@ -134,6 +139,9 @@ describe('TableroControlPresenter', () => {
           codigo: objetivoCodigo,
           nombre: `Objetivo ${objetivoCodigo}`,
           responsable: `Responsable ${objetivoCodigo}`,
+          tipo_modulo_id: 1,
+          oe_negocio_id: oeNegocio?.id ?? null,
+          oe_negocio: oeNegocio,
           perspectiva_bsc: {
             id: perspectiva.id,
             nombre: perspectiva.nombre,
@@ -267,5 +275,121 @@ describe('TableroControlPresenter', () => {
       anio_fin: 2028,
       estado_plan: { codigo: 'ACTIVO', nombre: 'Activo' },
     });
+  });
+
+  it('toHttp no expone oe_negocio ni oe_negocio_id aunque estén seteados en el dominio', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'ON-001',
+      nombre: 'Objetivo de negocio',
+    };
+    const http = toHttp(
+      [financiera],
+      [makeKpi(1, 'OE-001', financiera, [], [], oeNegocio)],
+      [makeIniciativa(2, 'OE-002', financiera, oeNegocio)],
+    );
+
+    for (const objetivoHttp of http.perspectivas[0].objetivos) {
+      expect(Object.keys(objetivoHttp)).not.toContain('oe_negocio');
+      expect(Object.keys(objetivoHttp)).not.toContain('oe_negocio_id');
+    }
+  });
+
+  it('toHttpTi expone oe_negocio_id y oe_negocio cuando están seteados', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'ON-001',
+      nombre: 'Objetivo de negocio',
+    };
+    const http = TableroControlPresenter.toHttpTi({
+      plan,
+      perspectivas: [financiera],
+      kpis: [makeKpi(1, 'OE-001', financiera, [], [], oeNegocio)],
+      iniciativas: [makeIniciativa(2, 'OE-002', financiera, oeNegocio)],
+    });
+
+    for (const objetivoHttp of http.perspectivas[0].objetivos) {
+      expect(objetivoHttp).toMatchObject({
+        oe_negocio_id: 5,
+        oe_negocio: {
+          id: 5,
+          codigo: 'ON-001',
+          nombre: 'Objetivo de negocio',
+        },
+      });
+    }
+  });
+
+  it('toHttpTi expone oe_negocio_id y oe_negocio nulos cuando no hay vínculo', () => {
+    const http = TableroControlPresenter.toHttpTi({
+      plan,
+      perspectivas: [financiera],
+      kpis: [makeKpi(1, 'OE-001')],
+      iniciativas: [makeIniciativa(2, 'OE-002')],
+    });
+
+    for (const objetivoHttp of http.perspectivas[0].objetivos) {
+      expect(objetivoHttp).toMatchObject({
+        oe_negocio_id: null,
+        oe_negocio: null,
+      });
+    }
+  });
+
+  it('toHttpTi es exactamente toHttp más oe_negocio_id y oe_negocio por objetivo', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'ON-001',
+      nombre: 'Objetivo de negocio',
+    };
+    const meta = new KpiMetaAnualEntity(1, 10, 2027, 85, true, fecha, fecha);
+    const periodo = new PeriodoEntity(
+      12,
+      1,
+      12,
+      'DIC',
+      'Diciembre',
+      12,
+      true,
+      fecha,
+      fecha,
+    );
+    const valor = Object.assign(
+      new KpiValorEntity(
+        1,
+        10,
+        2027,
+        periodo.id,
+        90,
+        'VERDE',
+        true,
+        fecha,
+        fecha,
+      ),
+      { periodo, color_hex: '#22C55E' },
+    );
+    const input = {
+      plan,
+      perspectivas: [clientes, financiera],
+      kpis: [makeKpi(1, 'OE-001', financiera, [meta], [valor], oeNegocio)],
+      iniciativas: [
+        makeIniciativa(1, 'OE-001', financiera, oeNegocio),
+        makeIniciativa(2, 'OE-002', clientes, oeNegocio),
+      ],
+    };
+    const http = TableroControlPresenter.toHttp(input);
+    const httpTi = TableroControlPresenter.toHttpTi(input);
+
+    expect({
+      ...httpTi,
+      perspectivas: httpTi.perspectivas.map((perspectiva) => ({
+        ...perspectiva,
+        objetivos: perspectiva.objetivos.map((objetivoTi) => ({
+          ...objetivoTi,
+          oe_negocio_id: undefined,
+          oe_negocio: undefined,
+        })),
+      })),
+    }).toEqual(http);
   });
 });
