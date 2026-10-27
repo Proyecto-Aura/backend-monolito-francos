@@ -21,14 +21,28 @@ type PrismaKpiEnriquecido = Prisma.KpiGetPayload<{
         nombre: true;
         responsable: true;
         tipo_modulo_id: true;
+        oe_negocio_id: true;
+        oe_negocio: { select: { id: true; codigo: true; nombre: true } };
         perspectiva_bsc: { select: { id: true; nombre: true } };
       };
     };
   };
 }>;
 
+type PrismaKpiSinVinculoNegocio = Omit<
+  PrismaKpiEnriquecido,
+  'objetivo_estrategico'
+> & {
+  objetivo_estrategico: Omit<
+    PrismaKpiEnriquecido['objetivo_estrategico'],
+    'oe_negocio_id' | 'oe_negocio'
+  >;
+};
+
 export class KpiMapper {
-  static toDomain(kpi: PrismaKpiEnriquecido): KpiEntityEnriquecido {
+  static toDomain(
+    kpi: PrismaKpiEnriquecido | PrismaKpiSinVinculoNegocio,
+  ): KpiEntityEnriquecido {
     return Object.assign(
       new KpiEntity(
         kpi.id,
@@ -51,6 +65,14 @@ export class KpiMapper {
           nombre: kpi.objetivo_estrategico.nombre,
           responsable: kpi.objetivo_estrategico.responsable,
           tipo_modulo_id: kpi.objetivo_estrategico.tipo_modulo_id,
+          oe_negocio_id:
+            'oe_negocio_id' in kpi.objetivo_estrategico
+              ? kpi.objetivo_estrategico.oe_negocio_id
+              : null,
+          oe_negocio:
+            'oe_negocio' in kpi.objetivo_estrategico
+              ? kpi.objetivo_estrategico.oe_negocio
+              : null,
           perspectiva_bsc: {
             id: kpi.objetivo_estrategico.perspectiva_bsc.id,
             nombre: kpi.objetivo_estrategico.perspectiva_bsc.nombre,

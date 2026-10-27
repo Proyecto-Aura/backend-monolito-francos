@@ -15,6 +15,18 @@ export interface ClienteParaPedido {
   email: string | null;
 }
 
+// Lo que el resumen del carrito necesita del cliente que inició sesión: si está
+// activo, su dirección predeterminada del perfil (RF-B20) y, si se identificó
+// con RUC, sus datos para proponer una factura (HU-B-009).
+export interface ClienteParaResumen {
+  id: string;
+  estado: boolean;
+  direccion: string | null;
+  // Número de documento solo cuando el tipo de documento es RUC.
+  ruc?: string | null;
+  razon_social?: string | null;
+}
+
 // Precios vigentes de una presentación al momento de registrar el pedido.
 export interface PresentacionParaPedido {
   id: number;
@@ -23,6 +35,8 @@ export interface PresentacionParaPedido {
   precio_unitario: number;
   precio_mayorista: number | null;
   umbral_mayorista: number | null;
+  // Si el cliente la ve en el catálogo del portal (RF-A025).
+  visible_portal_b: boolean;
 }
 
 export interface CreateDetallePedidoParams {

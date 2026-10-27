@@ -1,5 +1,6 @@
 import { ReembolsoEntity } from '../../entities';
 import {
+  EstadoPedido,
   EstadoReembolso,
   MetodoPago,
   TipoNotificacionReembolso,
@@ -41,4 +42,33 @@ export interface NotificacionCliente {
   tipo: TipoNotificacionReembolso;
   titulo: string;
   mensaje: string;
+}
+
+// Lo que la solicitud del cliente necesita saber de su pedido (HU-B-014).
+export interface PedidoParaReembolso {
+  id: number;
+  codigo: string;
+  cliente_id: string;
+  estado: EstadoPedido;
+  // null si el pedido no tiene pago registrado.
+  pago: { id: number; monto: number } | null;
+  // Si el pago ya tiene una solicitud (una sola por pedido, RF-B40).
+  tiene_reembolso: boolean;
+}
+
+// id y código reservados antes de subir la evidencia (la key lleva el código).
+export interface CodigoReembolsoReservado {
+  id: number;
+  codigo: string;
+}
+
+export interface CrearSolicitudReembolsoParams extends CodigoReembolsoReservado {
+  pago_id: number;
+  monto: number;
+  motivo_cliente: string;
+  evidencia_key: string;
+}
+
+export interface ListReembolsosDeClienteParams extends PaginationParams {
+  estado?: EstadoReembolso;
 }

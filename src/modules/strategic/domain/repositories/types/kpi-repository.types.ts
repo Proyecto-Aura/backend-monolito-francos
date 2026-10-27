@@ -40,6 +40,8 @@ export interface KpiObjetivoResumen {
   nombre: string;
   responsable: string;
   tipo_modulo_id: number;
+  oe_negocio_id: number | null;
+  oe_negocio: { id: number; codigo: string; nombre: string } | null;
   perspectiva_bsc: {
     id: number;
     nombre: string;

@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import { EstadoReembolso, MetodoPago } from '../../domain/enums';
+import { formatCodigoReembolso } from '../../application/utils/reembolso.utils';
+import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
+import { ResourceConflictError } from '../../domain/errors/sales-domain.errors';
 import { ReembolsoRepository } from '../../domain/repositories/reembolso.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import {
   CambioEstadoReembolso,
+  CodigoReembolsoReservado,
+  CrearSolicitudReembolsoParams,
+  ListReembolsosDeClienteParams,
   ListReembolsosParams,
   NotificacionCliente,
+  PedidoParaReembolso,
   ReembolsoConPedido,
 } from '../../domain/repositories/types/reembolso-repository.types';
 import { PedidoMapper } from '../mappers/pedido.mapper';
@@ -169,6 +175,127 @@ export class PrismaReembolsoRepository implements ReembolsoRepository {
 
       return true;
     });
+  }
+
+  async findPedidoParaReembolso(
+    pedidoId: number,
+  ): Promise<PedidoParaReembolso | null> {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      select: {
+        id: true,
+        codigo: true,
+        cliente_id: true,
+        estado: true,
+        pago: {
+          select: {
+            id: true,
+            monto: true,
+            reembolso: { select: { id: true } },
+          },
+        },
+      },
+    });
+
+    if (!pedido) {
+      return null;
+    }
+
+    return {
+      id: pedido.id,
+      codigo: pedido.codigo,
+      cliente_id: pedido.cliente_id,
+      estado: pedido.estado as EstadoPedido,
+      pago: pedido.pago
+        ? { id: pedido.pago.id, monto: pedido.pago.monto.toNumber() }
+        : null,
+      tiene_reembolso: Boolean(pedido.pago?.reembolso),
+    };
+  }
+
+  async reservarCodigo(): Promise<CodigoReembolsoReservado> {
+    // nextval no se deshace: un id reservado nunca se repite, aunque el
+    // registro falle después.
+    const [{ nextval }] = await this.prisma.$queryRaw<{ nextval: bigint }[]>`
+      SELECT nextval(pg_get_serial_sequence('commerce.reembolso', 'id')) AS nextval
+    `;
+    const id = Number(nextval);
+
+    return { id, codigo: formatCodigoReembolso(id) };
+  }
+
+  async crearSolicitud(
+    params: CrearSolicitudReembolsoParams,
+  ): Promise<ReembolsoConPedido> {
+    try {
+      const reembolso = await this.prisma.reembolso.create({
+        data: {
+          id: params.id,
+          codigo: params.codigo,
+          pago_id: params.pago_id,
+          monto: params.monto,
+          motivo_cliente: params.motivo_cliente,
+          evidencia_key: params.evidencia_key,
+          estado: EstadoReembolso.PENDIENTE,
+        },
+        include: reembolsoConPedidoInclude,
+      });
+
+      return this.toReembolsoConPedido(reembolso);
+    } catch (error) {
+      // uq_reembolso_pago: otra petición registró la solicitud del mismo pago.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ResourceConflictError(
+          'El pedido ya tiene una solicitud de reembolso registrada',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async findManyDeCliente(
+    clienteId: string,
+    params: ListReembolsosDeClienteParams,
+  ): Promise<PaginatedResult<ReembolsoConPedido>> {
+    const where: Prisma.ReembolsoWhereInput = {
+      pago: { pedido: { cliente_id: clienteId } },
+      ...(params.estado ? { estado: params.estado } : {}),
+    };
+
+    const [reembolsos, total] = await this.prisma.$transaction([
+      this.prisma.reembolso.findMany({
+        where,
+        include: reembolsoConPedidoInclude,
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+        // Las solicitudes más recientes primero.
+        orderBy: [{ fecha_solicitud: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.reembolso.count({ where }),
+    ]);
+
+    return {
+      data: reembolsos.map((reembolso) => this.toReembolsoConPedido(reembolso)),
+      total,
+      page: params.page,
+      limit: params.limit,
+    };
+  }
+
+  async findByIdDeCliente(
+    id: number,
+    clienteId: string,
+  ): Promise<ReembolsoConPedido | null> {
+    const reembolso = await this.prisma.reembolso.findFirst({
+      where: { id, pago: { pedido: { cliente_id: clienteId } } },
+      include: reembolsoConPedidoInclude,
+    });
+
+    return reembolso ? this.toReembolsoConPedido(reembolso) : null;
   }
 
   private toReembolsoConPedido(
