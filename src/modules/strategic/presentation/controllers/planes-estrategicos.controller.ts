@@ -35,6 +35,7 @@ import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-e
 import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
 import { ObtenerObjetivosPorPlanTiUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan-ti.use-case';
 import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { ObtenerTableroControlTiUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control-ti.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 import { IniciativaPresenter } from '../presenters/iniciativa.presenter';
@@ -65,6 +66,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
     private readonly obtenerIniciativasPorPlanTi: ObtenerIniciativasPorPlanTiUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
+    private readonly obtenerTableroControlTi: ObtenerTableroControlTiUseCase,
     private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
   ) {}
 
@@ -194,6 +196,18 @@ export class PlanesEstrategicosController {
   async tableroControlDelPlan(@Param('id', ParseIntPipe) id: number) {
     return TableroControlPresenter.toHttp(
       await this.obtenerTableroControl.execute(id),
+    );
+  }
+
+  @Get(':id/tablero-control-ti')
+  @ApiOperation({ summary: 'Tablero de control (BSC) de TI del plan' })
+  @ApiOkResponse({
+    description: 'Tablero de control de TI agrupado por perspectiva',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async tableroControlTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return TableroControlPresenter.toHttpTi(
+      await this.obtenerTableroControlTi.execute(id),
     );
   }
 

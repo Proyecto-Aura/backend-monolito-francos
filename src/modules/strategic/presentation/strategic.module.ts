@@ -70,6 +70,7 @@ import { ListIniciativasPorObjetivoTiUseCase } from '../application/use-cases/in
 import { ObtenerIniciativasPorPlanTiUseCase } from '../application/use-cases/iniciativa/obtener-iniciativas-por-plan-ti.use-case';
 import { UpdateIniciativaTiUseCase } from '../application/use-cases/iniciativa/update-iniciativa-ti.use-case';
 import { ObtenerTableroControlUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { ObtenerTableroControlTiUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control-ti.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
@@ -201,6 +202,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ListIniciativasPorObjetivoTiUseCase,
     ObtenerIniciativasPorPlanTiUseCase,
     ObtenerTableroControlUseCase,
+    ObtenerTableroControlTiUseCase,
     ObtenerSeguimientoKpisUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,

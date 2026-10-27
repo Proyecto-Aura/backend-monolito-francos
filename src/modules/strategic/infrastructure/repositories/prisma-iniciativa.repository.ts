@@ -20,6 +20,8 @@ const INICIATIVA_INCLUDE_ENRIQUECIDA = {
       nombre: true,
       responsable: true,
       tipo_modulo_id: true,
+      oe_negocio_id: true,
+      oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },

@@ -1,4 +1,5 @@
 import { TableroControlResultado } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { PerspectivaBscEntity } from '../../domain/entities';
 import { IniciativaEntityEnriquecido } from '../../domain/repositories/types/iniciativa-repository.types';
 import { KpiEntityEnriquecido } from '../../domain/repositories/types/kpi-repository.types';
 import { PlanEstrategicoEntityConEstado } from '../../domain/repositories/types/plan-estrategico-repository.types';
@@ -9,6 +10,8 @@ interface ObjetivoTablero {
   codigo: string;
   nombre: string;
   responsable: string;
+  oe_negocio_id: number | null;
+  oe_negocio: { id: number; codigo: string; nombre: string } | null;
   perspectiva_bsc_id: number;
 }
 
@@ -19,6 +22,33 @@ export class TableroControlPresenter {
     kpis,
     iniciativas,
   }: TableroControlResultado) {
+    return this.construir(plan, perspectivas, kpis, iniciativas, (objetivo) =>
+      this.objetivoToHttp(objetivo),
+    );
+  }
+
+  static toHttpTi({
+    plan,
+    perspectivas,
+    kpis,
+    iniciativas,
+  }: TableroControlResultado) {
+    return this.construir(plan, perspectivas, kpis, iniciativas, (objetivo) =>
+      this.objetivoToHttpTi(objetivo),
+    );
+  }
+
+  private static construir(
+    plan: PlanEstrategicoEntityConEstado,
+    perspectivas: PerspectivaBscEntity[],
+    kpis: KpiEntityEnriquecido[],
+    iniciativas: IniciativaEntityEnriquecido[],
+    presentarObjetivo: (
+      objetivo: ObjetivoTablero,
+    ) => ReturnType<typeof TableroControlPresenter.objetivoToHttp> = (
+      objetivo,
+    ) => this.objetivoToHttp(objetivo),
+  ) {
     return {
       plan: {
         id: plan.id,
@@ -41,8 +71,26 @@ export class TableroControlPresenter {
             kpis,
             iniciativas,
             plan,
+            presentarObjetivo,
           ),
         })),
+    };
+  }
+
+  private static objetivoToHttp(objetivo: ObjetivoTablero) {
+    return {
+      id: objetivo.id,
+      codigo: objetivo.codigo,
+      nombre: objetivo.nombre,
+      responsable: objetivo.responsable,
+    };
+  }
+
+  private static objetivoToHttpTi(objetivo: ObjetivoTablero) {
+    return {
+      ...this.objetivoToHttp(objetivo),
+      oe_negocio_id: objetivo.oe_negocio_id,
+      oe_negocio: objetivo.oe_negocio,
     };
   }
 
@@ -51,6 +99,11 @@ export class TableroControlPresenter {
     kpis: KpiEntityEnriquecido[],
     iniciativas: IniciativaEntityEnriquecido[],
     plan: PlanEstrategicoEntityConEstado,
+    presentarObjetivo: (
+      objetivo: ObjetivoTablero,
+    ) => ReturnType<typeof TableroControlPresenter.objetivoToHttp> = (
+      objetivo,
+    ) => this.objetivoToHttp(objetivo),
   ) {
     const objetivos = new Map<number, ObjetivoTablero>();
 
@@ -63,6 +116,8 @@ export class TableroControlPresenter {
           codigo: objetivo.codigo,
           nombre: objetivo.nombre,
           responsable: objetivo.responsable,
+          oe_negocio_id: objetivo.oe_negocio_id,
+          oe_negocio: objetivo.oe_negocio,
           perspectiva_bsc_id: objetivo.perspectiva_bsc.id,
         });
       }
@@ -77,6 +132,8 @@ export class TableroControlPresenter {
           codigo: objetivo.codigo,
           nombre: objetivo.nombre,
           responsable: objetivo.responsable,
+          oe_negocio_id: objetivo.oe_negocio_id,
+          oe_negocio: objetivo.oe_negocio,
           perspectiva_bsc_id: objetivo.perspectiva_bsc.id,
         });
       }
@@ -85,10 +142,7 @@ export class TableroControlPresenter {
     return [...objetivos.values()]
       .sort((a, b) => a.codigo.localeCompare(b.codigo))
       .map((objetivo) => ({
-        id: objetivo.id,
-        codigo: objetivo.codigo,
-        nombre: objetivo.nombre,
-        responsable: objetivo.responsable,
+        ...presentarObjetivo(objetivo),
         iniciativas: iniciativas
           .filter(
             (iniciativa) => iniciativa.objetivo_estrategico.id === objetivo.id,
