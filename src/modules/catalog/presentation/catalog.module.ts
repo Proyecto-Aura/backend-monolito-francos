@@ -119,6 +119,10 @@ import { CatalogDomainExceptionFilter } from './filters/catalog-domain-exception
       useClass: PrismaProductoTerminadoRepository,
     },
     {
+      provide: ProductoTerminadoRepository,
+      useClass: PrismaProductoTerminadoRepository,
+    },
+    {
       provide: APP_FILTER,
       useClass: CatalogDomainExceptionFilter,
     },
