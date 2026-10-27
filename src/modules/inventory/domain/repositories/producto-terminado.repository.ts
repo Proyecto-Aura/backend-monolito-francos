@@ -10,6 +10,10 @@ import {
 // ya devuelve ese stock embebido. Lo único que falta en todo el sistema es
 // poder editar stock_minimo/stock_maximo, así que este repo solo cubre eso.
 export abstract class ProductoTerminadoRepository {
+  // Usado por el kardex (OFT0-259) para resolver un producto terminado a
+  // partir de su propio id (el que referencian los lotes/movimientos), sin
+  // pasar por producto_presentacion_id.
+  abstract findById(id: number): Promise<ProductoTerminadoEntity | null>;
   abstract findByProductoPresentacionId(
     productoPresentacionId: number,
   ): Promise<ProductoTerminadoEntity | null>;

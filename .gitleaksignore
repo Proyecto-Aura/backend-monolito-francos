@@ -74,3 +74,12 @@ c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-
 # que el propio test crea y borra; no es un secreto real. Mismo caso que el
 # de objetivo_estrategico de arriba.
 139263abd49d28d6f25134fbd5d827ea2d8af29f:test/productos-terminados.e2e-spec.ts:generic-api-key:45
+
+# Falso positivo: contraseñas hardcodeadas de los usuarios de prueba
+# "inventario" y "ventas"/"produccion" en los e2e de lotes y movimientos de
+# producto terminado (OFT0-259). Usuarios desechables que el propio test
+# crea y borra; no son secretos reales. Mismo caso que el de
+# objetivo_estrategico de arriba.
+23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:44
+23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:51
+23170a5d65adc7efb419eded7a4742ced5abe813:test/movimientos-producto-terminado.e2e-spec.ts:generic-api-key:50

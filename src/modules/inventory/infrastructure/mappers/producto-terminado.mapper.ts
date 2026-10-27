@@ -5,6 +5,7 @@ import { UnidadMedidaPresentacion } from '../../../catalog/domain/enums';
 type PrismaProductoTerminadoConCatalogo = PrismaProductoTerminado & {
   producto_presentacion: {
     sku: string;
+    estado: boolean;
     producto_id: number;
     presentacion_id: number;
     producto: {
@@ -33,6 +34,7 @@ export class ProductoTerminadoMapper {
       pp.presentacion_id,
       pp.presentacion.cantidad,
       pp.presentacion.unidad_medida as UnidadMedidaPresentacion,
+      pp.estado,
       productoTerminado.stock_actual.toNumber(),
       productoTerminado.stock_minimo.toNumber(),
       productoTerminado.stock_maximo

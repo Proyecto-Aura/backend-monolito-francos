@@ -19,6 +19,10 @@ export class ProductoTerminadoEntity {
     public readonly presentacion_id: number,
     public readonly presentacion_cantidad: number,
     public readonly presentacion_unidad_medida: UnidadMedidaPresentacion,
+    // De producto_presentacion.estado: producto_terminado no tiene uno
+    // propio (ver nota de la clase). Usado por el kardex (OFT0-259) para no
+    // permitir salidas de un producto descatalogado.
+    public readonly estado: boolean,
     public stock_actual: number,
     public stock_minimo: number,
     public stock_maximo: number | null,

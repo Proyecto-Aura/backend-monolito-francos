@@ -128,6 +128,24 @@ enum TipoMovimientoInsumo {
   @@schema("commerce")
 }
 
+enum EstadoLoteProductoTerminado {
+  activo
+  agotado
+  vencido
+
+  @@map("estado_lote_producto_terminado_enum")
+  @@schema("commerce")
+}
+
+enum TipoMovimientoProductoTerminado {
+  entrada
+  salida
+  ajuste
+
+  @@map("tipo_movimiento_producto_terminado_enum")
+  @@schema("commerce")
+}
+
 enum OrigenPedido {
   portal
   manual
@@ -684,6 +702,8 @@ model ProductoTerminado {
 
   producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_terminado_producto_presentacion")
 
+  lotes LoteProductoTerminado[]
+
   @@map("producto_terminado")
   @@schema("commerce")
 }
@@ -772,6 +792,70 @@ model MovimientoInsumoCorrelativo {
 
   @@id([insumo_id, fecha], map: "pk_movimiento_insumo_correlativo")
   @@map("movimiento_insumo_correlativo")
+  @@schema("commerce")
+}
+
+// Lote de producción de un producto terminado. OFT0-259, mismo patrón que
+// LoteInsumo: nace vacío (0) y el movimiento "entrada" que se crea junto con
+// el lote (vía trigger) lo deja en cantidad_inicial.
+model LoteProductoTerminado {
+  id                     Int                         @id(map: "pk_lote_producto_terminado") @default(autoincrement())
+  producto_terminado_id  Int
+  codigo_lote            String                      @unique(map: "uq_lote_producto_terminado_codigo") @db.VarChar(50)
+  fecha_produccion       DateTime                    @db.Date
+  fecha_vencimiento      DateTime?                   @db.Date
+  cantidad_inicial       Decimal                     @db.Decimal(10, 2)
+  cantidad_actual        Decimal                     @db.Decimal(10, 2)
+  estado                 EstadoLoteProductoTerminado @default(activo)
+  activo                 Boolean                     @default(true)
+  created_at             DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  producto_terminado ProductoTerminado @relation(fields: [producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_producto_terminado_producto_terminado")
+
+  movimientos MovimientoProductoTerminado[]
+
+  @@map("lote_producto_terminado")
+  @@schema("commerce")
+}
+
+// Kardex de producto terminado: registro histórico e inmutable (sin
+// updated_at, sin activo/estado propio — nunca se edita ni se borra, solo se
+// agrega). stock_anterior/stock_resultante los completa un trigger (ver
+// migración), no la aplicación: siempre reflejan el estado real del lote en
+// ese instante. cantidad es positiva para entrada/salida (la dirección la
+// da "tipo"); para ajuste puede ser positiva o negativa (corrección hacia
+// arriba o abajo).
+model MovimientoProductoTerminado {
+  id                         Int                              @id(map: "pk_movimiento_producto_terminado") @default(autoincrement())
+  lote_producto_terminado_id Int
+  tipo                       TipoMovimientoProductoTerminado
+  cantidad                   Decimal                          @db.Decimal(10, 2)
+  stock_anterior             Decimal                          @default(0) @db.Decimal(10, 2)
+  stock_resultante           Decimal                          @default(0) @db.Decimal(10, 2)
+  // FR-MV-[000]-[YYMMDD]-PT{productoTerminadoID}; lo genera el trigger, no la app.
+  codigo                     String                           @default("") @unique(map: "uq_movimiento_producto_terminado_codigo") @db.VarChar(40)
+  razon                      String                           @db.VarChar(255)
+  fecha                      DateTime                         @default(now()) @db.Timestamptz(6)
+  created_at                 DateTime                         @default(now()) @db.Timestamptz(6)
+
+  lote_producto_terminado LoteProductoTerminado @relation(fields: [lote_producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_producto_terminado_lote")
+
+  @@map("movimiento_producto_terminado")
+  @@schema("commerce")
+}
+
+// Contador auxiliar del trigger de arriba: una fila por (producto_terminado,
+// día), para generar el correlativo de "codigo" sin choques bajo
+// concurrencia. No se consulta desde la aplicación salvo para limpieza en
+// tests.
+model MovimientoProductoTerminadoCorrelativo {
+  producto_terminado_id Int
+  fecha                  DateTime @db.Date
+  correlativo             Int      @default(0)
+
+  @@id([producto_terminado_id, fecha], map: "pk_movimiento_producto_terminado_correlativo")
+  @@map("movimiento_producto_terminado_correlativo")
   @@schema("commerce")
 }
 
