@@ -37,6 +37,7 @@ import { ObtenerObjetivosPorPlanTiUseCase } from '../../application/use-cases/ob
 import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { ObtenerTableroControlTiUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control-ti.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
+import { ObtenerSeguimientoKpisTiUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis-ti.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 import { IniciativaPresenter } from '../presenters/iniciativa.presenter';
 import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
@@ -68,6 +69,7 @@ export class PlanesEstrategicosController {
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
     private readonly obtenerTableroControlTi: ObtenerTableroControlTiUseCase,
     private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
+    private readonly obtenerSeguimientoKpisTi: ObtenerSeguimientoKpisTiUseCase,
   ) {}
 
   @Post()
@@ -224,6 +226,22 @@ export class PlanesEstrategicosController {
   async seguimientoKpisDelPlan(@Param('id', ParseIntPipe) id: number) {
     return SeguimientoKpisPresenter.toHttp(
       await this.obtenerSeguimientoKpis.execute(id),
+    );
+  }
+
+  @Get(':id/seguimiento-kpis-ti')
+  @ApiOperation({
+    summary:
+      'Seguimiento de KPIs de TI del plan (tendencia y cumplimiento para gráficos)',
+  })
+  @ApiOkResponse({
+    description:
+      'KPIs de TI agrupados por perspectiva/objetivo con su serie histórica completa, cumplimiento agregado y el objetivo de Negocio vinculado',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async seguimientoKpisTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return SeguimientoKpisPresenter.toHttpTi(
+      await this.obtenerSeguimientoKpisTi.execute(id),
     );
   }
 

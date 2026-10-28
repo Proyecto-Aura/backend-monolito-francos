@@ -72,6 +72,7 @@ import { UpdateIniciativaTiUseCase } from '../application/use-cases/iniciativa/u
 import { ObtenerTableroControlUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control.use-case';
 import { ObtenerTableroControlTiUseCase } from '../application/use-cases/tablero-control/obtener-tablero-control-ti.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
+import { ObtenerSeguimientoKpisTiUseCase } from '../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis-ti.use-case';
 import { DocumentoEstrategicoRepository } from '../domain/repositories/documento-estrategico.repository';
 import { EstadoPlanEstrategicoRepository } from '../domain/repositories/estado-plan-estrategico.repository';
 import { EstadoObjetivoRepository } from '../domain/repositories/estado-objetivo.repository';
@@ -204,6 +205,7 @@ import { StrategicDomainExceptionFilter } from './filters/strategic-domain-excep
     ObtenerTableroControlUseCase,
     ObtenerTableroControlTiUseCase,
     ObtenerSeguimientoKpisUseCase,
+    ObtenerSeguimientoKpisTiUseCase,
     {
       provide: EstadoPlanEstrategicoRepository,
       useClass: PrismaEstadoPlanEstrategicoRepository,

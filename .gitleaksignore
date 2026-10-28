@@ -35,6 +35,12 @@ a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:g
 # iniciativa de arriba.
 fec8ee926329c518da65e95f7645fb9662035fa0:test/seguimiento-kpis.e2e-spec.ts:generic-api-key:17
 
+# Falso positivo: contraseña hardcodeada del usuario de prueba "ventas" en el
+# e2e de seguimiento de KPIs de TI (HU-A-031 / OFT0-469). Usuario desechable
+# que el propio test crea y borra; no es un secreto real. Mismo caso que el
+# de seguimiento de KPIs de Negocio de arriba.
+d969bb66c99dd72a5b58d5d976852160702085cf:test/seguimiento-kpis-ti.e2e-spec.ts:generic-api-key:17
+
 # Falso positivo: contraseñas hardcodeadas de los usuarios de prueba "ventas"
 # y "estrategico" en el e2e de objetivo estratégico de TI (HU-A-033 /
 # OFT0-449). Usuarios desechables que el propio test crea y borra; no son

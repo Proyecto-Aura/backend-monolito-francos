@@ -138,6 +138,7 @@ describe('SeguimientoKpisPresenter', () => {
     meta2024 = 8,
     meta2025 = 8,
     historial = [],
+    oeNegocio = null,
   }: {
     id: number;
     objetivoId?: number;
@@ -147,6 +148,7 @@ describe('SeguimientoKpisPresenter', () => {
     meta2024?: number;
     meta2025?: number;
     historial?: KpiValorEntityEnriquecido[];
+    oeNegocio?: { id: number; codigo: string; nombre: string } | null;
   }): KpiSeguimientoEntidad => {
     const metasAnuales = [
       new KpiMetaAnualEntity(
@@ -207,6 +209,9 @@ describe('SeguimientoKpisPresenter', () => {
           codigo: objetivoCodigo,
           nombre: `Objetivo ${objetivoCodigo}`,
           responsable: `Responsable ${objetivoCodigo}`,
+          tipo_modulo_id: 1,
+          oe_negocio_id: oeNegocio?.id ?? null,
+          oe_negocio: oeNegocio ?? null,
           perspectiva_bsc: {
             id: perspectiva.id,
             nombre: perspectiva.nombre,
@@ -435,6 +440,95 @@ describe('SeguimientoKpisPresenter', () => {
       id: 1,
       codigo: 'PE-0001',
       nombre: 'Plan estratégico 2024-2025',
+    });
+  });
+
+  it('toHttp no expone oe_negocio_id ni oe_negocio aunque el objetivo tenga vínculo', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'OE-NEG-001',
+      nombre: 'Objetivo de Negocio',
+    };
+    const http = toHttp([makeKpi({ id: 1, oeNegocio })], [financiera]);
+    const objetivo = http.perspectivas[0].objetivos[0];
+
+    expect(Object.keys(objetivo)).not.toContain('oe_negocio_id');
+    expect(Object.keys(objetivo)).not.toContain('oe_negocio');
+  });
+
+  it('toHttpTi expone oe_negocio_id y oe_negocio cuando el objetivo tiene vínculo', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'OE-NEG-001',
+      nombre: 'Objetivo de Negocio',
+    };
+    const http = SeguimientoKpisPresenter.toHttpTi({
+      plan,
+      perspectivas: [financiera],
+      kpis: [makeKpi({ id: 1, oeNegocio })],
+      periodosPorFrecuencia,
+    });
+
+    expect(http.perspectivas[0].objetivos[0]).toMatchObject({
+      oe_negocio_id: 5,
+      oe_negocio: {
+        id: 5,
+        codigo: 'OE-NEG-001',
+        nombre: 'Objetivo de Negocio',
+      },
+    });
+  });
+
+  it('toHttpTi expone oe_negocio_id y oe_negocio nulos cuando no hay vínculo', () => {
+    const http = SeguimientoKpisPresenter.toHttpTi({
+      plan,
+      perspectivas: [financiera],
+      kpis: [makeKpi({ id: 1 }), makeKpi({ id: 2, oeNegocio: null })],
+      periodosPorFrecuencia,
+    });
+
+    expect(http.perspectivas[0].objetivos).toHaveLength(2);
+    for (const objetivo of http.perspectivas[0].objetivos) {
+      expect(objetivo).toMatchObject({
+        oe_negocio_id: null,
+        oe_negocio: null,
+      });
+    }
+  });
+
+  it('toHttpTi es exactamente toHttp más oe_negocio_id y oe_negocio por objetivo', () => {
+    const oeNegocio = {
+      id: 5,
+      codigo: 'OE-NEG-001',
+      nombre: 'Objetivo de Negocio',
+    };
+    const input = {
+      plan,
+      perspectivas: [clientes, financiera],
+      kpis: [
+        makeKpi({
+          id: 1,
+          oeNegocio,
+          meta2025: 10,
+          historial: [makeValor(1, 2025, t1, 7, 'AMARILLO')],
+        }),
+        makeKpi({ id: 2, perspectiva: clientes, oeNegocio }),
+      ],
+      periodosPorFrecuencia,
+    };
+    const http = SeguimientoKpisPresenter.toHttp(input);
+    const httpTi = SeguimientoKpisPresenter.toHttpTi(input);
+
+    expect(httpTi).toEqual({
+      ...http,
+      perspectivas: http.perspectivas.map((perspectiva) => ({
+        ...perspectiva,
+        objetivos: perspectiva.objetivos.map((objetivo) => ({
+          ...objetivo,
+          oe_negocio_id: oeNegocio.id,
+          oe_negocio: oeNegocio,
+        })),
+      })),
     });
   });
 });
