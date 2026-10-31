@@ -146,6 +146,19 @@ enum TipoMovimientoProductoTerminado {
   @@schema("commerce")
 }
 
+// Pendiente: recien creada, inventario la puede rechazar (su "cancelar").
+// En_proceso/Entregado: solo produccion las mueve. Rechazado solo se alcanza
+// desde Pendiente (ni inventario ni produccion rechazan algo ya en marcha).
+enum EstadoSolicitudProduccion {
+  pendiente
+  en_proceso
+  entregado
+  rechazado
+
+  @@map("estado_solicitud_produccion_enum")
+  @@schema("commerce")
+}
+
 enum OrigenPedido {
   portal
   manual
@@ -306,26 +319,27 @@ model Cliente {
 }
 
 model User {
-  id                                  String             @id(map: "pk_user") @default(uuid()) @db.Uuid
-  persona_id                          String             @unique(map: "uq_user_persona_id") @db.Uuid
-  email                               String             @unique(map: "uq_user_email") @db.VarChar(150)
-  username                            String             @unique(map: "uq_user_username") @db.VarChar(50)
-  contrasena                          String             @map("contraseña") @db.VarChar(255)
-  estado                              Boolean            @default(true)
-  token_recuperacion                  String?            @db.VarChar(255)
-  token_expiracion                    DateTime?          @db.Timestamptz(6)
-  debe_cambiar_contrasena             Boolean            @default(false)
-  email_verificado                    Boolean            @default(false)
-  token_verificacion_email            String?            @db.VarChar(255)
-  token_verificacion_email_expiracion DateTime?          @db.Timestamptz(6)
-  created_at                          DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at                          DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
-  persona                             Persona            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
+  id                                  String                @id(map: "pk_user") @default(uuid()) @db.Uuid
+  persona_id                          String                @unique(map: "uq_user_persona_id") @db.Uuid
+  email                               String                @unique(map: "uq_user_email") @db.VarChar(150)
+  username                            String                @unique(map: "uq_user_username") @db.VarChar(50)
+  contrasena                          String                @map("contraseña") @db.VarChar(255)
+  estado                              Boolean               @default(true)
+  token_recuperacion                  String?               @db.VarChar(255)
+  token_expiracion                    DateTime?             @db.Timestamptz(6)
+  debe_cambiar_contrasena             Boolean               @default(false)
+  email_verificado                    Boolean               @default(false)
+  token_verificacion_email            String?               @db.VarChar(255)
+  token_verificacion_email_expiracion DateTime?             @db.Timestamptz(6)
+  created_at                          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                          DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
+  persona                             Persona               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")
   usuario_roles                       UsuarioRol[]
   notificacion_users                  NotificacionUser[]
   refresh_tokens                      RefreshToken[]
   pedidos                             Pedido[]
   reembolsos_resueltos                Reembolso[]
+  solicitudes_produccion              SolicitudProduccion[]
 
   @@map("user")
   @@schema("persons")
@@ -702,7 +716,8 @@ model ProductoTerminado {
 
   producto_presentacion ProductoPresentacion @relation(fields: [producto_presentacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_producto_terminado_producto_presentacion")
 
-  lotes LoteProductoTerminado[]
+  lotes                         LoteProductoTerminado[]
+  solicitud_produccion_detalles SolicitudProduccionDetalle[]
 
   @@map("producto_terminado")
   @@schema("commerce")
@@ -771,13 +786,14 @@ model MovimientoInsumo {
   stock_anterior   Decimal              @default(0) @db.Decimal(10, 2)
   stock_resultante Decimal              @default(0) @db.Decimal(10, 2)
   // FR-MV-[000]-[YYMMDD]-INS{insumoID}; lo genera el trigger, no la app.
-  codigo           String               @default("") @unique(map: "uq_movimiento_insumo_codigo") @db.VarChar(40)
+  codigo           String               @unique(map: "uq_movimiento_insumo_codigo") @default("") @db.VarChar(40)
   razon            String               @db.VarChar(255)
   fecha            DateTime             @default(now()) @db.Timestamptz(6)
   created_at       DateTime             @default(now()) @db.Timestamptz(6)
 
   lote_insumo LoteInsumo @relation(fields: [lote_insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_insumo_lote")
 
+  @@index([lote_insumo_id], map: "idx_movimiento_insumo_lote")
   @@map("movimiento_insumo")
   @@schema("commerce")
 }
@@ -799,17 +815,17 @@ model MovimientoInsumoCorrelativo {
 // LoteInsumo: nace vacío (0) y el movimiento "entrada" que se crea junto con
 // el lote (vía trigger) lo deja en cantidad_inicial.
 model LoteProductoTerminado {
-  id                     Int                         @id(map: "pk_lote_producto_terminado") @default(autoincrement())
-  producto_terminado_id  Int
-  codigo_lote            String                      @unique(map: "uq_lote_producto_terminado_codigo") @db.VarChar(50)
-  fecha_produccion       DateTime                    @db.Date
-  fecha_vencimiento      DateTime?                   @db.Date
-  cantidad_inicial       Decimal                     @db.Decimal(10, 2)
-  cantidad_actual        Decimal                     @db.Decimal(10, 2)
-  estado                 EstadoLoteProductoTerminado @default(activo)
-  activo                 Boolean                     @default(true)
-  created_at             DateTime                    @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+  id                    Int                         @id(map: "pk_lote_producto_terminado") @default(autoincrement())
+  producto_terminado_id Int
+  codigo_lote           String                      @unique(map: "uq_lote_producto_terminado_codigo") @db.VarChar(50)
+  fecha_produccion      DateTime                    @db.Date
+  fecha_vencimiento     DateTime?                   @db.Date
+  cantidad_inicial      Decimal                     @db.Decimal(10, 2)
+  cantidad_actual       Decimal                     @db.Decimal(10, 2)
+  estado                EstadoLoteProductoTerminado @default(activo)
+  activo                Boolean                     @default(true)
+  created_at            DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
 
   producto_terminado ProductoTerminado @relation(fields: [producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_producto_terminado_producto_terminado")
 
@@ -827,20 +843,21 @@ model LoteProductoTerminado {
 // da "tipo"); para ajuste puede ser positiva o negativa (corrección hacia
 // arriba o abajo).
 model MovimientoProductoTerminado {
-  id                         Int                              @id(map: "pk_movimiento_producto_terminado") @default(autoincrement())
+  id                         Int                             @id(map: "pk_movimiento_producto_terminado") @default(autoincrement())
   lote_producto_terminado_id Int
   tipo                       TipoMovimientoProductoTerminado
-  cantidad                   Decimal                          @db.Decimal(10, 2)
-  stock_anterior             Decimal                          @default(0) @db.Decimal(10, 2)
-  stock_resultante           Decimal                          @default(0) @db.Decimal(10, 2)
+  cantidad                   Decimal                         @db.Decimal(10, 2)
+  stock_anterior             Decimal                         @default(0) @db.Decimal(10, 2)
+  stock_resultante           Decimal                         @default(0) @db.Decimal(10, 2)
   // FR-MV-[000]-[YYMMDD]-PT{productoTerminadoID}; lo genera el trigger, no la app.
-  codigo                     String                           @default("") @unique(map: "uq_movimiento_producto_terminado_codigo") @db.VarChar(40)
-  razon                      String                           @db.VarChar(255)
-  fecha                      DateTime                         @default(now()) @db.Timestamptz(6)
-  created_at                 DateTime                         @default(now()) @db.Timestamptz(6)
+  codigo                     String                          @unique(map: "uq_movimiento_producto_terminado_codigo") @default("") @db.VarChar(40)
+  razon                      String                          @db.VarChar(255)
+  fecha                      DateTime                        @default(now()) @db.Timestamptz(6)
+  created_at                 DateTime                        @default(now()) @db.Timestamptz(6)
 
   lote_producto_terminado LoteProductoTerminado @relation(fields: [lote_producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_producto_terminado_lote")
 
+  @@index([lote_producto_terminado_id], map: "idx_movimiento_producto_terminado_lote")
   @@map("movimiento_producto_terminado")
   @@schema("commerce")
 }
@@ -851,11 +868,54 @@ model MovimientoProductoTerminado {
 // tests.
 model MovimientoProductoTerminadoCorrelativo {
   producto_terminado_id Int
-  fecha                  DateTime @db.Date
-  correlativo             Int      @default(0)
+  fecha                 DateTime @db.Date
+  correlativo           Int      @default(0)
 
   @@id([producto_terminado_id, fecha], map: "pk_movimiento_producto_terminado_correlativo")
   @@map("movimiento_producto_terminado_correlativo")
+  @@schema("commerce")
+}
+
+// Pedido de producción interno (OFT0-261): no es un pedido de venta, es
+// inventario/admin pidiéndole a producción que fabrique. El codigo lo arma
+// el front (mismo criterio que codigo_lote). No toca stock directamente:
+// pasar a "entregado" es solo un estado, el alta del lote/movimiento real
+// queda en un flujo aparte.
+model SolicitudProduccion {
+  id             Int                       @id(map: "pk_solicitud_produccion") @default(autoincrement())
+  codigo         String                    @unique(map: "uq_solicitud_produccion_codigo") @db.VarChar(50)
+  estado         EstadoSolicitudProduccion @default(pendiente)
+  fecha_creacion DateTime                  @db.Date
+  fecha_limite   DateTime?                 @db.Date
+  solicitado_por String                    @db.Uuid
+  created_at     DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  solicitante User                         @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_user")
+  detalle     SolicitudProduccionDetalle[]
+
+  @@index([solicitado_por], map: "idx_solicitud_produccion_solicitado_por")
+  @@map("solicitud_produccion")
+  @@schema("commerce")
+}
+
+// Líneas de una solicitud: qué producto terminado y cuánto. Editable solo
+// mientras la solicitud está en pendiente (se valida en el use-case, no acá).
+model SolicitudProduccionDetalle {
+  id                      Int      @id(map: "pk_solicitud_produccion_detalle") @default(autoincrement())
+  solicitud_produccion_id Int
+  producto_terminado_id   Int
+  cantidad_solicitada     Int
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  solicitud_produccion SolicitudProduccion @relation(fields: [solicitud_produccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_detalle_solicitud")
+  producto_terminado   ProductoTerminado   @relation(fields: [producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_detalle_producto_terminado")
+
+  @@unique([solicitud_produccion_id, producto_terminado_id], map: "uq_solicitud_produccion_detalle_solicitud_producto")
+  @@index([solicitud_produccion_id], map: "idx_solicitud_produccion_detalle_solicitud")
+  @@index([producto_terminado_id], map: "idx_solicitud_produccion_detalle_producto_terminado")
+  @@map("solicitud_produccion_detalle")
   @@schema("commerce")
 }
 
