@@ -23,24 +23,38 @@ import { RegistrarSalidaProductoTerminadoUseCase } from '../application/use-case
 import { RegistrarAjusteProductoTerminadoUseCase } from '../application/use-cases/movimiento-producto-terminado/registrar-ajuste-producto-terminado.use-case';
 import { GetMovimientoProductoTerminadoByIdUseCase } from '../application/use-cases/movimiento-producto-terminado/get-movimiento-producto-terminado-by-id.use-case';
 import { ListMovimientosProductoTerminadoUseCase } from '../application/use-cases/movimiento-producto-terminado/list-movimientos-producto-terminado.use-case';
+import { CreateSolicitudProduccionUseCase } from '../application/use-cases/solicitud-produccion/create-solicitud-produccion.use-case';
+import { GetSolicitudProduccionByIdUseCase } from '../application/use-cases/solicitud-produccion/get-solicitud-produccion-by-id.use-case';
+import { ListSolicitudesProduccionUseCase } from '../application/use-cases/solicitud-produccion/list-solicitudes-produccion.use-case';
+import { CambiarEstadoSolicitudProduccionUseCase } from '../application/use-cases/solicitud-produccion/cambiar-estado-solicitud-produccion.use-case';
+import { GetIndicadoresSolicitudProduccionUseCase } from '../application/use-cases/solicitud-produccion/get-indicadores-solicitud-produccion.use-case';
+import { ActualizarFechaLimiteSolicitudProduccionUseCase } from '../application/use-cases/solicitud-produccion/actualizar-fecha-limite-solicitud-produccion.use-case';
+import { AgregarDetalleLineaUseCase } from '../application/use-cases/solicitud-produccion-detalle/agregar-detalle-linea.use-case';
+import { ActualizarDetalleLineaUseCase } from '../application/use-cases/solicitud-produccion-detalle/actualizar-detalle-linea.use-case';
+import { EliminarDetalleLineaUseCase } from '../application/use-cases/solicitud-produccion-detalle/eliminar-detalle-linea.use-case';
 import { InsumoRepository } from '../domain/repositories/insumo.repository';
 import { LoteInsumoRepository } from '../domain/repositories/lote-insumo.repository';
 import { LoteProductoTerminadoRepository } from '../domain/repositories/lote-producto-terminado.repository';
 import { MovimientoInsumoRepository } from '../domain/repositories/movimiento-insumo.repository';
 import { MovimientoProductoTerminadoRepository } from '../domain/repositories/movimiento-producto-terminado.repository';
 import { ProductoTerminadoRepository } from '../domain/repositories/producto-terminado.repository';
+import { SolicitudProduccionRepository } from '../domain/repositories/solicitud-produccion.repository';
+import { SolicitudProduccionDetalleRepository } from '../domain/repositories/solicitud-produccion-detalle.repository';
 import { PrismaInsumoRepository } from '../infrastructure/repositories/prisma-insumo.repository';
 import { PrismaLoteInsumoRepository } from '../infrastructure/repositories/prisma-lote-insumo.repository';
 import { PrismaLoteProductoTerminadoRepository } from '../infrastructure/repositories/prisma-lote-producto-terminado.repository';
 import { PrismaMovimientoInsumoRepository } from '../infrastructure/repositories/prisma-movimiento-insumo.repository';
 import { PrismaMovimientoProductoTerminadoRepository } from '../infrastructure/repositories/prisma-movimiento-producto-terminado.repository';
 import { PrismaProductoTerminadoRepository } from '../infrastructure/repositories/prisma-producto-terminado.repository';
+import { PrismaSolicitudProduccionRepository } from '../infrastructure/repositories/prisma-solicitud-produccion.repository';
+import { PrismaSolicitudProduccionDetalleRepository } from '../infrastructure/repositories/prisma-solicitud-produccion-detalle.repository';
 import { InsumosController } from './controllers/insumos.controller';
 import { LotesInsumoController } from './controllers/lotes-insumo.controller';
 import { LotesProductoTerminadoController } from './controllers/lotes-producto-terminado.controller';
 import { MovimientosInsumoController } from './controllers/movimientos-insumo.controller';
 import { MovimientosProductoTerminadoController } from './controllers/movimientos-producto-terminado.controller';
 import { ProductosTerminadosController } from './controllers/productos-terminados.controller';
+import { SolicitudesProduccionController } from './controllers/solicitudes-produccion.controller';
 
 // El filtro de errores de dominio (CatalogDomainExceptionFilter) sigue
 // registrado como APP_FILTER en CatalogModule; al ser global, también
@@ -53,6 +67,7 @@ import { ProductosTerminadosController } from './controllers/productos-terminado
     ProductosTerminadosController,
     LotesProductoTerminadoController,
     MovimientosProductoTerminadoController,
+    SolicitudesProduccionController,
   ],
   providers: [
     CreateInsumoUseCase,
@@ -96,6 +111,23 @@ import { ProductosTerminadosController } from './controllers/productos-terminado
     {
       provide: MovimientoProductoTerminadoRepository,
       useClass: PrismaMovimientoProductoTerminadoRepository,
+    },
+    CreateSolicitudProduccionUseCase,
+    GetSolicitudProduccionByIdUseCase,
+    ListSolicitudesProduccionUseCase,
+    CambiarEstadoSolicitudProduccionUseCase,
+    GetIndicadoresSolicitudProduccionUseCase,
+    ActualizarFechaLimiteSolicitudProduccionUseCase,
+    AgregarDetalleLineaUseCase,
+    ActualizarDetalleLineaUseCase,
+    EliminarDetalleLineaUseCase,
+    {
+      provide: SolicitudProduccionRepository,
+      useClass: PrismaSolicitudProduccionRepository,
+    },
+    {
+      provide: SolicitudProduccionDetalleRepository,
+      useClass: PrismaSolicitudProduccionDetalleRepository,
     },
   ],
 })
