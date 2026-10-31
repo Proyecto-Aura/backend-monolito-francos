@@ -89,3 +89,8 @@ c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-
 23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:44
 23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:51
 23170a5d65adc7efb419eded7a4742ced5abe813:test/movimientos-producto-terminado.e2e-spec.ts:generic-api-key:50
+
+# Falso positivo: contrasena ficticia de los usuarios desechables del e2e de
+# solicitudes de produccion (OFT0-261). El test crea y elimina esos usuarios;
+# no es una credencial real. Se excluye solo esta huella del historial.
+7cad8631a728378de0de58acb7cea8c4da736d4c:test/solicitudes-produccion.e2e-spec.ts:generic-api-key:145
