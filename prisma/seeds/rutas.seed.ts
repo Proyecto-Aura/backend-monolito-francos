@@ -225,6 +225,12 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'users',
     parent: 'configuracion',
   },
+  {
+    nombre: 'comprobantes',
+    etiqueta: 'Series de comprobantes',
+    icono: 'receipt',
+    parent: 'configuracion',
+  },
 ];
 
 export async function seedRutas(prisma: PrismaClient) {
