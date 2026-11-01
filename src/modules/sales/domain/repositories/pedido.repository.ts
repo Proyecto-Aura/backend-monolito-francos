@@ -5,6 +5,7 @@ import {
   ClienteParaPedido,
   ClienteParaResumen,
   CreatePedidoParams,
+  IndicadoresPedidosInventario,
   ListPedidosParams,
   NotificacionPedidoParams,
   PedidoDetalle,
@@ -50,4 +51,6 @@ export abstract class PedidoRepository {
   // de cada presentación en la misma transacción (RF-A036, RF-A098). Falla si
   // alguna no tiene stock suficiente.
   abstract marcarEntregado(id: number): Promise<PedidoEntity>;
+  // Conteo de pedidos por preparar, por cada uno de los 3 estados de inventario.
+  abstract getIndicadoresInventario(): Promise<IndicadoresPedidosInventario>;
 }

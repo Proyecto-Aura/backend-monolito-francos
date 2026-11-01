@@ -11,12 +11,14 @@ import {
   ClienteParaPedido,
   ClienteParaResumen,
   CreatePedidoParams,
+  IndicadoresPedidosInventario,
   ListPedidosParams,
   NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
   PresentacionParaPedido,
 } from '../../domain/repositories/types/pedido-repository.types';
+import { ESTADOS_DE_INVENTARIO } from '../../domain/rules/transiciones-pedido';
 import { PedidoMapper } from '../mappers/pedido.mapper';
 
 const clienteConPersona = {
@@ -37,6 +39,7 @@ const pedidoDetalleInclude = {
           sku: true,
           producto: { select: { nombre: true } },
           presentacion: { select: { cantidad: true, unidad_medida: true } },
+          producto_terminado: { select: { id: true, stock_actual: true } },
         },
       },
     },
@@ -172,6 +175,48 @@ export class PrismaPedidoRepository implements PedidoRepository {
       ...(params.estado ? { estado: params.estado } : {}),
       ...(params.origen ? { origen: params.origen } : {}),
       ...(params.cliente_id ? { cliente_id: params.cliente_id } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              { codigo: { contains: params.search, mode: 'insensitive' } },
+              {
+                cliente: {
+                  razon_social: {
+                    contains: params.search,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    nombres: { contains: params.search, mode: 'insensitive' },
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    apellido_paterno: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    apellido_materno: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
       ...(params.desde || params.hasta
         ? {
             created_at: {
@@ -188,6 +233,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: {
           cliente: clienteConPersona,
           pago: { select: { metodo_pago: true } },
+          detalles: { select: { cantidad: true } },
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
@@ -203,6 +249,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
         cliente_nombre: PedidoMapper.nombreCliente(pedido.cliente),
         metodo_pago:
           (pedido.pago?.metodo_pago as MetodoPago | undefined) ?? null,
+        cantidad_productos: pedido.detalles.length,
+        cantidad_unidades: pedido.detalles.reduce(
+          (suma, detalle) => suma + detalle.cantidad,
+          0,
+        ),
       })),
       total,
       page: params.page,
@@ -323,6 +374,26 @@ export class PrismaPedidoRepository implements PedidoRepository {
     });
   }
 
+  async getIndicadoresInventario(): Promise<IndicadoresPedidosInventario> {
+    const conteos = await this.prisma.pedido.groupBy({
+      by: ['estado'],
+      where: { estado: { in: [...ESTADOS_DE_INVENTARIO] } },
+      _count: { _all: true },
+    });
+
+    const indicadores: IndicadoresPedidosInventario = {
+      en_espera_inventario: 0,
+      en_preparacion: 0,
+      pendiente_entrega: 0,
+    };
+
+    for (const { estado, _count } of conteos) {
+      indicadores[estado as keyof IndicadoresPedidosInventario] = _count._all;
+    }
+
+    return indicadores;
+  }
+
   private toPedidoDetalle(pedido: PedidoConDetalle): PedidoDetalle {
     return {
       pedido: PedidoMapper.toDomain(pedido),
@@ -332,6 +403,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
         sku: detalle.producto_presentacion.sku,
         producto_nombre: detalle.producto_presentacion.producto.nombre,
         presentacion: `${detalle.producto_presentacion.presentacion.cantidad} ${detalle.producto_presentacion.presentacion.unidad_medida}`,
+        stock_disponible:
+          detalle.producto_presentacion.producto_terminado?.stock_actual.toNumber() ??
+          0,
+        producto_terminado_id:
+          detalle.producto_presentacion.producto_terminado?.id ?? null,
       })),
       pago: pedido.pago ? PedidoMapper.pagoToDomain(pedido.pago) : null,
     };

@@ -6,7 +6,13 @@ import {
 
 export class PedidoPresenter {
   // Fila del listado (RF-A030).
-  static resumenToHttp({ pedido, cliente_nombre, metodo_pago }: PedidoResumen) {
+  static resumenToHttp({
+    pedido,
+    cliente_nombre,
+    metodo_pago,
+    cantidad_productos,
+    cantidad_unidades,
+  }: PedidoResumen) {
     return {
       id: pedido.id,
       codigo: pedido.codigo,
@@ -16,6 +22,8 @@ export class PedidoPresenter {
       tipo_entrega: pedido.tipo_entrega,
       estado: pedido.estado,
       origen: pedido.origen,
+      productos: cantidad_productos,
+      unidades: cantidad_unidades,
       fecha_entrega: pedido.fecha_entrega,
       created_at: pedido.created_at,
     };
@@ -75,6 +83,26 @@ export class PedidoPresenter {
             comprobante: null,
           }
         : null,
+    };
+  }
+
+  // Detalle para inventario: igual al general, más el stock actual por item
+  // y si alcanza para completar el pedido (mockup "Pedidos por preparar").
+  static detalleInventarioToHttp(pedidoDetalle: PedidoDetalle) {
+    const base = this.detalleToHttp(pedidoDetalle);
+    const items = base.items.map((item, i) => ({
+      ...item,
+      stock_disponible: pedidoDetalle.detalles[i].stock_disponible,
+    }));
+
+    return {
+      ...base,
+      items,
+      disponibilidad: items.every(
+        (item) => item.stock_disponible >= item.cantidad,
+      )
+        ? 'completo'
+        : 'insuficiente',
     };
   }
 }
