@@ -45,3 +45,33 @@ export function esTransicionDeDespacho(
 ): boolean {
   return TRANSICIONES_DE_DESPACHO[desde]?.includes(hacia) ?? false;
 }
+
+// RN6: estados que ve el operario de productos terminados ("pedidos por
+// preparar"). Los demás son de ventas o de despacho.
+export const ESTADOS_DE_INVENTARIO = [
+  EstadoPedido.EN_ESPERA_INVENTARIO,
+  EstadoPedido.EN_PREPARACION,
+  EstadoPedido.PENDIENTE_ENTREGA,
+] as const;
+
+export type EstadoDeInventario = (typeof ESTADOS_DE_INVENTARIO)[number];
+
+export function esEstadoDeInventario(estado: EstadoPedido): boolean {
+  return (ESTADOS_DE_INVENTARIO as readonly EstadoPedido[]).includes(estado);
+}
+
+// RN6: inventario empieza a preparar el pedido y luego lo deja listo para
+// que despacho lo recoja.
+export const TRANSICIONES_DE_INVENTARIO: Partial<
+  Record<EstadoPedido, EstadoPedido[]>
+> = {
+  [EstadoPedido.EN_ESPERA_INVENTARIO]: [EstadoPedido.EN_PREPARACION],
+  [EstadoPedido.EN_PREPARACION]: [EstadoPedido.PENDIENTE_ENTREGA],
+};
+
+export function esTransicionDeInventario(
+  desde: EstadoPedido,
+  hacia: EstadoPedido,
+): boolean {
+  return TRANSICIONES_DE_INVENTARIO[desde]?.includes(hacia) ?? false;
+}

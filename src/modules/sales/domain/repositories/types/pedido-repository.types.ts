@@ -67,13 +67,22 @@ export interface CreatePedidoParams {
 
 export interface ListPedidosParams extends PaginationParams {
   estado?: EstadoPedido;
-  // Limita el listado a estos estados (despacho, RF-A094); `estado` afina dentro.
+  // Limita el listado a estos estados (despacho, inventario); `estado` afina dentro.
   estados?: readonly EstadoPedido[];
   origen?: OrigenPedido;
   cliente_id?: string;
+  // Busca por código de pedido o nombre/razón social del cliente.
+  search?: string;
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;
+}
+
+// Conteo de "pedidos por preparar" para las cards de la vista de inventario.
+export interface IndicadoresPedidosInventario {
+  en_espera_inventario: number;
+  en_preparacion: number;
+  pendiente_entrega: number;
 }
 
 // Aviso in-app al cliente cuando su pedido sale a reparto (RF-A097).
@@ -87,6 +96,9 @@ export interface PedidoResumen {
   pedido: PedidoEntity;
   cliente_nombre: string;
   metodo_pago: MetodoPago | null;
+  // Cantidad de líneas distintas y suma de unidades pedidas (vista de inventario).
+  cantidad_productos: number;
+  cantidad_unidades: number;
 }
 
 export interface DetallePedidoConProducto {
@@ -94,6 +106,11 @@ export interface DetallePedidoConProducto {
   sku: string;
   producto_nombre: string;
   presentacion: string;
+  // Stock actual de productos terminados de esa presentación (vista de inventario).
+  stock_disponible: number;
+  // Id de ProductoTerminado de esa presentación; null si la presentación no
+  // tiene registro de producto terminado (no debería darse en un pedido ya creado).
+  producto_terminado_id: number | null;
 }
 
 // Detalle completo de un pedido (RF-A031).

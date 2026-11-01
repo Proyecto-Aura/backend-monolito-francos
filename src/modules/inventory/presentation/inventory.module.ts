@@ -130,5 +130,8 @@ import { SolicitudesProduccionController } from './controllers/solicitudes-produ
       useClass: PrismaSolicitudProduccionDetalleRepository,
     },
   ],
+  // RegistrarSalidaProductoTerminadoUseCase: lo usa sales (OFT0-260) para
+  // descontar stock al preparar un pedido, sin duplicar el reparto FEFO.
+  exports: [RegistrarSalidaProductoTerminadoUseCase],
 })
 export class InventoryModule {}
