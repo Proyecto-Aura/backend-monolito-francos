@@ -91,8 +91,8 @@ describe('Consultas de movimientos de producto terminado', () => {
         producto_terminado_id: 1,
         lote_producto_terminado_id: 4,
         tipo: TipoMovimientoProductoTerminado.SALIDA,
-        fecha_desde: new Date('2026-10-01'),
-        fecha_hasta: new Date('2026-10-31'),
+        fecha_desde: new Date('2026-10-01T00:00:00.000-05:00'),
+        fecha_hasta: new Date('2026-11-01T00:00:00.000-05:00'),
       });
     });
 

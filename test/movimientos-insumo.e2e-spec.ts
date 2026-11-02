@@ -15,6 +15,13 @@ const INSUMOS_URL = '/api/v1/insumos';
 const LOTES_URL = '/api/v1/lotes-insumo';
 const MOVIMIENTOS_URL = '/api/v1/movimientos-insumo';
 
+// Los lotes consumibles deben seguir vigentes al correr la suite en otra fecha.
+const fechaEnDias = (dias: number): string => {
+  const fecha = new Date();
+  fecha.setUTCDate(fecha.getUTCDate() + dias);
+  return fecha.toISOString().slice(0, 10);
+};
+
 interface InsumoHttp {
   id: number;
   stock_actual: string;
@@ -194,8 +201,8 @@ describe('Movimientos de insumo (e2e)', () => {
         .send({
           insumo_id: insumoId,
           codigo_lote: `${MARCA}-cercano`,
-          fecha_ingreso: '2026-10-01',
-          fecha_vencimiento: '2026-11-01',
+          fecha_ingreso: fechaEnDias(-30),
+          fecha_vencimiento: fechaEnDias(30),
           cantidad_inicial: 60,
         })
         .expect(201)
@@ -209,8 +216,8 @@ describe('Movimientos de insumo (e2e)', () => {
         .send({
           insumo_id: insumoId,
           codigo_lote: `${MARCA}-lejano`,
-          fecha_ingreso: '2026-10-01',
-          fecha_vencimiento: '2027-06-01',
+          fecha_ingreso: fechaEnDias(-30),
+          fecha_vencimiento: fechaEnDias(180),
           cantidad_inicial: 50,
         })
         .expect(201)
@@ -326,8 +333,8 @@ describe('Movimientos de insumo (e2e)', () => {
         .send({
           insumo_id: insumoFefoVencido.id,
           codigo_lote: `${MARCA}-fefo-vencido`,
-          fecha_ingreso: '2020-01-01',
-          fecha_vencimiento: '2020-02-01',
+          fecha_ingreso: fechaEnDias(-90),
+          fecha_vencimiento: fechaEnDias(-60),
           cantidad_inicial: 50,
         })
         .expect(201)
@@ -340,8 +347,8 @@ describe('Movimientos de insumo (e2e)', () => {
         .send({
           insumo_id: insumoFefoVencido.id,
           codigo_lote: `${MARCA}-fefo-valido`,
-          fecha_ingreso: '2026-10-01',
-          fecha_vencimiento: '2027-01-01',
+          fecha_ingreso: fechaEnDias(-30),
+          fecha_vencimiento: fechaEnDias(60),
           cantidad_inicial: 30,
         })
         .expect(201)
@@ -514,8 +521,8 @@ describe('Movimientos de insumo (e2e)', () => {
           .send({
             insumo_id: insumoBatchId,
             codigo_lote: `${MARCA}-batch-a`,
-            fecha_ingreso: '2026-10-01',
-            fecha_vencimiento: '2026-11-01',
+            fecha_ingreso: fechaEnDias(-30),
+            fecha_vencimiento: fechaEnDias(30),
             cantidad_inicial: 40,
           })
           .expect(201)
@@ -529,8 +536,8 @@ describe('Movimientos de insumo (e2e)', () => {
           .send({
             insumo_id: insumoBatchId,
             codigo_lote: `${MARCA}-batch-b`,
-            fecha_ingreso: '2026-10-01',
-            fecha_vencimiento: '2027-06-01',
+            fecha_ingreso: fechaEnDias(-30),
+            fecha_vencimiento: fechaEnDias(180),
             cantidad_inicial: 40,
           })
           .expect(201)

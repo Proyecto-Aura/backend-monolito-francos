@@ -163,8 +163,8 @@ describe('Crear y consultar solicitudes de producción', () => {
     ).resolves.toBe(resultado);
     expect(repository.findMany).toHaveBeenCalledWith({
       ...query,
-      fecha_desde: new Date(query.fecha_desde),
-      fecha_hasta: new Date(query.fecha_hasta),
+      fecha_desde: new Date('2026-10-01T00:00:00.000-05:00'),
+      fecha_hasta: new Date('2026-11-01T00:00:00.000-05:00'),
     });
   });
 

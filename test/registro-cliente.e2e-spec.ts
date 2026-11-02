@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
+import { EmailService } from '../src/modules/auth/domain/services/email.service';
 
 // Documentos que crea este archivo; se borran antes y después.
 const DNI = '99999951';
@@ -15,6 +16,7 @@ const PREFIJO = 'e2e-registro-';
 describe('Registrar cliente (e2e, HU-B-002)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
+  const sendVerificationEmail = jest.fn(() => Promise.resolve());
 
   const registrar = (body: object) =>
     request(app.getHttpServer()).post('/api/v1/auth/register').send(body);
@@ -62,7 +64,11 @@ describe('Registrar cliente (e2e, HU-B-002)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      // El registro se prueba con PostgreSQL real; el correo no depende de SMTP.
+      .overrideProvider(EmailService)
+      .useValue({ sendVerificationEmail })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -73,8 +79,11 @@ describe('Registrar cliente (e2e, HU-B-002)', () => {
   });
 
   afterAll(async () => {
-    await deleteTestData();
-    await app.close();
+    try {
+      await deleteTestData();
+    } finally {
+      await app.close();
+    }
   });
 
   it('registra a una persona con DNI, con rol cliente y el correo sin verificar', async () => {
@@ -94,6 +103,12 @@ describe('Registrar cliente (e2e, HU-B-002)', () => {
       },
     });
     expect(user.token_verificacion_email).toMatch(/^[a-f0-9]{64}$/);
+    expect(sendVerificationEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: `${PREFIJO}ana@francos.test`,
+        frontend: 'tienda',
+      }),
+    );
     expect(user.usuario_roles.map((ur) => ur.rol.nombre)).toEqual(['cliente']);
     expect(user.persona.cliente).toMatchObject({
       tipo_cliente: 'persona_natural',

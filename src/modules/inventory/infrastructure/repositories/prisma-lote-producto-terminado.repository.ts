@@ -4,7 +4,10 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import { LoteProductoTerminadoEntity } from '../../domain/entities';
 import { EstadoLoteProductoTerminado } from '../../domain/enums';
 import { LoteProductoTerminadoRepository } from '../../domain/repositories/lote-producto-terminado.repository';
-import { ListLoteProductoTerminadoParams } from '../../domain/repositories/types/lote-producto-terminado-repository.types';
+import {
+  CreateLoteProductoTerminadoParams,
+  ListLoteProductoTerminadoParams,
+} from '../../domain/repositories/types/lote-producto-terminado-repository.types';
 import { PaginatedResult } from '../../../catalog/domain/repositories/types/pagination.types';
 import { DIAS_POR_VENCER } from '../mappers/lote-insumo.mapper';
 import { LoteProductoTerminadoMapper } from '../mappers/lote-producto-terminado.mapper';
@@ -36,6 +39,45 @@ const INCLUDE_CATALOGO = {
 @Injectable()
 export class PrismaLoteProductoTerminadoRepository implements LoteProductoTerminadoRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async create(
+    params: CreateLoteProductoTerminadoParams,
+  ): Promise<LoteProductoTerminadoEntity> {
+    const { razon, cantidad_inicial, ...loteParams } = params;
+
+    return this.prisma.$transaction(async (tx) => {
+      // Nace en 0: el movimiento "entrada" de abajo (vía trigger) lo deja en
+      // cantidad_inicial, igual que cualquier otro movimiento de stock.
+      const lote = await tx.loteProductoTerminado.create({
+        data: { ...loteParams, cantidad_inicial, cantidad_actual: 0 },
+      });
+
+      await tx.movimientoProductoTerminado.create({
+        data: {
+          lote_producto_terminado_id: lote.id,
+          tipo: 'entrada',
+          cantidad: cantidad_inicial,
+          razon,
+        },
+      });
+
+      const loteActualizado = await tx.loteProductoTerminado.findUniqueOrThrow({
+        where: { id: lote.id },
+        include: INCLUDE_CATALOGO,
+      });
+
+      return LoteProductoTerminadoMapper.toDomain(loteActualizado);
+    });
+  }
+
+  async existsByCodigoLote(codigo_lote: string): Promise<boolean> {
+    const lote = await this.prisma.loteProductoTerminado.findFirst({
+      where: { codigo_lote: { equals: codigo_lote, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    return lote !== null;
+  }
 
   // 'vencido' y 'por_vencer' no están en la columna estado (se calculan al
   // leer, ver LoteProductoTerminadoMapper): mismo patrón que
