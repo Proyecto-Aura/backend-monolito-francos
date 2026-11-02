@@ -25,6 +25,8 @@ export interface ClienteParaResumen {
   // Número de documento solo cuando el tipo de documento es RUC.
   ruc?: string | null;
   razon_social?: string | null;
+  // Correo del usuario: Culqi lo necesita para cobrar (HU-B-008).
+  email?: string | null;
 }
 
 // Precios vigentes de una presentación al momento de registrar el pedido.
@@ -63,6 +65,9 @@ export interface CreatePedidoParams {
   total: number;
   detalles: CreateDetallePedidoParams[];
   pago: CreatePagoParams;
+  // Aviso in-app de pago confirmado (RF-B26, RF-B28): se guarda en la misma
+  // transacción que el pedido. Solo si `user_id` existe.
+  notificacion?: NotificacionPedidoParams;
 }
 
 export interface ListPedidosParams extends PaginationParams {
@@ -85,7 +90,7 @@ export interface IndicadoresPedidosInventario {
   pendiente_entrega: number;
 }
 
-// Aviso in-app al cliente cuando su pedido sale a reparto (RF-A097).
+// Aviso in-app al cliente: pedido en camino (RF-A097) o resultado del pago (RF-B26).
 export interface NotificacionPedidoParams {
   titulo: string;
   mensaje: string;

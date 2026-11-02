@@ -27,6 +27,12 @@ export abstract class PedidoRepository {
   // Crea el pedido con sus detalles y su pago en una sola transacción, y le
   // asigna el código PED-000001 a partir de su id (RF-A034).
   abstract create(params: CreatePedidoParams): Promise<PedidoDetalle>;
+  // Deja el aviso in-app de pago rechazado al usuario del portal (RF-B26). No
+  // crea ningún pedido: un pago rechazado no deja nada guardado (RN5).
+  abstract notificarPagoRechazado(
+    userId: string,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<void>;
   abstract findMany(
     params: ListPedidosParams,
   ): Promise<PaginatedResult<PedidoResumen>>;

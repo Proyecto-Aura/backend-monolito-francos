@@ -1,3 +1,4 @@
+import { envs } from '../../../config/envs';
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { InventoryModule } from '../../inventory/presentation/inventory.module';
@@ -14,6 +15,7 @@ import { ListPedidosDespachoUseCase } from '../application/use-cases/pedido/list
 import { ListPedidosInventarioUseCase } from '../application/use-cases/pedido/list-pedidos-inventario.use-case';
 import { ListPedidosUseCase } from '../application/use-cases/pedido/list-pedidos.use-case';
 import { PrepararPedidoUseCase } from '../application/use-cases/pedido/preparar-pedido.use-case';
+import { CrearPedidoPortalUseCase } from '../application/use-cases/pedido/crear-pedido-portal.use-case';
 import { ResumirPedidoPortalUseCase } from '../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { AprobarReembolsoUseCase } from '../application/use-cases/reembolso/aprobar-reembolso.use-case';
 import { ConfirmarDevolucionReembolsoUseCase } from '../application/use-cases/reembolso/confirmar-devolucion-reembolso.use-case';
@@ -36,6 +38,7 @@ import { SerieComprobanteRepository } from '../domain/repositories/serie-comprob
 import { EvidenciaReembolsoService } from '../domain/services/evidencia-reembolso.service';
 import { PasarelaPagoService } from '../domain/services/pasarela-pago.service';
 import { CulqiPasarelaPagoService } from '../infrastructure/payment/culqi-pasarela-pago.service';
+import { SimuladaPasarelaPagoService } from '../infrastructure/payment/simulada-pasarela-pago.service';
 import { PrismaPedidoRepository } from '../infrastructure/repositories/prisma-pedido.repository';
 import { PrismaReembolsoRepository } from '../infrastructure/repositories/prisma-reembolso.repository';
 import { PrismaSerieComprobanteRepository } from '../infrastructure/repositories/prisma-serie-comprobante.repository';
@@ -67,6 +70,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     ActualizarEstadoPedidoUseCase,
     CompletarPedidoUseCase,
     ResumirPedidoPortalUseCase,
+    CrearPedidoPortalUseCase,
     ListPedidosDespachoUseCase,
     GetPedidoDespachoUseCase,
     DespacharPedidoUseCase,
@@ -85,7 +89,13 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     GetMiReembolsoUseCase,
     { provide: PedidoRepository, useClass: PrismaPedidoRepository },
     { provide: ReembolsoRepository, useClass: PrismaReembolsoRepository },
-    { provide: PasarelaPagoService, useClass: CulqiPasarelaPagoService },
+    {
+      provide: PasarelaPagoService,
+      // CULQI_SIMULADO=true (solo desarrollo): cobra sin llamar a Culqi.
+      useClass: envs.culqiSimulado
+        ? SimuladaPasarelaPagoService
+        : CulqiPasarelaPagoService,
+    },
     CreateSerieComprobanteUseCase,
     ListSeriesComprobanteUseCase,
     ListAlertasSeriesComprobanteUseCase,

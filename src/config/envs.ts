@@ -28,6 +28,7 @@ interface EnvVars {
   CATALOGO_PUBLICO_RATE_TTL_MS: number;
   CULQI_SECRET_KEY?: string;
   CULQI_API_URL: string;
+  CULQI_SIMULADO: boolean;
 }
 
 const envSchema = joi
@@ -77,6 +78,9 @@ const envSchema = joi
           'CULQI_SECRET_KEY debe ser una llave de pruebas de Culqi (sk_test_...)',
       }),
     CULQI_API_URL: joi.string().uri().default('https://api.culqi.com/v2'),
+    // Solo desarrollo: cobra con una pasarela simulada, sin llamar a Culqi. El
+    // backend no arranca con esto activo en producción.
+    CULQI_SIMULADO: joi.boolean().default(false),
   })
   .and('S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY')
   .unknown(true);
@@ -88,6 +92,12 @@ if (validationResult.error) {
 }
 
 const envVars = validationResult.value;
+
+if (envVars.CULQI_SIMULADO && process.env.NODE_ENV === 'production') {
+  throw new Error(
+    'Config validation error: CULQI_SIMULADO no puede estar activo en producción',
+  );
+}
 
 export const envs = {
   port: envVars.PORT,
@@ -116,4 +126,5 @@ export const envs = {
   catalogoPublicoRateTtlMs: envVars.CATALOGO_PUBLICO_RATE_TTL_MS,
   culqiSecretKey: envVars.CULQI_SECRET_KEY || undefined,
   culqiApiUrl: envVars.CULQI_API_URL,
+  culqiSimulado: envVars.CULQI_SIMULADO,
 };

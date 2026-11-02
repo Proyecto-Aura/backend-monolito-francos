@@ -91,6 +91,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
             direccion: true,
             tipo_documento: true,
             numero_documento: true,
+            user: { select: { email: true } },
           },
         },
       },
@@ -100,6 +101,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
       ? {
           id: cliente.id,
           estado: cliente.estado,
+          email: cliente.persona.user?.email ?? null,
           direccion: cliente.persona.direccion,
           ruc:
             cliente.persona.tipo_documento === TipoDocumento.ruc
@@ -161,7 +163,34 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: pedidoDetalleInclude,
       });
 
+      if (params.notificacion && params.user_id) {
+        await tx.notificacion.create({
+          data: {
+            tipo: 'pago_confirmado',
+            titulo: params.notificacion.titulo,
+            mensaje: params.notificacion.mensaje,
+            referencia_tipo: 'pedido',
+            referencia_id: String(id),
+            notificacion_users: { create: { user_id: params.user_id } },
+          },
+        });
+      }
+
       return this.toPedidoDetalle(pedido);
+    });
+  }
+
+  async notificarPagoRechazado(
+    userId: string,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<void> {
+    await this.prisma.notificacion.create({
+      data: {
+        tipo: 'pago_rechazado',
+        titulo: notificacion.titulo,
+        mensaje: notificacion.mensaje,
+        notificacion_users: { create: { user_id: userId } },
+      },
     });
   }
 
