@@ -15,6 +15,7 @@ import { ListPedidosDespachoUseCase } from '../application/use-cases/pedido/list
 import { ListPedidosInventarioUseCase } from '../application/use-cases/pedido/list-pedidos-inventario.use-case';
 import { ListPedidosUseCase } from '../application/use-cases/pedido/list-pedidos.use-case';
 import { PrepararPedidoUseCase } from '../application/use-cases/pedido/preparar-pedido.use-case';
+import { GetPedidoPortalUseCase } from '../application/use-cases/pedido/get-pedido-portal.use-case';
 import { CrearPedidoPortalUseCase } from '../application/use-cases/pedido/crear-pedido-portal.use-case';
 import { ResumirPedidoPortalUseCase } from '../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { AprobarReembolsoUseCase } from '../application/use-cases/reembolso/aprobar-reembolso.use-case';
@@ -71,6 +72,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     CompletarPedidoUseCase,
     ResumirPedidoPortalUseCase,
     CrearPedidoPortalUseCase,
+    GetPedidoPortalUseCase,
     ListPedidosDespachoUseCase,
     GetPedidoDespachoUseCase,
     DespacharPedidoUseCase,
