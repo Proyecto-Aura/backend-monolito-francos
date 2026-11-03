@@ -137,7 +137,7 @@ export class PrismaMovimientoProductoTerminadoRepository implements MovimientoPr
         ? {
             fecha: {
               ...(params.fecha_desde ? { gte: params.fecha_desde } : {}),
-              ...(params.fecha_hasta ? { lte: params.fecha_hasta } : {}),
+              ...(params.fecha_hasta ? { lt: params.fecha_hasta } : {}),
             },
           }
         : {}),

@@ -864,11 +864,17 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     const dos = await crear();
     await prisma.solicitudProduccion.update({
       where: { id: uno.id },
-      data: { fecha_creacion: new Date('2026-10-05'), estado: 'rechazado' },
+      data: {
+        fecha_creacion: new Date('2026-10-05T10:00:00.000-05:00'),
+        estado: 'rechazado',
+      },
     });
     await prisma.solicitudProduccion.update({
       where: { id: dos.id },
-      data: { fecha_creacion: new Date('2026-10-06'), estado: 'rechazado' },
+      data: {
+        fecha_creacion: new Date('2026-10-06T10:00:00.000-05:00'),
+        estado: 'rechazado',
+      },
     });
     expect(
       (await listar({ search: uno.codigo.toLowerCase() })).data.map(

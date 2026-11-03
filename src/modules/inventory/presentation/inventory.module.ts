@@ -16,6 +16,7 @@ import { GetMovimientoByIdUseCase } from '../application/use-cases/movimiento-in
 import { ListMovimientosUseCase } from '../application/use-cases/movimiento-insumo/list-movimientos.use-case';
 import { GetIndicadoresProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/get-indicadores-producto-terminado.use-case';
 import { UpdateProductoTerminadoUseCase } from '../application/use-cases/producto-terminado/update-producto-terminado.use-case';
+import { CreateLoteProductoTerminadoUseCase } from '../application/use-cases/lote-producto-terminado/create-lote-producto-terminado.use-case';
 import { GetLoteProductoTerminadoByIdUseCase } from '../application/use-cases/lote-producto-terminado/get-lote-producto-terminado-by-id.use-case';
 import { ListLotesProductoTerminadoUseCase } from '../application/use-cases/lote-producto-terminado/list-lotes-producto-terminado.use-case';
 import { RegistrarEntradaProductoTerminadoUseCase } from '../application/use-cases/movimiento-producto-terminado/registrar-entrada-producto-terminado.use-case';
@@ -97,6 +98,7 @@ import { SolicitudesProduccionController } from './controllers/solicitudes-produ
       provide: ProductoTerminadoRepository,
       useClass: PrismaProductoTerminadoRepository,
     },
+    CreateLoteProductoTerminadoUseCase,
     GetLoteProductoTerminadoByIdUseCase,
     ListLotesProductoTerminadoUseCase,
     {

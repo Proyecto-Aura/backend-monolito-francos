@@ -206,6 +206,29 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'folder-open',
     parent: 'gestion-estrategica-ti',
   },
+  // --- Producción ---
+  // Menú dedicado al rol "produccion": duplica (con nombre propio, misma
+  // etiqueta) las rutas de solicitudes que ya existen bajo Inventario, para
+  // no mover ni afectar el acceso del rol "inventario" a las suyas.
+  {
+    nombre: 'produccion',
+    etiqueta: 'Producción',
+    icono: 'handshake',
+    descripcion: 'Control de producción',
+  },
+  {
+    nombre: 'produccion-solicitudes',
+    etiqueta: 'Solicitudes de producción',
+    icono: 'clipboard-list',
+    parent: 'produccion',
+  },
+  {
+    nombre: 'produccion-solicitudes-insumos',
+    etiqueta: 'Solicitudes de insumos',
+    icono: 'clipboard-list',
+    parent: 'produccion',
+  },
+
   // --- Configuración ---
   {
     nombre: 'configuracion',
