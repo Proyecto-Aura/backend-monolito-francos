@@ -5,7 +5,9 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
+import { S3Service } from '../src/infrastructure/storage/s3.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { FakeS3Service } from './fake-s3.service';
 
 const ADMIN_CREDENTIALS = { identificador: 'admin', password: 'admin123' };
 const PASSWORD = 'VentasE2e123';
@@ -204,7 +206,10 @@ describe('Notificaciones del portal (e2e, OFT0-557)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(S3Service)
+      .useValue(new FakeS3Service())
+      .compile();
     app = moduleFixture.createNestApplication();
     configureApp(app);
     await app.init();
