@@ -4,6 +4,7 @@ import {
   PedidoResumen,
   PedidoResumenPortal,
 } from '../../domain/repositories/types/pedido-repository.types';
+import { calcularDisponibilidad } from '../../application/utils/pedido.utils';
 
 export class PedidoPresenter {
   static resumenPortalToHttp({
@@ -36,13 +37,15 @@ export class PedidoPresenter {
     };
   }
 
-  // Fila del listado (RF-A030).
+  // Fila del listado (RF-A030). `disponibilidad` solo viene si el listado se
+  // pidió con conDisponibilidad (vista de inventario, "Pedidos por preparar").
   static resumenToHttp({
     pedido,
     cliente_nombre,
     metodo_pago,
     cantidad_productos,
     cantidad_unidades,
+    disponibilidad,
   }: PedidoResumen) {
     return {
       id: pedido.id,
@@ -57,6 +60,7 @@ export class PedidoPresenter {
       unidades: cantidad_unidades,
       fecha_entrega: pedido.fecha_entrega,
       created_at: pedido.created_at,
+      ...(disponibilidad ? { disponibilidad } : {}),
     };
   }
 
@@ -129,11 +133,7 @@ export class PedidoPresenter {
     return {
       ...base,
       items,
-      disponibilidad: items.every(
-        (item) => item.stock_disponible >= item.cantidad,
-      )
-        ? 'completo'
-        : 'insuficiente',
+      disponibilidad: calcularDisponibilidad(items),
     };
   }
 }

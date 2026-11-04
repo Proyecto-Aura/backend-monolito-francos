@@ -27,6 +27,7 @@ interface LoteHttp {
   cantidad_actual: number;
   estado: string;
   activo: boolean;
+  solicitud_produccion_id: number | null;
 }
 
 describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
@@ -76,6 +77,12 @@ describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
       where: { lote_producto_terminado: filtro },
     });
     await prisma.loteProductoTerminado.deleteMany({ where: filtro });
+    await prisma.solicitudProduccionDetalle.deleteMany({
+      where: { solicitud_produccion: { codigo: { startsWith: MARCA } } },
+    });
+    await prisma.solicitudProduccion.deleteMany({
+      where: { codigo: { startsWith: MARCA } },
+    });
     await prisma.productoTerminado.deleteMany({
       where: { producto_presentacion: { producto: { nombre: MARCA } } },
     });
@@ -244,6 +251,46 @@ describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
       }
     },
   );
+
+  it('vincula el lote a una solicitud existente y conserva el vínculo al leerlo', async () => {
+    const solicitudRes = await http()
+      .post('/api/v1/solicitudes-produccion')
+      .set(auth('admin'))
+      .send({
+        codigo: `${MARCA}-SOL-${++secuencia}`,
+        detalle: [
+          { producto_terminado_id: productos[0], cantidad_solicitada: 100 },
+        ],
+      })
+      .expect(201);
+    const solicitud = solicitudRes.body as { id: number };
+    const res = await http()
+      .post(URL)
+      .set(auth())
+      .send({ ...body(), solicitud_produccion_id: solicitud.id })
+      .expect(201);
+    const lote = res.body as LoteHttp;
+    expect(lote.solicitud_produccion_id).toBe(solicitud.id);
+    const persistido = await prisma.loteProductoTerminado.findUniqueOrThrow({
+      where: { id: lote.id },
+    });
+    expect(persistido.solicitud_produccion_id).toBe(solicitud.id);
+    const leido = await http().get(`${URL}/${lote.id}`).set(auth()).expect(200);
+    expect(leido.body).toMatchObject({
+      id: lote.id,
+      solicitud_produccion_id: solicitud.id,
+    });
+  });
+
+  it('solicitud inexistente devuelve 404 sin crear lote, entrada ni alterar stock', async () => {
+    const antes = await snapshot();
+    await http()
+      .post(URL)
+      .set(auth())
+      .send({ ...body(), solicitud_produccion_id: 2147483647 })
+      .expect(404);
+    expect(await snapshot()).toEqual(antes);
+  });
 
   it('respeta fecha de vencimiento, cantidad decimal y razón personalizada', async () => {
     const stockAnterior = await stockDe();

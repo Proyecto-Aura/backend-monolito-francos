@@ -18,6 +18,9 @@ export interface CreateLoteProductoTerminadoParams {
   // pide cantidad_actual: nace en 0 y el propio movimiento "entrada" (vía
   // trigger) la deja en cantidad_inicial.
   razon: string;
+  // Solicitud de producción que este lote cumple; null/undefined si no
+  // nació de una solicitud formal.
+  solicitud_produccion_id?: number | null;
 }
 
 export interface ListLoteProductoTerminadoParams extends PaginationParams {

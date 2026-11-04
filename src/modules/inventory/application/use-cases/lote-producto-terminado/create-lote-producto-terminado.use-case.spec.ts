@@ -6,6 +6,7 @@ import {
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
 import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
 import { ProductoTerminadoRepository } from '../../../domain/repositories/producto-terminado.repository';
+import { SolicitudProduccionRepository } from '../../../domain/repositories/solicitud-produccion.repository';
 import { CreateLoteProductoTerminadoUseCase } from './create-lote-producto-terminado.use-case';
 
 describe('CreateLoteProductoTerminadoUseCase', () => {
@@ -17,7 +18,15 @@ describe('CreateLoteProductoTerminadoUseCase', () => {
     existsByCodigoLote,
     create,
   } as unknown as LoteProductoTerminadoRepository;
-  const useCase = new CreateLoteProductoTerminadoUseCase(lotes, productos);
+  const findSolicitudById = jest.fn();
+  const solicitudes = {
+    findById: findSolicitudById,
+  } as unknown as SolicitudProduccionRepository;
+  const useCase = new CreateLoteProductoTerminadoUseCase(
+    lotes,
+    productos,
+    solicitudes,
+  );
   const fecha = new Date('2026-11-01T00:00:00Z');
   const producto = new ProductoTerminadoEntity(
     17,
@@ -67,6 +76,26 @@ describe('CreateLoteProductoTerminadoUseCase', () => {
       razon: 'Producción inicial de lote',
     });
     expect(create).toHaveBeenCalledTimes(1);
+    expect(findSolicitudById).not.toHaveBeenCalled();
+  });
+
+  it('valida la solicitud indicada y persiste su vínculo en el lote', async () => {
+    findSolicitudById.mockResolvedValue({ id: 31 });
+    await expect(
+      useCase.execute({ ...dto, solicitud_produccion_id: 31 }),
+    ).resolves.toBe(creado);
+    expect(findSolicitudById).toHaveBeenCalledWith(31);
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ solicitud_produccion_id: 31 }),
+    );
+  });
+
+  it('devuelve 404 sin crear el lote si la solicitud no existe', async () => {
+    findSolicitudById.mockResolvedValue(null);
+    await expect(
+      useCase.execute({ ...dto, solicitud_produccion_id: 99 }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('normaliza el código antes de comprobar duplicados y persistir', async () => {

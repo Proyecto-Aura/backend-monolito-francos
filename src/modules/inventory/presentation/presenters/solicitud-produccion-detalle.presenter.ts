@@ -1,7 +1,14 @@
 import { SolicitudProduccionDetalleEntity } from '../../domain/entities';
+import { SolicitudProduccionDetalleConLote } from '../../application/use-cases/solicitud-produccion/get-solicitud-produccion-by-id.use-case';
 
 export class SolicitudProduccionDetallePresenter {
-  static toHttp(detalle: SolicitudProduccionDetalleEntity) {
+  // lote_creado solo viene del detalle de la solicitud (conLoteToHttp); al
+  // agregar/actualizar una línea no aplica (recién se puede editar mientras
+  // está pendiente, antes de que exista ningún lote).
+  static toHttp(
+    detalle: SolicitudProduccionDetalleEntity,
+    lote_creado?: boolean,
+  ) {
     return {
       id: detalle.id,
       solicitud_produccion_id: detalle.solicitud_produccion_id,
@@ -17,10 +24,17 @@ export class SolicitudProduccionDetallePresenter {
       cantidad_solicitada: detalle.cantidad_solicitada,
       created_at: detalle.created_at,
       updated_at: detalle.updated_at,
+      ...(lote_creado === undefined ? {} : { lote_creado }),
     };
   }
 
   static listToHttp(detalles: SolicitudProduccionDetalleEntity[]) {
     return detalles.map((detalle) => this.toHttp(detalle));
+  }
+
+  static listConLoteToHttp(detalles: SolicitudProduccionDetalleConLote[]) {
+    return detalles.map(({ detalle, lote_creado }) =>
+      this.toHttp(detalle, lote_creado),
+    );
   }
 }

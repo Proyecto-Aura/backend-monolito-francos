@@ -23,7 +23,7 @@ export class SolicitudProduccionPresenter {
   static conDetalleToHttp(resultado: SolicitudProduccionConDetalle) {
     return {
       ...this.toHttp(resultado.solicitud),
-      detalle: SolicitudProduccionDetallePresenter.listToHttp(
+      detalle: SolicitudProduccionDetallePresenter.listConLoteToHttp(
         resultado.detalle,
       ),
     };

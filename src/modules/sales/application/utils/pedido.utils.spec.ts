@@ -2,6 +2,7 @@ import { InvalidRequestError } from '../../domain/errors/sales-domain.errors';
 import { PresentacionParaPedido } from '../../domain/repositories/types/pedido-repository.types';
 import {
   calcularLinea,
+  calcularDisponibilidad,
   calcularTotal,
   formatCodigoPedido,
   precioAplicado,
@@ -22,6 +23,68 @@ const presentacion = (
 });
 
 describe('pedido.utils', () => {
+  describe('calcularDisponibilidad', () => {
+    it.each([
+      {
+        caso: 'todos alcanzan, incluyendo igualdad',
+        items: [
+          { stock_disponible: 3, cantidad: 3 },
+          { stock_disponible: 6, cantidad: 5 },
+        ],
+        esperado: 'completo',
+      },
+      {
+        caso: 'solo el primero alcanza',
+        items: [
+          { stock_disponible: 3, cantidad: 3 },
+          { stock_disponible: 0, cantidad: 5 },
+        ],
+        esperado: 'parcial',
+      },
+      {
+        caso: 'solo el segundo alcanza',
+        items: [
+          { stock_disponible: 2, cantidad: 3 },
+          { stock_disponible: 5, cantidad: 5 },
+        ],
+        esperado: 'parcial',
+      },
+      {
+        caso: 'ninguno alcanza aunque ambos tienen stock positivo',
+        items: [
+          { stock_disponible: 2, cantidad: 3 },
+          { stock_disponible: 4, cantidad: 5 },
+        ],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'ambos tienen stock cero',
+        items: [
+          { stock_disponible: 0, cantidad: 3 },
+          { stock_disponible: 0, cantidad: 5 },
+        ],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'un solo item suficiente',
+        items: [{ stock_disponible: 3, cantidad: 3 }],
+        esperado: 'completo',
+      },
+      {
+        caso: 'un solo item insuficiente',
+        items: [{ stock_disponible: 2, cantidad: 3 }],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'stock decimal exactamente suficiente',
+        items: [{ stock_disponible: 1.25, cantidad: 1.25 }],
+        esperado: 'completo',
+      },
+    ])('$caso', ({ items, esperado }) => {
+      expect(calcularDisponibilidad(items)).toBe(esperado);
+    });
+  });
+
   describe('formatCodigoPedido (RF-A034)', () => {
     it('rellena con ceros hasta 6 dígitos', () => {
       expect(formatCodigoPedido(1)).toBe('PED-000001');

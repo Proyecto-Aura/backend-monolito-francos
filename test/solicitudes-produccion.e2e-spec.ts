@@ -30,6 +30,7 @@ interface LineaHttp {
   cantidad_solicitada: number;
   created_at: string;
   updated_at: string;
+  lote_creado?: boolean;
 }
 interface SolicitudHttp {
   id: number;
@@ -90,13 +91,25 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     return obtener(solicitud.id);
   };
 
+  const registrarLote = async (solicitudId: number, productoId: number) => {
+    await http()
+      .post('/api/v1/lotes-producto-terminado')
+      .set(auth('produccion'))
+      .send({
+        codigo_lote: codigo(),
+        producto_terminado_id: productoId,
+        solicitud_produccion_id: solicitudId,
+        fecha_produccion: new Date().toISOString().slice(0, 10),
+        cantidad_inicial: 1,
+      })
+      .expect(201);
+  };
+  const registrarLotes = async (id: number) => {
+    for (const detalle of (await obtener(id)).detalle)
+      await registrarLote(id, detalle.producto_terminado_id);
+  };
+
   const limpiar = async () => {
-    await prisma.solicitudProduccionDetalle.deleteMany({
-      where: { solicitud_produccion: { codigo: { startsWith: MARCA } } },
-    });
-    await prisma.solicitudProduccion.deleteMany({
-      where: { codigo: { startsWith: MARCA } },
-    });
     const filtroProducto = {
       producto_presentacion: { producto: { nombre: { startsWith: MARCA } } },
     };
@@ -107,6 +120,12 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     });
     await prisma.loteProductoTerminado.deleteMany({
       where: { producto_terminado: filtroProducto },
+    });
+    await prisma.solicitudProduccionDetalle.deleteMany({
+      where: { solicitud_produccion: { codigo: { startsWith: MARCA } } },
+    });
+    await prisma.solicitudProduccion.deleteMany({
+      where: { codigo: { startsWith: MARCA } },
     });
     await prisma.productoTerminado.deleteMany({ where: filtroProducto });
     await prisma.productoPresentacion.deleteMany({
@@ -196,7 +215,11 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
           nombre: `${MARCA} Chifles ${i}`,
           destacado: false,
           producto_presentaciones: [
-            { presentacion_id: presentacion.id, precio_unitario: 10 },
+            {
+              presentacion_id: presentacion.id,
+              precio_unitario: 10,
+              estado: true,
+            },
           ],
         })
         .expect(201);
@@ -396,7 +419,10 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
         where: { id: original.id },
       });
     expect(actualizada.updated_at).toBe(persistida.updated_at.toISOString());
-    expect((await obtener(solicitud.id)).detalle[0]).toEqual(actualizada);
+    expect((await obtener(solicitud.id)).detalle[0]).toEqual({
+      ...actualizada,
+      lote_creado: false,
+    });
   });
 
   const endpoints = [
@@ -681,6 +707,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
         .send(linea(1))
         .expect(201);
       const detalle = agregada.body as LineaHttp;
+      expect(detalle).not.toHaveProperty('lote_creado');
       expect(detalle).toMatchObject({
         solicitud_produccion_id: solicitud.id,
         ...linea(1),
@@ -690,6 +717,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
         .set(auth(rol))
         .send({ cantidad_solicitada: 85 })
         .expect(200);
+      expect(actualizada.body).not.toHaveProperty('lote_creado');
       expect(actualizada.body).toMatchObject({
         id: detalle.id,
         cantidad_solicitada: 85,
@@ -770,6 +798,8 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
         (desde === 'pendiente' &&
           ['en_proceso', 'rechazado'].includes(hasta)) ||
         (desde === 'en_proceso' && hasta === 'entregado');
+      if (permitida && hasta === 'entregado')
+        await registrarLotes(solicitud.id);
       await cambiar(solicitud.id, hasta).expect(permitida ? 200 : 409);
       expect((await obtener(solicitud.id)).estado).toBe(
         permitida ? hasta : desde,
@@ -777,7 +807,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     },
   );
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['inventario'] as const)(
     '%s solo puede rechazar desde pendiente y no avanzar ni entregar',
     async (rol) => {
       const solicitud = await crear();
@@ -788,6 +818,59 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       await cambiar(iniciada.id, 'rechazado', rol).expect(409);
       await cambiar(iniciada.id, 'entregado', rol).expect(409);
       expect((await obtener(iniciada.id)).estado).toBe('en_proceso');
+    },
+  );
+
+  it('admin avanza de pendiente a en_proceso y entregado respetando las transiciones', async () => {
+    const solicitud = await crear();
+    await cambiar(solicitud.id, 'entregado', 'admin').expect(409);
+    expect((await obtener(solicitud.id)).estado).toBe('pendiente');
+    await cambiar(solicitud.id, 'en_proceso', 'admin').expect(200);
+    expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
+    await cambiar(solicitud.id, 'rechazado', 'admin').expect(409);
+    expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
+    await registrarLotes(solicitud.id);
+    await cambiar(solicitud.id, 'entregado', 'admin').expect(200);
+    expect((await obtener(solicitud.id)).estado).toBe('entregado');
+  });
+
+  it.each(['admin', 'produccion'] as const)(
+    '%s solo puede entregar cuando todas las líneas tienen un lote de esta solicitud',
+    async (rol) => {
+      const solicitud = await crear();
+      await http()
+        .post(URL + '/' + solicitud.id + '/detalle')
+        .set(auth())
+        .send(linea(1))
+        .expect(201);
+      const otra = await crear();
+      await registrarLote(otra.id, productos[0]);
+      // Hay lote del mismo producto en otra solicitud: no debe contar.
+      expect(
+        (await obtener(solicitud.id)).detalle.map((d) => d.lote_creado),
+      ).toEqual([false, false]);
+      await cambiar(solicitud.id, 'en_proceso', rol).expect(200);
+      const bloquearEntrega = async () => {
+        const res = await cambiar(solicitud.id, 'entregado', rol).expect(409);
+        expect(res.body).toMatchObject({
+          message: 'Faltan lotes por registrar para completar esta solicitud',
+        });
+        expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
+      };
+      await bloquearEntrega();
+      await registrarLote(solicitud.id, productos[0]);
+      await registrarLote(solicitud.id, productos[0]);
+      // Dos lotes del primer producto no cubren el segundo.
+      expect(
+        (await obtener(solicitud.id)).detalle.map((d) => d.lote_creado),
+      ).toEqual([true, false]);
+      await bloquearEntrega();
+      await registrarLote(solicitud.id, productos[1]);
+      expect(
+        (await obtener(solicitud.id)).detalle.map((d) => d.lote_creado),
+      ).toEqual([true, true]);
+      await cambiar(solicitud.id, 'entregado', rol).expect(200);
+      expect((await obtener(solicitud.id)).estado).toBe('entregado');
     },
   );
 
@@ -845,7 +928,6 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       }),
     });
     const antes = await snapshot();
-    expect(Number(antes.stock[0].stock_actual)).toBe(25);
     const solicitud = await crear();
     const detalle = (await obtener(solicitud.id)).detalle[0];
     await http()
@@ -854,9 +936,12 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       .send({ cantidad_solicitada: 1000 })
       .expect(200);
     await cambiar(solicitud.id, 'en_proceso').expect(200);
+    expect(await snapshot()).toEqual(antes);
+    await registrarLotes(solicitud.id);
+    const conLotes = await snapshot();
     await cambiar(solicitud.id, 'entregado').expect(200);
     expect((await obtener(solicitud.id)).estado).toBe('entregado');
-    expect(await snapshot()).toEqual(antes);
+    expect(await snapshot()).toEqual(conLotes);
   });
 
   it('lista por código, nombre y SKU; filtra estado, fechas inclusivas y paginación', async () => {

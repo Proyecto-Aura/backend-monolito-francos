@@ -82,6 +82,10 @@ export interface ListPedidosParams extends PaginationParams {
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;
+  // Vista de inventario (RF-A030 inventario): trae el stock de cada item para
+  // calcular `disponibilidad` por pedido. Solo se pide acá porque implica un
+  // join extra que las demás listas (despacho, general) no necesitan.
+  conDisponibilidad?: boolean;
 }
 
 export interface ListPedidosDeClienteParams extends PaginationParams {
@@ -115,7 +119,14 @@ export interface PedidoResumen {
   // Cantidad de líneas distintas y suma de unidades pedidas (vista de inventario).
   cantidad_productos: number;
   cantidad_unidades: number;
+  // Solo presente si se pidió `conDisponibilidad`. Mismo criterio que el
+  // detalle, ver calcularDisponibilidad en application/utils/pedido.utils.
+  disponibilidad?: DisponibilidadPedido;
 }
+
+// completo: todos los items alcanzan. sin_stock: ninguno alcanza. parcial:
+// alcanza para algunos items sí y para otros no.
+export type DisponibilidadPedido = 'completo' | 'parcial' | 'sin_stock';
 
 export interface DetallePedidoConProducto {
   detalle: DetallePedidoEntity;

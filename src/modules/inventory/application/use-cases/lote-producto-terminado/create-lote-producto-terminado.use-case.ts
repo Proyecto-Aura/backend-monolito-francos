@@ -7,6 +7,7 @@ import {
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
 import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
 import { ProductoTerminadoRepository } from '../../../domain/repositories/producto-terminado.repository';
+import { SolicitudProduccionRepository } from '../../../domain/repositories/solicitud-produccion.repository';
 import { normalizarTexto } from '../../../../catalog/application/utils/texto.utils';
 import {
   parseFechaDia,
@@ -19,6 +20,7 @@ export class CreateLoteProductoTerminadoUseCase {
   constructor(
     private readonly loteProductoTerminadoRepository: LoteProductoTerminadoRepository,
     private readonly productoTerminadoRepository: ProductoTerminadoRepository,
+    private readonly solicitudProduccionRepository: SolicitudProduccionRepository,
   ) {}
 
   async execute(
@@ -49,6 +51,17 @@ export class CreateLoteProductoTerminadoUseCase {
       : null;
     validarFechaVencimiento(fecha_produccion, fecha_vencimiento);
 
+    if (dto.solicitud_produccion_id !== undefined) {
+      const solicitud = await this.solicitudProduccionRepository.findById(
+        dto.solicitud_produccion_id,
+      );
+      if (!solicitud) {
+        throw new ResourceNotFoundError(
+          'Solicitud de producción no encontrada',
+        );
+      }
+    }
+
     // cantidad_actual no se pasa: el repositorio crea el lote en 0 y lo deja
     // en cantidad_inicial mediante el movimiento "entrada" correspondiente.
     return this.loteProductoTerminadoRepository.create({
@@ -60,6 +73,7 @@ export class CreateLoteProductoTerminadoUseCase {
       estado: EstadoLoteProductoTerminado.ACTIVO,
       activo: dto.activo ?? true,
       razon: dto.razon ?? 'Producción inicial de lote',
+      solicitud_produccion_id: dto.solicitud_produccion_id,
     });
   }
 }

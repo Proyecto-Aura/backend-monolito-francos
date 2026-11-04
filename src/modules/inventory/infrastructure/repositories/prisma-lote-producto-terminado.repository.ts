@@ -222,4 +222,16 @@ export class PrismaLoteProductoTerminadoRepository implements LoteProductoTermin
 
     return lotes.map((lote) => LoteProductoTerminadoMapper.toDomain(lote));
   }
+
+  async findProductoTerminadoIdsConLotePorSolicitud(
+    solicitud_produccion_id: number,
+  ): Promise<number[]> {
+    const lotes = await this.prisma.loteProductoTerminado.findMany({
+      where: { solicitud_produccion_id },
+      select: { producto_terminado_id: true },
+      distinct: ['producto_terminado_id'],
+    });
+
+    return lotes.map((lote) => lote.producto_terminado_id);
+  }
 }

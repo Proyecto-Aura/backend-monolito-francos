@@ -39,8 +39,9 @@ import { SolicitudProduccionPresenter } from '../presenters/solicitud-produccion
 
 // Solicitud de producción interna (OFT0-261): admin/inventario la crean y
 // pueden rechazarla mientras está pendiente; producción la mueve a
-// en_proceso/entregado (o la rechaza, también solo desde pendiente). No
-// toca stock directamente — eso es un flujo aparte.
+// en_proceso/entregado (o la rechaza, también solo desde pendiente). Admin
+// tiene acceso total: puede hacer también lo que hace producción. No toca
+// stock directamente — eso es un flujo aparte.
 @ApiTags('Solicitudes de producción')
 @ApiBearerAuth()
 @Controller('solicitudes-produccion')
@@ -110,7 +111,7 @@ export class SolicitudesProduccionController {
   @Patch(':id/estado')
   @ApiOperation({
     summary:
-      'Cambiar el estado de la solicitud. admin/inventario solo pueden rechazar (y solo desde pendiente); producción puede pasar a en_proceso/entregado/rechazado.',
+      'Cambiar el estado de la solicitud. inventario solo puede rechazar (y solo desde pendiente); producción y admin pueden pasar a en_proceso/entregado/rechazado.',
   })
   @ApiParam({ name: 'id', type: Number })
   async cambiarEstado(

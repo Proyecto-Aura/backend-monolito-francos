@@ -33,6 +33,7 @@ describe('Consultas de lotes de producto terminado', () => {
     100,
     EstadoLoteProductoTerminado.ACTIVO,
     true,
+    null,
     fecha,
     fecha,
   );

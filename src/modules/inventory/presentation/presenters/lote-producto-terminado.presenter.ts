@@ -21,6 +21,7 @@ export class LoteProductoTerminadoPresenter {
       cantidad_actual: lote.cantidad_actual,
       estado: lote.estado,
       activo: lote.activo,
+      solicitud_produccion_id: lote.solicitud_produccion_id,
       created_at: lote.created_at,
       updated_at: lote.updated_at,
     };

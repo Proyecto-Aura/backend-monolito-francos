@@ -1,4 +1,9 @@
-import { MetodoPago, OrigenPedido, TipoEntrega } from '../../../domain/enums';
+import {
+  MetodoPago,
+  OrigenPedido,
+  TipoEntrega,
+  TipoComprobante,
+} from '../../../domain/enums';
 import {
   PagoRechazadoError,
   ResourceConflictError,
@@ -50,7 +55,11 @@ describe('CrearPedidoPortalUseCase', () => {
     tipo_entrega: TipoEntrega.DELIVERY,
     direccion_perfil: 'Jr. Huallaga 320',
     direccion_entrega: 'Av. Los Olivos 123',
-    comprobante: { tipo_comprobante: 'boleta', ruc: null, razon_social: null },
+    comprobante: {
+      tipo_comprobante: TipoComprobante.BOLETA,
+      ruc: null,
+      razon_social: null,
+    },
     comprobante_sugerido: null,
     items: [
       {

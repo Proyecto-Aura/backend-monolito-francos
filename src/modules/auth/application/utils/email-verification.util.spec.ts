@@ -22,6 +22,6 @@ describe('email verification utilities', () => {
     [[{ nombre: 'cliente' }, { nombre: 'ventas' }], 'portal'],
     [[], 'portal'],
   ] as const)('resuelve el destino correcto', (roles, destino) => {
-    expect(resolveFrontendDestino(roles)).toBe(destino);
+    expect(resolveFrontendDestino([...roles])).toBe(destino);
   });
 });

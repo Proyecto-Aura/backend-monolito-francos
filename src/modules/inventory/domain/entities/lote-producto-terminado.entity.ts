@@ -26,6 +26,7 @@ export class LoteProductoTerminadoEntity {
     public cantidad_actual: number,
     public estado: EstadoLoteProductoTerminado,
     public activo: boolean,
+    public readonly solicitud_produccion_id: number | null,
     public readonly created_at: Date,
     public updated_at: Date,
   ) {}
