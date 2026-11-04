@@ -1,6 +1,7 @@
 import { DetallePedidoEntity, PagoEntity, PedidoEntity } from '../../entities';
 import {
   EstadoPedido,
+  EstadoReembolso,
   MetodoPago,
   OrigenPedido,
   TipoEntrega,
@@ -81,6 +82,16 @@ export interface ListPedidosParams extends PaginationParams {
   // Rango sobre created_at: desde inclusive, hasta exclusivo.
   desde?: Date;
   hasta?: Date;
+}
+
+export interface ListPedidosDeClienteParams extends PaginationParams {
+  estado?: EstadoPedido;
+}
+
+export interface PedidoResumenPortal {
+  pedido: PedidoEntity;
+  metodo_pago: MetodoPago | null;
+  reembolso: { id: number; estado: EstadoReembolso } | null;
 }
 
 // Conteo de "pedidos por preparar" para las cards de la vista de inventario.
