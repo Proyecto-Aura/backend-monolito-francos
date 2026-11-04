@@ -24,6 +24,14 @@ const TEST_USERS = {
     rol: 'cliente',
     conCliente: true,
   },
+  // Otro cliente: no debe ver los pedidos de `cliente` (HU-B-013).
+  otro: {
+    identificador: 'e2e-cliente-pago-ot',
+    email: 'e2e-cliente-pago-ot@francos.test',
+    documento: '99999964',
+    rol: 'cliente',
+    conCliente: true,
+  },
   sinCliente: {
     identificador: 'e2e-cliente-pago-nc',
     email: 'e2e-cliente-pago-nc@francos.test',
@@ -449,6 +457,62 @@ describe('Pago del pedido del portal (e2e, HU-B-008)', () => {
       ).expect(201);
 
       expect((response.body as PedidoCreadoBody).direccion_entrega).toBeNull();
+    });
+  });
+
+  describe('consulta del pedido (HU-B-013, RF-B37)', () => {
+    const consultar = (id: number | string, token?: string) => {
+      const req = request(app.getHttpServer()).get(
+        `/api/v1/portal/pedidos/${id}`,
+      );
+      if (token) {
+        req.set('Authorization', `Bearer ${token}`);
+      }
+      return req;
+    };
+
+    let pedidoId: number;
+
+    beforeAll(async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      pedidoId = (response.body as PedidoCreadoBody).id;
+    });
+
+    it('sin token devuelve 401', async () => {
+      await consultar(pedidoId).expect(401);
+    });
+
+    it.each(['admin', 'ventas'] as const)(
+      'con rol %s devuelve 403',
+      async (rol) => {
+        await consultar(pedidoId, tokens[rol]).expect(403);
+      },
+    );
+
+    it('el cliente ve su pedido como confirmado una vez pagado', async () => {
+      const response = await consultar(pedidoId, tokens.cliente).expect(200);
+      const pedido = response.body as PedidoCreadoBody;
+
+      expect(pedido.id).toBe(pedidoId);
+      expect(pedido.estado).toBe('confirmado');
+      expect(pedido.pago?.metodo_pago).toBe('culqi');
+      expect(Number(pedido.total)).toBe(165.6);
+    });
+
+    it('otro cliente no lo ve: responde 404 como si no existiera', async () => {
+      await consultar(pedidoId, tokens.otro).expect(404);
+    });
+
+    it('un pedido que no existe devuelve 404', async () => {
+      await consultar(999999, tokens.cliente).expect(404);
+    });
+
+    it('un usuario sin cliente devuelve 404', async () => {
+      await consultar(pedidoId, tokens.sinCliente).expect(404);
+    });
+
+    it('un id que no es número devuelve 400', async () => {
+      await consultar('abc', tokens.cliente).expect(400);
     });
   });
 });

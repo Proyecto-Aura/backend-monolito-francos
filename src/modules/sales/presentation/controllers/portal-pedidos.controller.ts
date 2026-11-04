@@ -1,4 +1,13 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -16,8 +25,11 @@ import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../../auth/presentation/strategies/jwt.strategy';
 import { CrearPedidoPortalDto } from '../../application/dto/pedido-dtos/crear-pedido-portal.dto';
 import { ResumenPedidoPortalDto } from '../../application/dto/pedido-dtos/resumen-pedido-portal.dto';
+import { ListPedidosPortalQueryDto } from '../../application/dto/pedido-dtos/list-pedidos-portal-query.dto';
 import { CrearPedidoPortalUseCase } from '../../application/use-cases/pedido/crear-pedido-portal.use-case';
+import { GetPedidoPortalUseCase } from '../../application/use-cases/pedido/get-pedido-portal.use-case';
 import { ResumirPedidoPortalUseCase } from '../../application/use-cases/pedido/resumir-pedido-portal.use-case';
+import { ListPedidosPortalUseCase } from '../../application/use-cases/pedido/list-pedidos-portal.use-case';
 import { PedidoPresenter } from '../presenters/pedido.presenter';
 import { ResumenPedidoPortalPresenter } from '../presenters/resumen-pedido-portal.presenter';
 
@@ -29,7 +41,27 @@ export class PortalPedidosController {
   constructor(
     private readonly resumirPedidoPortal: ResumirPedidoPortalUseCase,
     private readonly crearPedidoPortal: CrearPedidoPortalUseCase,
+    private readonly listPedidosPortal: ListPedidosPortalUseCase,
+    private readonly getPedidoPortal: GetPedidoPortalUseCase,
   ) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Listar mis pedidos',
+    description:
+      'Los más recientes primero. Incluye el pago y, si ya existe, la solicitud de reembolso del pedido (para habilitar el botón correspondiente).',
+  })
+  @ApiOkResponse({ description: 'Lista paginada de mis pedidos' })
+  @ApiBadRequestResponse({ description: 'Filtro inválido' })
+  @ApiNotFoundResponse({ description: 'El usuario no tiene un cliente' })
+  async findAll(
+    @Query() query: ListPedidosPortalQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.paginatedPortalToHttp(
+      await this.listPedidosPortal.execute(query, user.userId),
+    );
+  }
 
   @Post('resumen')
   @HttpCode(200)
@@ -92,6 +124,27 @@ export class PortalPedidosController {
   ) {
     return PedidoPresenter.detalleToHttp(
       await this.crearPedidoPortal.execute(dto, user.userId),
+    );
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Consultar un pedido propio y su estado',
+    description:
+      'Devuelve el detalle del pedido del cliente, con su estado ("confirmado" una vez que el pago se completa) y su pago (HU-B-013). Solo se ven los pedidos propios: el de otro cliente responde 404.',
+  })
+  @ApiOkResponse({ description: 'Pedido con su estado, líneas y pago' })
+  @ApiBadRequestResponse({ description: 'El id del pedido no es un número' })
+  @ApiNotFoundResponse({
+    description:
+      'El usuario no tiene un cliente, o el pedido no existe o es de otro cliente',
+  })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.getPedidoPortal.execute(id, user.userId),
     );
   }
 }
