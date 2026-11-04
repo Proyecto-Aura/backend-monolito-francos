@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, TipoDocumento } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import { formatCodigoPedido } from '../../application/utils/pedido.utils';
+import {
+  calcularDisponibilidad,
+  formatCodigoPedido,
+} from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
 import { EstadoPedido, MetodoPago } from '../../domain/enums';
 import { ResourceConflictError } from '../../domain/errors/sales-domain.errors';
@@ -262,7 +265,20 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: {
           cliente: clienteConPersona,
           pago: { select: { metodo_pago: true } },
-          detalles: { select: { cantidad: true } },
+          detalles: {
+            select: {
+              cantidad: true,
+              // Solo se usa cuando conDisponibilidad=true (vista de
+              // inventario), pero el join es barato (FK indexada) así que se
+              // pide siempre para no complicar el tipo del select con un
+              // condicional en tiempo de ejecución.
+              producto_presentacion: {
+                select: {
+                  producto_terminado: { select: { stock_actual: true } },
+                },
+              },
+            },
+          },
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
@@ -283,6 +299,18 @@ export class PrismaPedidoRepository implements PedidoRepository {
           (suma, detalle) => suma + detalle.cantidad,
           0,
         ),
+        ...(params.conDisponibilidad
+          ? {
+              disponibilidad: calcularDisponibilidad(
+                pedido.detalles.map((detalle) => ({
+                  cantidad: detalle.cantidad,
+                  stock_disponible:
+                    detalle.producto_presentacion.producto_terminado?.stock_actual.toNumber() ??
+                    0,
+                })),
+              ),
+            }
+          : {}),
       })),
       total,
       page: params.page,

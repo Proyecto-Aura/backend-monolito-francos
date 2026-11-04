@@ -623,11 +623,12 @@ describe('Clientes (e2e)', () => {
     });
 
     it('filtra por distrito, provincia y departamento', async () => {
-      for (const filtro of [
+      const filtros: Record<string, string>[] = [
         { distrito_id: '150131' },
         { provincia_id: '1501' },
         { departamento_id: '15' },
-      ]) {
+      ];
+      for (const filtro of filtros) {
         const res = await listar(filtro).expect(200);
         const { data } = res.body as ListadoHttp;
 

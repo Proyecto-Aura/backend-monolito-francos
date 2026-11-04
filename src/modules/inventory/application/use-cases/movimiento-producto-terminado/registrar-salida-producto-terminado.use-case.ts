@@ -83,6 +83,7 @@ export class RegistrarSalidaProductoTerminadoUseCase {
           tipo: TipoMovimientoProductoTerminado.SALIDA,
           cantidad: cantidadATomar,
           razon: dto.razon,
+          pedido_id: dto.pedido_id,
         });
         reservadoPorLote.set(
           lote.id,

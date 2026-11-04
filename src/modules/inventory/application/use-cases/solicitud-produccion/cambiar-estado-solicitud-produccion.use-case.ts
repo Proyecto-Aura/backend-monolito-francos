@@ -5,6 +5,8 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
+import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
+import { SolicitudProduccionDetalleRepository } from '../../../domain/repositories/solicitud-produccion-detalle.repository';
 import { SolicitudProduccionRepository } from '../../../domain/repositories/solicitud-produccion.repository';
 
 // pendiente -> en_proceso -> entregado. rechazado solo se alcanza desde
@@ -26,6 +28,8 @@ const TRANSICIONES_VALIDAS: Record<
 export class CambiarEstadoSolicitudProduccionUseCase {
   constructor(
     private readonly solicitudProduccionRepository: SolicitudProduccionRepository,
+    private readonly solicitudProduccionDetalleRepository: SolicitudProduccionDetalleRepository,
+    private readonly loteProductoTerminadoRepository: LoteProductoTerminadoRepository,
   ) {}
 
   async execute(
@@ -45,13 +49,15 @@ export class CambiarEstadoSolicitudProduccionUseCase {
       );
     }
 
-    // En el único estado donde conviven dos roles (pendiente), inventario y
-    // admin solo pueden "cancelar" (rechazar); avanzar a en_proceso es cosa
-    // de producción. Entregado solo lo mueve producción (ya viene desde
-    // en_proceso, donde solo esa transición es válida).
+    // Inventario solo puede "cancelar" (rechazar) mientras está pendiente;
+    // avanzar a en_proceso/entregado es cosa de producción. Admin tiene
+    // acceso total al sistema, así que puede hacer lo mismo que producción
+    // además de rechazar.
+    const esAdmin = roles.includes('admin');
     const esProduccion = roles.includes('produccion');
+    const puedeAvanzar = esProduccion || esAdmin;
     const puedeRechazar =
-      roles.includes('admin') || roles.includes('inventario') || esProduccion;
+      esAdmin || roles.includes('inventario') || esProduccion;
 
     if (nuevoEstado === EstadoSolicitudProduccion.RECHAZADO) {
       if (!puedeRechazar) {
@@ -59,10 +65,30 @@ export class CambiarEstadoSolicitudProduccionUseCase {
           'No tenés permiso para rechazar esta solicitud',
         );
       }
-    } else if (!esProduccion) {
+    } else if (!puedeAvanzar) {
       throw new ResourceConflictError(
-        'Solo producción puede mover la solicitud a este estado',
+        'Solo producción (o un admin) puede mover la solicitud a este estado',
       );
+    }
+
+    // No se puede entregar si todavía falta registrar el lote de algún
+    // producto de la solicitud (OFT0-262).
+    if (nuevoEstado === EstadoSolicitudProduccion.ENTREGADO) {
+      const detalle =
+        await this.solicitudProduccionDetalleRepository.findBySolicitudId(id);
+      const productosConLote = new Set(
+        await this.loteProductoTerminadoRepository.findProductoTerminadoIdsConLotePorSolicitud(
+          id,
+        ),
+      );
+      const faltaAlguno = detalle.some(
+        (linea) => !productosConLote.has(linea.producto_terminado_id),
+      );
+      if (faltaAlguno) {
+        throw new ResourceConflictError(
+          'Faltan lotes por registrar para completar esta solicitud',
+        );
+      }
     }
 
     return this.solicitudProduccionRepository.updateEstado(id, nuevoEstado);

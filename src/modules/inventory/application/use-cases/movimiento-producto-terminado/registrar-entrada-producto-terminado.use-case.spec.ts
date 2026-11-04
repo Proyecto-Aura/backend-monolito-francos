@@ -46,6 +46,7 @@ describe('RegistrarEntradaProductoTerminadoUseCase', () => {
     60,
     EstadoLoteProductoTerminado.ACTIVO,
     true,
+    null,
     fecha,
     fecha,
   );

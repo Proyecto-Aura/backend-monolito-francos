@@ -75,4 +75,16 @@ export class CreateLoteProductoTerminadoDto {
   @IsString()
   @MaxLength(255)
   razon?: string;
+
+  @ApiPropertyOptional({
+    example: 12,
+    minimum: 1,
+    description:
+      'Id de la solicitud de producción que este lote cumple, si viene de una',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsPositive()
+  solicitud_produccion_id?: number;
 }

@@ -68,6 +68,7 @@ export class LoteProductoTerminadoMapper {
       lote.cantidad_actual.toNumber(),
       this.calcularEstado(lote),
       lote.activo,
+      lote.solicitud_produccion_id,
       lote.created_at,
       lote.updated_at,
     );

@@ -1,4 +1,9 @@
-import { SolicitudProduccionEntity } from '../../../domain/entities';
+import { UnidadMedidaPresentacion } from '../../../../catalog/domain/enums';
+import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
+import {
+  SolicitudProduccionDetalleEntity,
+  SolicitudProduccionEntity,
+} from '../../../domain/entities';
 import { EstadoSolicitudProduccion } from '../../../domain/enums';
 import { SolicitudProduccionRepository } from '../../../domain/repositories/solicitud-produccion.repository';
 import { SolicitudProduccionDetalleRepository } from '../../../domain/repositories/solicitud-produccion-detalle.repository';
@@ -30,6 +35,12 @@ describe('Crear y consultar solicitudes de producción', () => {
   const detalles = {
     findBySolicitudId: jest.fn(),
   };
+  const lotes = { findProductoTerminadoIdsConLotePorSolicitud: jest.fn() };
+  const consultar = new GetSolicitudProduccionByIdUseCase(
+    repository,
+    detalles as unknown as SolicitudProduccionDetalleRepository,
+    lotes as unknown as LoteProductoTerminadoRepository,
+  );
   const fecha = new Date('2026-10-29T12:00:00Z');
   const solicitud = new SolicitudProduccionEntity(
     1,
@@ -56,6 +67,7 @@ describe('Crear y consultar solicitudes de producción', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    lotes.findProductoTerminadoIdsConLotePorSolicitud.mockResolvedValue([]);
     repository.existsByCodigo.mockResolvedValue(false);
     repository.create.mockResolvedValue(solicitud);
     productos.findById.mockResolvedValue({ id: 10 });
@@ -124,10 +136,6 @@ describe('Crear y consultar solicitudes de producción', () => {
   it('obtiene cabecera y detalle de la misma solicitud', async () => {
     repository.findById.mockResolvedValue(solicitud);
     detalles.findBySolicitudId.mockResolvedValue([]);
-    const consultar = new GetSolicitudProduccionByIdUseCase(
-      repository,
-      detalles as unknown as SolicitudProduccionDetalleRepository,
-    );
     await expect(consultar.execute(1)).resolves.toEqual({
       solicitud,
       detalle: [],
@@ -142,10 +150,59 @@ describe('Crear y consultar solicitudes de producción', () => {
       new GetSolicitudProduccionByIdUseCase(
         repository,
         detalles as unknown as SolicitudProduccionDetalleRepository,
+        lotes as unknown as LoteProductoTerminadoRepository,
       ).execute(99),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
     expect(detalles.findBySolicitudId).not.toHaveBeenCalled();
+    expect(
+      lotes.findProductoTerminadoIdsConLotePorSolicitud,
+    ).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { ids: [], flags: [false, false] },
+    { ids: [20, 99, 20], flags: [false, true] },
+    { ids: [20, 10], flags: [true, true] },
+  ])(
+    'marca lote_creado por producto con lotes $ids',
+    async ({ ids, flags }) => {
+      const lineas = [10, 20].map(
+        (producto, i) =>
+          new SolicitudProduccionDetalleEntity(
+            i + 1,
+            1,
+            producto,
+            'SKU-' + producto,
+            2,
+            'Chifles',
+            3,
+            'Snacks',
+            4,
+            250,
+            UnidadMedidaPresentacion.GR,
+            50,
+            fecha,
+            fecha,
+          ),
+      );
+      repository.findById.mockResolvedValue(solicitud);
+      detalles.findBySolicitudId.mockResolvedValue(lineas);
+      lotes.findProductoTerminadoIdsConLotePorSolicitud.mockResolvedValue(ids);
+      await expect(consultar.execute(1)).resolves.toEqual({
+        solicitud,
+        detalle: lineas.map((detalle, i) => ({
+          detalle,
+          lote_creado: flags[i],
+        })),
+      });
+      expect(
+        lotes.findProductoTerminadoIdsConLotePorSolicitud,
+      ).toHaveBeenCalledWith(1);
+      expect(
+        lotes.findProductoTerminadoIdsConLotePorSolicitud,
+      ).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('propaga filtros y convierte las fechas al listar', async () => {
     const resultado = { data: [solicitud], total: 1, page: 2, limit: 5 };

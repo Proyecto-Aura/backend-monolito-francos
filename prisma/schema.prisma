@@ -600,6 +600,7 @@ model Pedido {
   user     User?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_user")
   detalles DetallePedido[]
   pago     Pago?
+  movimientos_producto_terminado MovimientoProductoTerminado[]
 
   @@index([created_at], map: "idx_pedido_created_at")
   @@index([cliente_id], map: "idx_pedido_cliente")
@@ -815,22 +816,31 @@ model MovimientoInsumoCorrelativo {
 // LoteInsumo: nace vacío (0) y el movimiento "entrada" que se crea junto con
 // el lote (vía trigger) lo deja en cantidad_inicial.
 model LoteProductoTerminado {
-  id                    Int                         @id(map: "pk_lote_producto_terminado") @default(autoincrement())
-  producto_terminado_id Int
-  codigo_lote           String                      @unique(map: "uq_lote_producto_terminado_codigo") @db.VarChar(50)
-  fecha_produccion      DateTime                    @db.Date
-  fecha_vencimiento     DateTime?                   @db.Date
-  cantidad_inicial      Decimal                     @db.Decimal(10, 2)
-  cantidad_actual       Decimal                     @db.Decimal(10, 2)
-  estado                EstadoLoteProductoTerminado @default(activo)
-  activo                Boolean                     @default(true)
-  created_at            DateTime                    @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+  id                      Int                         @id(map: "pk_lote_producto_terminado") @default(autoincrement())
+  producto_terminado_id   Int
+  codigo_lote             String                      @unique(map: "uq_lote_producto_terminado_codigo") @db.VarChar(50)
+  fecha_produccion        DateTime                    @db.Date
+  fecha_vencimiento       DateTime?                   @db.Date
+  cantidad_inicial        Decimal                     @db.Decimal(10, 2)
+  cantidad_actual         Decimal                     @db.Decimal(10, 2)
+  estado                  EstadoLoteProductoTerminado @default(activo)
+  activo                  Boolean                     @default(true)
+  // Solicitud de producción (OFT0-261) que este lote cumple; null si el lote
+  // no nació de una solicitud formal (ej. seed, producción sin solicitud).
+  // Un lote es de una sola producción puntual, por eso va acá y no en el
+  // movimiento: a diferencia de pedido_id en MovimientoProductoTerminado
+  // (un lote se reparte entre muchos pedidos distintos a lo largo del
+  // tiempo), un lote nace de una sola solicitud, si nace de alguna.
+  solicitud_produccion_id Int?
+  created_at              DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
 
-  producto_terminado ProductoTerminado @relation(fields: [producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_producto_terminado_producto_terminado")
+  producto_terminado   ProductoTerminado    @relation(fields: [producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_producto_terminado_producto_terminado")
+  solicitud_produccion SolicitudProduccion? @relation(fields: [solicitud_produccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lote_producto_terminado_solicitud_produccion")
 
   movimientos MovimientoProductoTerminado[]
 
+  @@index([solicitud_produccion_id], map: "idx_lote_producto_terminado_solicitud_produccion")
   @@map("lote_producto_terminado")
   @@schema("commerce")
 }
@@ -852,12 +862,19 @@ model MovimientoProductoTerminado {
   // FR-MV-[000]-[YYMMDD]-PT{productoTerminadoID}; lo genera el trigger, no la app.
   codigo                     String                          @unique(map: "uq_movimiento_producto_terminado_codigo") @default("") @db.VarChar(40)
   razon                      String                          @db.VarChar(255)
+  // Pedido de venta que originó esta salida (EntregarPedidoADespachoUseCase);
+  // null en entradas, ajustes, y salidas que no vienen de un pedido. Un lote
+  // se reparte entre muchos pedidos con el tiempo, por eso va acá (por
+  // movimiento) y no en el lote.
+  pedido_id                  Int?
   fecha                      DateTime                        @default(now()) @db.Timestamptz(6)
   created_at                 DateTime                        @default(now()) @db.Timestamptz(6)
 
   lote_producto_terminado LoteProductoTerminado @relation(fields: [lote_producto_terminado_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_producto_terminado_lote")
+  pedido                  Pedido?               @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_producto_terminado_pedido")
 
   @@index([lote_producto_terminado_id], map: "idx_movimiento_producto_terminado_lote")
+  @@index([pedido_id], map: "idx_movimiento_producto_terminado_pedido")
   @@map("movimiento_producto_terminado")
   @@schema("commerce")
 }
@@ -893,6 +910,7 @@ model SolicitudProduccion {
 
   solicitante User                         @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_user")
   detalle     SolicitudProduccionDetalle[]
+  lotes_producto_terminado LoteProductoTerminado[]
 
   @@index([solicitado_por], map: "idx_solicitud_produccion_solicitado_por")
   @@map("solicitud_produccion")

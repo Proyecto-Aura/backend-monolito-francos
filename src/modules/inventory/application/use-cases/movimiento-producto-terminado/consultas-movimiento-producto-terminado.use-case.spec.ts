@@ -34,6 +34,7 @@ describe('Consultas de movimientos de producto terminado', () => {
     60,
     40,
     'Venta',
+    null,
     fecha,
     fecha,
   );

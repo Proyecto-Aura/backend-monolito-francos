@@ -23,4 +23,10 @@ export abstract class LoteProductoTerminadoRepository {
   abstract findDisponiblesParaSalida(
     producto_terminado_id: number,
   ): Promise<LoteProductoTerminadoEntity[]>;
+  // Ids (sin duplicar) de producto_terminado que ya tienen al menos un lote
+  // creado para esta solicitud. Para marcar, en el detalle de la solicitud,
+  // qué líneas ya se produjeron y cuáles faltan (OFT0-262).
+  abstract findProductoTerminadoIdsConLotePorSolicitud(
+    solicitud_produccion_id: number,
+  ): Promise<number[]>;
 }
