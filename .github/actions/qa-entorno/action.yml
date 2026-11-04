@@ -1,0 +1,65 @@
+name: Levantar entorno QA
+description: >
+  Levanta en el runner la API (migraciones + seed demo) y la tienda
+  frontend-cliente-angular, y espera a que respondan. Necesita un servicio
+  postgres en el job. Nunca apunta a AWS.
+
+inputs:
+  tienda-ref:
+    description: Rama de frontend-cliente-angular que se prueba
+    required: false
+    default: develop
+
+runs:
+  using: composite
+  steps:
+    - name: Preparar backend
+      uses: ./.github/actions/setup
+
+    - name: Migrar y cargar datos de prueba
+      shell: bash
+      run: |
+        pnpm exec prisma migrate deploy
+        pnpm exec prisma db seed
+
+    - name: Compilar y arrancar la API
+      shell: bash
+      run: |
+        pnpm build
+        nohup node dist/main.js > "$RUNNER_TEMP/api.log" 2>&1 &
+        for i in $(seq 1 60); do
+          curl -sf http://localhost:3000/api/v1/health/live > /dev/null && exit 0
+          sleep 2
+        done
+        echo "La API no respondió en 120 s" && cat "$RUNNER_TEMP/api.log" && exit 1
+
+    # Solo lectura: QA nunca modifica la tienda, solo la compila y la sirve.
+    - name: Descargar la tienda
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Proyecto-Aura/frontend-cliente-angular
+        ref: ${{ inputs.tienda-ref }}
+        path: tienda
+        persist-credentials: false
+
+    - name: Instalar Node de la tienda
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: tienda/.nvmrc
+        cache: npm
+        cache-dependency-path: tienda/package-lock.json
+
+    # La configuración development usa environment.ts, que apunta a
+    # http://localhost:3000/api/v1: la misma API que acabamos de levantar.
+    - name: Compilar y servir la tienda
+      shell: bash
+      working-directory: tienda
+      run: |
+        npm ci --no-audit --no-fund
+        npx ng build --configuration development
+        nohup npx --yes serve@14.2.6 -s dist/portal-cliente/browser -l 4200 > "$RUNNER_TEMP/tienda.log" 2>&1 &
+        for i in $(seq 1 30); do
+          curl -sf http://localhost:4200/ > /dev/null && exit 0
+          sleep 2
+        done
+        echo "La tienda no respondió en 60 s" && cat "$RUNNER_TEMP/tienda.log" && exit 1

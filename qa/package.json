@@ -1,0 +1,13 @@
+{
+  "name": "francos-qa",
+  "private": true,
+  "description": "Pruebas de QA de Francos: E2E de la tienda contra la API, en un entorno efímero. Aislado del workspace pnpm del backend.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
