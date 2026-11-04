@@ -3,7 +3,7 @@ import { Prisma, TipoDocumento } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import { formatCodigoPedido } from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
-import { EstadoPedido, MetodoPago } from '../../domain/enums';
+import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
 import { ResourceConflictError } from '../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../domain/repositories/pedido.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
@@ -13,9 +13,11 @@ import {
   CreatePedidoParams,
   IndicadoresPedidosInventario,
   ListPedidosParams,
+  ListPedidosDeClienteParams,
   NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
+  PedidoResumenPortal,
   PresentacionParaPedido,
 } from '../../domain/repositories/types/pedido-repository.types';
 import { ESTADOS_DE_INVENTARIO } from '../../domain/rules/transiciones-pedido';
@@ -294,6 +296,49 @@ export class PrismaPedidoRepository implements PedidoRepository {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
 
     return pedido ? PedidoMapper.toDomain(pedido) : null;
+  }
+
+  async findManyDeCliente(
+    clienteId: string,
+    params: ListPedidosDeClienteParams,
+  ): Promise<PaginatedResult<PedidoResumenPortal>> {
+    const where: Prisma.PedidoWhereInput = {
+      cliente_id: clienteId,
+      ...(params.estado ? { estado: params.estado } : {}),
+    };
+    const [pedidos, total] = await this.prisma.$transaction([
+      this.prisma.pedido.findMany({
+        where,
+        include: {
+          pago: {
+            select: {
+              metodo_pago: true,
+              reembolso: { select: { id: true, estado: true } },
+            },
+          },
+        },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.pedido.count({ where }),
+    ]);
+
+    return {
+      data: pedidos.map((pedido) => ({
+        pedido: PedidoMapper.toDomain(pedido),
+        metodo_pago: (pedido.pago?.metodo_pago as MetodoPago) ?? null,
+        reembolso: pedido.pago?.reembolso
+          ? {
+              id: pedido.pago.reembolso.id,
+              estado: pedido.pago.reembolso.estado as EstadoReembolso,
+            }
+          : null,
+      })),
+      total,
+      page: params.page,
+      limit: params.limit,
+    };
   }
 
   async findDetalleById(id: number): Promise<PedidoDetalle | null> {
