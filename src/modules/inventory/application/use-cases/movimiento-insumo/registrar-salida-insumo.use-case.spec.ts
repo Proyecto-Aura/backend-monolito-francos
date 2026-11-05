@@ -130,6 +130,46 @@ describe('RegistrarSalidaInsumoUseCase', () => {
   });
 
   describe('executeMany', () => {
+    it('propaga la solicitud de cada fila a todos sus movimientos FEFO', async () => {
+      await useCase.executeMany([
+        {
+          insumo_id: 1,
+          cantidad: 70,
+          razon: 'Solicitud 7',
+          solicitud_insumos_id: 7,
+        },
+        {
+          insumo_id: 1,
+          cantidad: 10,
+          razon: 'Solicitud 8',
+          solicitud_insumos_id: 8,
+        },
+      ]);
+      expect(createMany).toHaveBeenCalledWith([
+        {
+          lote_insumo_id: 10,
+          tipo: 'salida',
+          cantidad: 60,
+          razon: 'Solicitud 7',
+          solicitud_insumos_id: 7,
+        },
+        {
+          lote_insumo_id: 11,
+          tipo: 'salida',
+          cantidad: 10,
+          razon: 'Solicitud 7',
+          solicitud_insumos_id: 7,
+        },
+        {
+          lote_insumo_id: 11,
+          tipo: 'salida',
+          cantidad: 10,
+          razon: 'Solicitud 8',
+          solicitud_insumos_id: 8,
+        },
+      ]);
+    });
+
     it('junta varias filas del mismo insumo en una sola llamada a createMany', async () => {
       await useCase.executeMany([
         { insumo_id: 1, cantidad: 20, razon: 'Fila 1' },

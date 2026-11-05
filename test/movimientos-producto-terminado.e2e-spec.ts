@@ -17,7 +17,7 @@ const MARCA = 'E2E OFT0-259-M';
 const CATEGORIAS_URL = '/api/v1/categorias';
 const PRESENTACIONES_URL = '/api/v1/presentaciones';
 const PRODUCTOS_URL = '/api/v1/productos';
-const LOTES_URL = '/api/v1/lotes-producto-terminado';
+const LOTES_URL = '/api/v1/produccion/lotes-producto-terminado';
 const MOVIMIENTOS_URL = '/api/v1/movimientos-producto-terminado';
 
 interface ProductoPresentacionHttp {

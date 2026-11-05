@@ -508,6 +508,8 @@ describe('Insumos y lotes de insumo (e2e)', () => {
     });
 
     it('muestra "por_vencer" dentro de la ventana de 15 días y filtra por estado/fechas de vencimiento correctamente', async () => {
+      const fechaEnDias = (dias: number) =>
+        new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
       // Insumo propio para no mezclar con otras pruebas de este describe.
       const insumo = (
         await request(app.getHttpServer())
@@ -531,17 +533,17 @@ describe('Insumos y lotes de insumo (e2e)', () => {
             .send({
               insumo_id: insumo.id,
               codigo_lote: `${MARCA}-porvencer-${sufijo}`,
-              fecha_ingreso: '2026-01-01',
+              fecha_ingreso: fechaEnDias(-30),
               ...(fecha_vencimiento ? { fecha_vencimiento } : {}),
               cantidad_inicial: 10,
             })
             .expect(201)
         ).body as LoteHttp;
 
-      // "Hoy" en los tests es 2026-10-25 (ver fecha del sistema).
-      const vencido = await crearLote('vencido', '2026-10-01');
-      const porVencer = await crearLote('por-vencer', '2026-11-05'); // 11 días
-      const activo = await crearLote('activo', '2027-06-01'); // muy lejos
+      // Fechas relativas: el fixture no caduca al avanzar el calendario real.
+      const vencido = await crearLote('vencido', fechaEnDias(-10));
+      const porVencer = await crearLote('por-vencer', fechaEnDias(10));
+      const activo = await crearLote('activo', fechaEnDias(180));
       const sinVencimiento = await crearLote('sin-vencimiento');
 
       expect(vencido.estado).toBe('vencido');
@@ -573,8 +575,8 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .get(LOTES_URL)
         .query({
           insumo_id: insumo.id,
-          vence_desde: '2026-11-01',
-          vence_hasta: '2026-11-10',
+          vence_desde: fechaEnDias(1),
+          vence_hasta: fechaEnDias(15),
           limit: 100,
         })
         .set(auth(adminToken))

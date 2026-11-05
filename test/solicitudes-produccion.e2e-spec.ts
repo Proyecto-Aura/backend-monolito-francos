@@ -8,7 +8,7 @@ import { PrismaService } from '../src/infrastructure/database/prisma/prisma.serv
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 
 const MARCA = 'E2E-OFT261';
-const URL = '/api/v1/solicitudes-produccion';
+const URL = '/api/v1/produccion/solicitudes';
 const ROLES = [
   'admin',
   'inventario',
@@ -47,6 +47,19 @@ interface ListaHttp {
   data: SolicitudHttp[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }
+
+// Oraculo independiente del helper de produccion y de la zona horaria del equipo.
+const diaCalendarioLima = () => {
+  const partes = new Intl.DateTimeFormat('en', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  return ['year', 'month', 'day']
+    .map((tipo) => partes.find((parte) => parte.type === tipo)?.value)
+    .join('-');
+};
 
 describe('Solicitudes de producción OFT0-261 (e2e)', () => {
   let app: INestApplication<App>;
@@ -93,7 +106,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
 
   const registrarLote = async (solicitudId: number, productoId: number) => {
     await http()
-      .post('/api/v1/lotes-producto-terminado')
+      .post('/api/v1/produccion/lotes-producto-terminado')
       .set(auth('produccion'))
       .send({
         codigo_lote: codigo(),
@@ -487,6 +500,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     '%s crea cabecera y detalle con su identidad, fecha y catálogo embebido',
     async (rol) => {
       const codigoCliente = codigo();
+      const diaAntes = diaCalendarioLima();
       const res = await http()
         .post(URL)
         .set(auth(rol))
@@ -504,8 +518,8 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
         solicitado_por_nombre: `Solicitud ${rol} ${MARCA}`,
         fecha_limite: '2026-11-15T00:00:00.000Z',
       });
-      expect(creada.fecha_creacion.slice(0, 10)).toBe(
-        new Date().toISOString().slice(0, 10),
+      expect([diaAntes, diaCalendarioLima()]).toContain(
+        creada.fecha_creacion.slice(0, 10),
       );
       const leida = await obtener(creada.id, rol);
       expect(leida.detalle).toHaveLength(2);
@@ -816,6 +830,8 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       expect((await obtener(solicitud.id)).estado).toBe('rechazado');
       const iniciada = await fijarEstado('en_proceso');
       await cambiar(iniciada.id, 'rechazado', rol).expect(409);
+      // Tener todos los lotes no concede a inventario el permiso de entregar.
+      await registrarLotes(iniciada.id);
       await cambiar(iniciada.id, 'entregado', rol).expect(409);
       expect((await obtener(iniciada.id)).estado).toBe('en_proceso');
     },

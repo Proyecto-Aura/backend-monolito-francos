@@ -27,6 +27,7 @@ export class MovimientoInsumoMapper {
       movimiento.stock_anterior.toNumber(),
       movimiento.stock_resultante.toNumber(),
       movimiento.razon,
+      movimiento.solicitud_insumos_id,
       movimiento.fecha,
       movimiento.created_at,
     );

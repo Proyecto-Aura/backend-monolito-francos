@@ -159,6 +159,20 @@ enum EstadoSolicitudProduccion {
   @@schema("commerce")
 }
 
+// Pendiente: recien creada, produccion la puede rechazar (su "cancelar").
+// En_proceso/Entregado: solo inventario las mueve (espejo de solicitud de
+// produccion con los roles invertidos). Rechazado solo se alcanza desde
+// Pendiente.
+enum EstadoSolicitudInsumos {
+  pendiente
+  en_proceso
+  entregado
+  rechazado
+
+  @@map("estado_solicitud_insumos_enum")
+  @@schema("commerce")
+}
+
 enum OrigenPedido {
   portal
   manual
@@ -340,6 +354,7 @@ model User {
   pedidos                             Pedido[]
   reembolsos_resueltos                Reembolso[]
   solicitudes_produccion              SolicitudProduccion[]
+  solicitudes_insumos                 SolicitudInsumos[]
 
   @@map("user")
   @@schema("persons")
@@ -596,10 +611,10 @@ model Pedido {
   created_at        DateTime     @default(now()) @db.Timestamptz(6)
   updated_at        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
 
-  cliente  Cliente         @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_cliente")
-  user     User?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_user")
-  detalles DetallePedido[]
-  pago     Pago?
+  cliente                        Cliente                       @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_cliente")
+  user                           User?                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pedido_user")
+  detalles                       DetallePedido[]
+  pago                           Pago?
   movimientos_producto_terminado MovimientoProductoTerminado[]
 
   @@index([created_at], map: "idx_pedido_created_at")
@@ -742,7 +757,8 @@ model Insumo {
   created_at    DateTime           @default(now()) @db.Timestamptz(6)
   updated_at    DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
 
-  lotes LoteInsumo[]
+  lotes                      LoteInsumo[]
+  solicitud_insumos_detalles SolicitudInsumosDetalle[]
 
   @@map("insumo")
   @@schema("commerce")
@@ -780,21 +796,26 @@ model LoteInsumo {
 // cantidad es positiva para entrada/salida (la dirección la da "tipo"); para
 // ajuste puede ser positiva o negativa (corrección hacia arriba o abajo).
 model MovimientoInsumo {
-  id               Int                  @id(map: "pk_movimiento_insumo") @default(autoincrement())
-  lote_insumo_id   Int
-  tipo             TipoMovimientoInsumo
-  cantidad         Decimal              @db.Decimal(10, 2)
-  stock_anterior   Decimal              @default(0) @db.Decimal(10, 2)
-  stock_resultante Decimal              @default(0) @db.Decimal(10, 2)
+  id                   Int                  @id(map: "pk_movimiento_insumo") @default(autoincrement())
+  lote_insumo_id       Int
+  tipo                 TipoMovimientoInsumo
+  cantidad             Decimal              @db.Decimal(10, 2)
+  stock_anterior       Decimal              @default(0) @db.Decimal(10, 2)
+  stock_resultante     Decimal              @default(0) @db.Decimal(10, 2)
   // FR-MV-[000]-[YYMMDD]-INS{insumoID}; lo genera el trigger, no la app.
-  codigo           String               @unique(map: "uq_movimiento_insumo_codigo") @default("") @db.VarChar(40)
-  razon            String               @db.VarChar(255)
-  fecha            DateTime             @default(now()) @db.Timestamptz(6)
-  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  codigo               String               @unique(map: "uq_movimiento_insumo_codigo") @default("") @db.VarChar(40)
+  razon                String               @db.VarChar(255)
+  // Solicitud de insumos que originó esta salida (OFT0-264); null si fue un
+  // movimiento manual no ligado a una solicitud.
+  solicitud_insumos_id Int?
+  fecha                DateTime             @default(now()) @db.Timestamptz(6)
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
 
-  lote_insumo LoteInsumo @relation(fields: [lote_insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_insumo_lote")
+  lote_insumo       LoteInsumo        @relation(fields: [lote_insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_insumo_lote")
+  solicitud_insumos SolicitudInsumos? @relation(fields: [solicitud_insumos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_movimiento_insumo_solicitud_insumos")
 
   @@index([lote_insumo_id], map: "idx_movimiento_insumo_lote")
+  @@index([solicitud_insumos_id], map: "idx_movimiento_insumo_solicitud_insumos")
   @@map("movimiento_insumo")
   @@schema("commerce")
 }
@@ -908,9 +929,10 @@ model SolicitudProduccion {
   created_at     DateTime                  @default(now()) @db.Timestamptz(6)
   updated_at     DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
 
-  solicitante User                         @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_user")
-  detalle     SolicitudProduccionDetalle[]
+  solicitante              User                         @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_produccion_user")
+  detalle                  SolicitudProduccionDetalle[]
   lotes_producto_terminado LoteProductoTerminado[]
+  solicitudes_insumos      SolicitudInsumos[]
 
   @@index([solicitado_por], map: "idx_solicitud_produccion_solicitado_por")
   @@map("solicitud_produccion")
@@ -934,6 +956,56 @@ model SolicitudProduccionDetalle {
   @@index([solicitud_produccion_id], map: "idx_solicitud_produccion_detalle_solicitud")
   @@index([producto_terminado_id], map: "idx_solicitud_produccion_detalle_producto_terminado")
   @@map("solicitud_produccion_detalle")
+  @@schema("commerce")
+}
+
+// Pedido de insumos interno (OFT0-264): espejo de solicitud de producción
+// con los roles invertidos — produccion pide, inventario entrega. Opcionalmente
+// ligada a la solicitud de producción que la origina (null si es una
+// reposición suelta, no ligada a una producción puntual). A diferencia de
+// solicitud de producción, "entregado" sí mueve stock: dispara una salida
+// FEFO real por cada línea (ver CambiarEstadoSolicitudInsumosUseCase),
+// trazada en movimiento_insumo.solicitud_insumos_id.
+model SolicitudInsumos {
+  id                      Int                    @id(map: "pk_solicitud_insumos") @default(autoincrement())
+  codigo_solicitud        String                 @unique(map: "uq_solicitud_insumos_codigo") @db.VarChar(50)
+  solicitud_produccion_id Int?
+  estado                  EstadoSolicitudInsumos @default(pendiente)
+  fecha_creacion          DateTime               @db.Date
+  fecha_limite            DateTime?              @db.Date
+  solicitado_por          String                 @db.Uuid
+  created_at              DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
+
+  solicitante          User                      @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_insumos_user")
+  solicitud_produccion SolicitudProduccion?      @relation(fields: [solicitud_produccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_insumos_solicitud_produccion")
+  detalle              SolicitudInsumosDetalle[]
+  movimientos_insumo   MovimientoInsumo[]
+
+  @@index([solicitado_por], map: "idx_solicitud_insumos_solicitado_por")
+  @@index([solicitud_produccion_id], map: "idx_solicitud_insumos_solicitud_produccion")
+  @@map("solicitud_insumos")
+  @@schema("commerce")
+}
+
+// Líneas de una solicitud: qué insumo y cuánto. Editable solo mientras la
+// solicitud está pendiente (se valida en el use-case, no acá). Sin
+// updated_at: a diferencia del detalle de producción, no hay flujo que
+// necesite saber cuándo se editó una línea después de creada.
+model SolicitudInsumosDetalle {
+  id                   Int      @id(map: "pk_solicitud_insumos_detalle") @default(autoincrement())
+  solicitud_insumos_id Int
+  insumo_id            Int
+  cantidad_solicitada  Decimal  @db.Decimal(10, 2)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  solicitud_insumos SolicitudInsumos @relation(fields: [solicitud_insumos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_insumos_detalle_solicitud")
+  insumo            Insumo           @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitud_insumos_detalle_insumo")
+
+  @@unique([solicitud_insumos_id, insumo_id], map: "uq_solicitud_insumos_detalle_solicitud_insumo")
+  @@index([solicitud_insumos_id], map: "idx_solicitud_insumos_detalle_solicitud")
+  @@index([insumo_id], map: "idx_solicitud_insumos_detalle_insumo")
+  @@map("solicitud_insumos_detalle")
   @@schema("commerce")
 }
 

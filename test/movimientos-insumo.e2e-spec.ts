@@ -275,6 +275,34 @@ describe('Movimientos de insumo (e2e)', () => {
       .expect(404);
   });
 
+  it.each([false, true])(
+    'rechaza solicitud_insumos_id externo sin movimientos ni stock parcial (array=%s)',
+    async (array) => {
+      const antes = await prisma.movimientoInsumo.count();
+      const saldo = await prisma.insumo.findUniqueOrThrow({
+        where: { id: insumoId },
+      });
+      const fila = {
+        insumo_id: insumoId,
+        cantidad: 1,
+        razon: MARCA,
+        solicitud_insumos_id: 2147483647,
+      };
+      const res = await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/salida`)
+        .set(auth(inventarioToken))
+        .send(array ? [fila] : fila)
+        .expect(400);
+      expect((res.body as { message: string[] }).message).toContain(
+        'property solicitud_insumos_id should not exist',
+      );
+      expect(await prisma.movimientoInsumo.count()).toBe(antes);
+      expect(
+        await prisma.insumo.findUniqueOrThrow({ where: { id: insumoId } }),
+      ).toEqual(saldo);
+    },
+  );
+
   it('salida reparte FEFO entre lotes (el que vence antes se agota primero) y marca el lote en 0 como agotado', async () => {
     const res = await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/salida`)

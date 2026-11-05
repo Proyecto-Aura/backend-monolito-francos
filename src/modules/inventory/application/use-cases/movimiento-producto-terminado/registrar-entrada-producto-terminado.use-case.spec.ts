@@ -1,11 +1,11 @@
-import { LoteProductoTerminadoEntity } from '../../../domain/entities';
-import { EstadoLoteProductoTerminado } from '../../../domain/enums';
+import { LoteProductoTerminadoEntity } from '../../../../production/domain/entities';
+import { EstadoLoteProductoTerminado } from '../../../../production/domain/enums';
 import { UnidadMedidaPresentacion } from '../../../../catalog/domain/enums';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
-import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
+import { LoteProductoTerminadoRepository } from '../../../../production/domain/repositories/lote-producto-terminado.repository';
 import { MovimientoProductoTerminadoRepository } from '../../../domain/repositories/movimiento-producto-terminado.repository';
 import { RegistrarEntradaProductoTerminadoUseCase } from './registrar-entrada-producto-terminado.use-case';
 

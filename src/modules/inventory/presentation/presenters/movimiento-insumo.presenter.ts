@@ -17,6 +17,7 @@ export class MovimientoInsumoPresenter {
       stock_anterior: movimiento.stock_anterior,
       stock_resultante: movimiento.stock_resultante,
       razon: movimiento.razon,
+      solicitud_insumos_id: movimiento.solicitud_insumos_id,
       fecha: movimiento.fecha,
       created_at: movimiento.created_at,
     };
