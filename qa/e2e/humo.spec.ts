@@ -47,9 +47,21 @@ test.describe('humo: login y catálogo de la tienda', () => {
     await page
       .locator('input[autocomplete="current-password"]')
       .fill('contraseña-incorrecta');
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
 
-    await expect(page.getByRole('alert')).toBeVisible();
+    // Se exige el rechazo real de la API (401, InvalidCredentialsError) y su
+    // mensaje: un 500, un error de red o de CORS también muestran una alerta,
+    // pero con otro texto, y no deben dar verde.
+    const login = page.waitForResponse(
+      (r) =>
+        r.url().includes('/api/v1/auth/login') &&
+        r.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+    expect((await login).status()).toBe(401);
+
+    await expect(page.getByRole('alert')).toContainText(
+      'Credenciales inválidas',
+    );
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 });

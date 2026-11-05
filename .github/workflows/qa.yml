@@ -99,7 +99,8 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: qa-logs-entorno
-          path: |
-            ${{ runner.temp }}/api.log
-            ${{ runner.temp }}/tienda.log
+          # Sube los logs que existan: si falla la migración, todavía no hay
+          # api.log ni tienda.log.
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
           retention-days: 7
