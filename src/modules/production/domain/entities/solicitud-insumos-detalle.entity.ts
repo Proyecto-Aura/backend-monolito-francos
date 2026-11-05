@@ -10,6 +10,11 @@ export class SolicitudInsumosDetalleEntity {
     public readonly insumo_sku: string,
     public readonly insumo_nombre: string,
     public readonly insumo_unidad_medida: UnidadMedidaInsumo,
+    // stock_actual del insumo al momento de leer (no se persiste acá): para
+    // que el front pinte "stock completo/insuficiente" por línea sin tener
+    // que resolver el insumo aparte, mismo criterio que stock_disponible en
+    // PedidoDetalle.
+    public readonly insumo_stock_actual: number,
     public cantidad_solicitada: number,
     public readonly created_at: Date,
   ) {}

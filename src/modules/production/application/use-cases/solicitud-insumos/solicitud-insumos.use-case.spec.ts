@@ -25,7 +25,10 @@ describe('Crear y consultar solicitudes de insumos', () => {
     >(),
     existsByCodigo: jest.fn(),
     findById: jest.fn(),
-    findMany: jest.fn(),
+    findMany: jest.fn<
+      ReturnType<SolicitudInsumosRepository['findMany']>,
+      Parameters<SolicitudInsumosRepository['findMany']>
+    >(),
     updateEstado: jest.fn(),
     updateFechaLimite: jest.fn(),
     getIndicadores: jest.fn(),
@@ -176,6 +179,7 @@ describe('Crear y consultar solicitudes de insumos', () => {
       'INS-10',
       'Harina',
       UnidadMedidaInsumo.KG,
+      100,
       10.25,
       fecha,
     );
@@ -198,7 +202,7 @@ describe('Crear y consultar solicitudes de insumos', () => {
   });
 
   it('propaga paginación, estado, búsqueda y vínculo con rango inclusivo/exclusivo de Lima', async () => {
-    const resultado = { data: [solicitud], total: 1, page: 2, limit: 5 };
+    const resultado = { data: [{ solicitud }], total: 1, page: 2, limit: 5 };
     repo.findMany.mockResolvedValue(resultado);
     const query = {
       page: 2,
@@ -216,6 +220,25 @@ describe('Crear y consultar solicitudes de insumos', () => {
       fecha_hasta: new Date('2026-11-05T00:00:00-05:00'),
     });
   });
+
+  it.each([true, false, undefined])(
+    'propaga conDisponibilidad=%s y conserva el resumen del repositorio',
+    async (conDisponibilidad) => {
+      const resumen = {
+        solicitud,
+        ...(conDisponibilidad ? { disponibilidad: 'parcial' as const } : {}),
+      };
+      const resultado = { data: [resumen], total: 1, page: 1, limit: 10 };
+      repo.findMany.mockResolvedValue(resultado);
+
+      await expect(
+        listar.execute({ page: 1, limit: 10, conDisponibilidad }),
+      ).resolves.toBe(resultado);
+      expect(repo.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ conDisponibilidad }),
+      );
+    },
+  );
 
   it('permite listar sin filtros opcionales', async () => {
     await listar.execute({ page: 1, limit: 10 });

@@ -7,6 +7,7 @@ type PrismaSolicitudInsumosDetalleConInsumo = PrismaSolicitudInsumosDetalle & {
     sku: string;
     nombre: string;
     unidad_medida: string;
+    stock_actual: { toNumber(): number };
   };
 };
 
@@ -21,6 +22,7 @@ export class SolicitudInsumosDetalleMapper {
       detalle.insumo.sku,
       detalle.insumo.nombre,
       detalle.insumo.unidad_medida as UnidadMedidaInsumo,
+      detalle.insumo.stock_actual.toNumber(),
       detalle.cantidad_solicitada.toNumber(),
       detalle.created_at,
     );

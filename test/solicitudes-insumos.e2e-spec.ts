@@ -25,6 +25,7 @@ interface LineaHttp {
   insumo_sku: string;
   insumo_nombre: string;
   insumo_unidad_medida: string;
+  stock_disponible: number;
   cantidad_solicitada: number;
   created_at: string;
 }
@@ -39,6 +40,7 @@ interface SolicitudHttp {
   solicitado_por: string;
   solicitado_por_nombre: string;
   detalle: LineaHttp[];
+  disponibilidad?: 'completo' | 'parcial' | 'sin_stock';
 }
 interface ListaHttp {
   data: SolicitudHttp[];
@@ -1149,5 +1151,83 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       .send({ cantidad_solicitada: 1 })
       .expect(400);
     await http().delete(`${URL}/detalle/${id}`).set(auth()).expect(400);
+  });
+
+  describe('disponibilidad del detalle OFT0-257', () => {
+    it.each([
+      { stocks: [10, 5.5], esperado: 'completo' },
+      { stocks: [10, 4], esperado: 'parcial' },
+      { stocks: [9.99, 5.49], esperado: 'sin_stock' },
+      { stocks: [0, 0], esperado: 'sin_stock' },
+    ])(
+      'detalle y listado con stocks $stocks devuelven $esperado',
+      async ({ stocks, esperado }) => {
+        const ids: number[] = [];
+        for (const [indice, stock] of stocks.entries()) {
+          const insumoId = await nuevoInsumo(`disponibilidad ${indice}`);
+          ids.push(insumoId);
+          if (stock > 0) await lote(insumoId, stock);
+        }
+        const detalle = ids.map((insumo_id, indice) => ({
+          insumo_id,
+          cantidad_solicitada: indice === 0 ? 10 : 5.5,
+        }));
+        const solicitud = await crear('produccion', detalle);
+
+        const respuesta = await obtener(solicitud.id, 'inventario');
+
+        expect(respuesta.disponibilidad).toBe(esperado);
+        expect(respuesta.detalle).toHaveLength(2);
+        detalle.forEach((linea, indice) => {
+          expect(respuesta.detalle).toContainEqual(
+            expect.objectContaining({
+              ...linea,
+              stock_disponible: stocks[indice],
+            }),
+          );
+        });
+
+        const query = { search: solicitud.codigo_solicitud };
+        const conDisponibilidad = await listar(
+          { ...query, conDisponibilidad: 'true' },
+          'inventario',
+        );
+        expect(conDisponibilidad.meta.total).toBe(1);
+        expect(conDisponibilidad.data).toHaveLength(1);
+        expect(conDisponibilidad.data[0]).toEqual(
+          expect.objectContaining({
+            id: solicitud.id,
+            disponibilidad: esperado,
+          }),
+        );
+        expect(conDisponibilidad.data[0]).not.toHaveProperty('solicitud');
+
+        for (const filtro of [
+          query,
+          { ...query, conDisponibilidad: 'false' },
+        ]) {
+          const sinDisponibilidad = await listar(filtro, 'inventario');
+          expect(sinDisponibilidad.meta).toEqual(conDisponibilidad.meta);
+          expect(sinDisponibilidad.data).toHaveLength(1);
+          expect(sinDisponibilidad.data[0]).toEqual(
+            expect.objectContaining({ id: solicitud.id }),
+          );
+          expect(sinDisponibilidad.data[0]).not.toHaveProperty(
+            'disponibilidad',
+          );
+        }
+      },
+    );
+
+    it.each(['1', '0', 'TRUE', 'si', ''])(
+      'rechaza conDisponibilidad no booleano: %j',
+      async (conDisponibilidad) => {
+        await http()
+          .get(URL)
+          .set(auth('inventario'))
+          .query({ conDisponibilidad })
+          .expect(400);
+      },
+    );
   });
 });
