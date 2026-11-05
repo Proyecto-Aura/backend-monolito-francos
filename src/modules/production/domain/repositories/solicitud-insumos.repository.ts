@@ -4,6 +4,7 @@ import {
   CreateSolicitudInsumosParams,
   IndicadoresSolicitudInsumos,
   ListSolicitudInsumosParams,
+  SolicitudInsumosResumen,
 } from './types/solicitud-insumos-repository.types';
 import { PaginatedResult } from '../../../catalog/domain/repositories/types/pagination.types';
 
@@ -15,7 +16,7 @@ export abstract class SolicitudInsumosRepository {
   abstract findById(id: number): Promise<SolicitudInsumosEntity | null>;
   abstract findMany(
     params: ListSolicitudInsumosParams,
-  ): Promise<PaginatedResult<SolicitudInsumosEntity>>;
+  ): Promise<PaginatedResult<SolicitudInsumosResumen>>;
   abstract existsByCodigo(codigo_solicitud: string): Promise<boolean>;
   abstract updateEstado(
     id: number,

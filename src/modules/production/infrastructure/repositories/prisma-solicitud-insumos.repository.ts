@@ -8,8 +8,10 @@ import {
   CreateSolicitudInsumosParams,
   IndicadoresSolicitudInsumos,
   ListSolicitudInsumosParams,
+  SolicitudInsumosResumen,
 } from '../../domain/repositories/types/solicitud-insumos-repository.types';
 import { PaginatedResult } from '../../../catalog/domain/repositories/types/pagination.types';
+import { calcularDisponibilidadInsumos } from '../../application/utils/solicitud-insumos.utils';
 import { SolicitudInsumosMapper } from '../mappers/solicitud-insumos.mapper';
 
 const INCLUDE_SOLICITANTE = {
@@ -68,7 +70,7 @@ export class PrismaSolicitudInsumosRepository implements SolicitudInsumosReposit
 
   async findMany(
     params: ListSolicitudInsumosParams,
-  ): Promise<PaginatedResult<SolicitudInsumosEntity>> {
+  ): Promise<PaginatedResult<SolicitudInsumosResumen>> {
     const where: Prisma.SolicitudInsumosWhereInput = {
       ...(params.estado ? { estado: params.estado } : {}),
       ...(params.solicitado_por
@@ -126,16 +128,43 @@ export class PrismaSolicitudInsumosRepository implements SolicitudInsumosReposit
         where,
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        orderBy: { created_at: 'desc' },
-        include: INCLUDE_SOLICITANTE,
+        // Primero por estado -- Postgres ordena un enum por el orden en que
+        // se declaró el tipo, así que `estado: 'asc'` ya deja pendiente,
+        // luego en_proceso, luego entregado, luego rechazado (ver
+        // EstadoSolicitudInsumos en schema.prisma) -- y dentro de cada
+        // estado, las más recientes primero.
+        orderBy: [{ estado: 'asc' }, { created_at: 'desc' }],
+        include: {
+          ...INCLUDE_SOLICITANTE,
+          // Solo se usa cuando conDisponibilidad=true (vista de inventario),
+          // pero el join es barato (FK indexada) así que se pide siempre
+          // para no complicar el tipo del select con un condicional en
+          // tiempo de ejecución (mismo criterio que PrismaPedidoRepository).
+          detalle: {
+            select: {
+              cantidad_solicitada: true,
+              insumo: { select: { stock_actual: true } },
+            },
+          },
+        },
       }),
       this.prisma.solicitudInsumos.count({ where }),
     ]);
 
     return {
-      data: solicitudes.map((solicitud) =>
-        SolicitudInsumosMapper.toDomain(solicitud),
-      ),
+      data: solicitudes.map((solicitud) => ({
+        solicitud: SolicitudInsumosMapper.toDomain(solicitud),
+        ...(params.conDisponibilidad
+          ? {
+              disponibilidad: calcularDisponibilidadInsumos(
+                solicitud.detalle.map((linea) => ({
+                  cantidad_solicitada: linea.cantidad_solicitada.toNumber(),
+                  stock_disponible: linea.insumo.stock_actual.toNumber(),
+                })),
+              ),
+            }
+          : {}),
+      })),
       total,
       page: params.page,
       limit: params.limit,

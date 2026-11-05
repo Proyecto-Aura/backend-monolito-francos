@@ -122,7 +122,12 @@ export class PrismaSolicitudProduccionRepository implements SolicitudProduccionR
         where,
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        orderBy: { created_at: 'desc' },
+        // Primero por estado -- Postgres ordena un enum por el orden en que
+        // se declaró el tipo, así que `estado: 'asc'` ya deja pendiente,
+        // luego en_proceso, luego entregado, luego rechazado (ver
+        // EstadoSolicitudProduccion en schema.prisma) -- y dentro de cada
+        // estado, las más recientes primero.
+        orderBy: [{ estado: 'asc' }, { created_at: 'desc' }],
         include: INCLUDE_SOLICITANTE,
       }),
       this.prisma.solicitudProduccion.count({ where }),

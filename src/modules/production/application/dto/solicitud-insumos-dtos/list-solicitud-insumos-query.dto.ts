@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsISO8601,
@@ -9,11 +10,18 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { EstadoSolicitudInsumos } from '../../../domain/enums';
 import { PaginationQueryDto } from '../../../../catalog/application/dto/common/pagination-query-dto';
 
 const FECHA_DIA = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+const toBoolean = ({ value }: { value: unknown }) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (typeof value === 'boolean') return value;
+  return String(value);
+};
 
 export class ListSolicitudInsumosQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
@@ -69,4 +77,14 @@ export class ListSolicitudInsumosQueryDto extends PaginationQueryDto {
     message: 'fecha_hasta debe tener el formato YYYY-MM-DD',
   })
   fecha_hasta?: string;
+
+  @ApiPropertyOptional({
+    type: Boolean,
+    description:
+      'Incluye "disponibilidad" (completo/parcial/sin_stock) por solicitud, calculado contra el stock actual de cada insumo del detalle. Vista de inventario ("solicitudes de insumos por entregar").',
+  })
+  @IsOptional()
+  @Transform(toBoolean)
+  @IsBoolean()
+  conDisponibilidad?: boolean;
 }

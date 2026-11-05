@@ -50,6 +50,7 @@ describe('Detalle de solicitudes de insumos', () => {
     'INS-10',
     'Harina',
     UnidadMedidaInsumo.KG,
+    100,
     50,
     fecha,
   );

@@ -1,5 +1,12 @@
 import { EstadoSolicitudInsumos } from '../../enums';
 import { PaginationParams } from '../../../../catalog/domain/repositories/types/pagination.types';
+import { SolicitudInsumosEntity } from '../../entities';
+
+// Vista de inventario ("solicitudes de insumos por entregar"): completo si
+// TODAS las líneas alcanzan, sin_stock si NINGUNA alcanza, parcial en
+// cualquier otro caso. Mismo criterio que DisponibilidadPedido.
+export type DisponibilidadSolicitudInsumos =
+  'completo' | 'parcial' | 'sin_stock';
 
 export interface CreateSolicitudInsumosParams {
   codigo_solicitud: string;
@@ -23,6 +30,15 @@ export interface ListSolicitudInsumosParams extends PaginationParams {
   solicitud_produccion_id?: number;
   fecha_desde?: Date;
   fecha_hasta?: Date;
+  // Agrega `disponibilidad` a cada fila del listado (ver SolicitudInsumosResumen).
+  conDisponibilidad?: boolean;
+}
+
+// Fila del listado. `disponibilidad` solo viene si se pidió con
+// conDisponibilidad (vista de inventario), mismo criterio que PedidoResumen.
+export interface SolicitudInsumosResumen {
+  solicitud: SolicitudInsumosEntity;
+  disponibilidad?: DisponibilidadSolicitudInsumos;
 }
 
 export interface IndicadoresSolicitudInsumos {

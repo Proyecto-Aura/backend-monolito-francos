@@ -7,7 +7,14 @@ import { AgregarDetalleLineaInsumoParams } from '../../domain/repositories/types
 import { SolicitudInsumosDetalleMapper } from '../mappers/solicitud-insumos-detalle.mapper';
 
 const INCLUDE_INSUMO = {
-  insumo: { select: { sku: true, nombre: true, unidad_medida: true } },
+  insumo: {
+    select: {
+      sku: true,
+      nombre: true,
+      unidad_medida: true,
+      stock_actual: true,
+    },
+  },
 } satisfies Prisma.SolicitudInsumosDetalleInclude;
 
 @Injectable()
