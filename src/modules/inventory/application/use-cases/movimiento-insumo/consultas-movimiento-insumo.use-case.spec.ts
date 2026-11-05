@@ -31,6 +31,7 @@ describe('Consultas de movimientos de insumo', () => {
     60,
     40,
     'Consumo en producción',
+    null,
     fecha,
     fecha,
   );

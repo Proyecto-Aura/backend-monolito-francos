@@ -1,12 +1,13 @@
 import { LoteInsumo as PrismaLoteInsumo } from '@prisma/client';
 import { LoteInsumoEntity } from '../../domain/entities';
 import { EstadoLoteInsumo } from '../../domain/enums';
+import { DIAS_POR_VENCER } from '../../../../common/constants/lotes.constants';
+export { DIAS_POR_VENCER } from '../../../../common/constants/lotes.constants';
 
 // Ventana de alerta temprana para "por_vencer": un lote activo entra acá
 // cuando le quedan DIAS_POR_VENCER días o menos para su fecha_vencimiento
 // (y todavía no venció). Mismo valor que usa el filtro `estado` del listado
 // (PrismaLoteInsumoRepository) para que ambos lados calculen lo mismo.
-export const DIAS_POR_VENCER = 15;
 
 export class LoteInsumoMapper {
   // 'vencido' y 'por_vencer' no se persisten en la columna estado (no hay

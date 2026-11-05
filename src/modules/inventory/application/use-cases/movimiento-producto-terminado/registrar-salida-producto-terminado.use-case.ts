@@ -5,7 +5,7 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
-import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
+import { LoteProductoTerminadoRepository } from '../../../../production/domain/repositories/lote-producto-terminado.repository';
 import { MovimientoProductoTerminadoRepository } from '../../../domain/repositories/movimiento-producto-terminado.repository';
 import { ProductoTerminadoRepository } from '../../../domain/repositories/producto-terminado.repository';
 import { CreateMovimientoProductoTerminadoParams } from '../../../domain/repositories/types/movimiento-producto-terminado-repository.types';

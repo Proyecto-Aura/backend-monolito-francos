@@ -20,6 +20,7 @@ export class MovimientoInsumoEntity {
     public readonly stock_anterior: number,
     public readonly stock_resultante: number,
     public readonly razon: string,
+    public readonly solicitud_insumos_id: number | null,
     public readonly fecha: Date,
     public readonly created_at: Date,
   ) {}

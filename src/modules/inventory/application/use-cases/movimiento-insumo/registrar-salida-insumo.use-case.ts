@@ -79,6 +79,7 @@ export class RegistrarSalidaInsumoUseCase {
           tipo: TipoMovimientoInsumo.SALIDA,
           cantidad: cantidadATomar,
           razon: dto.razon,
+          solicitud_insumos_id: dto.solicitud_insumos_id,
         });
         reservadoPorLote.set(
           lote.id,

@@ -8,7 +8,7 @@ import { PrismaService } from '../src/infrastructure/database/prisma/prisma.serv
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 
 const MARCA = 'E2E263';
-const URL = '/api/v1/lotes-producto-terminado';
+const URL = '/api/v1/produccion/lotes-producto-terminado';
 const ROLES = [
   'admin',
   'produccion',
@@ -254,7 +254,7 @@ describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
 
   it('vincula el lote a una solicitud existente y conserva el vínculo al leerlo', async () => {
     const solicitudRes = await http()
-      .post('/api/v1/solicitudes-produccion')
+      .post('/api/v1/produccion/solicitudes')
       .set(auth('admin'))
       .send({
         codigo: `${MARCA}-SOL-${++secuencia}`,
