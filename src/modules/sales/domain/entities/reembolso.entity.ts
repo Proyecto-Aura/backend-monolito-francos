@@ -15,6 +15,7 @@ export class ReembolsoEntity {
     public resuelto_por: string | null,
     public fecha_solicitud: Date,
     public fecha_resolucion: Date | null,
+    public fecha_reembolso: Date | null,
     public readonly created_at: Date,
     public updated_at: Date,
   ) {}

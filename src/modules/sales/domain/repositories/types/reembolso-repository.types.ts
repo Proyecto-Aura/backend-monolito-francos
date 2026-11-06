@@ -36,6 +36,7 @@ export interface CambioEstadoReembolso {
   motivo_rechazo?: string;
   resuelto_por?: string;
   fecha_resolucion?: Date;
+  fecha_reembolso?: Date;
 }
 
 export interface NotificacionCliente {

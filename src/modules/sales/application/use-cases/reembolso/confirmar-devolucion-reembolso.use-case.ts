@@ -48,7 +48,7 @@ export class ConfirmarDevolucionReembolsoUseCase {
     const cambiado = await this.reembolsoRepository.cambiarEstado(
       id,
       EstadoReembolso.APROBADO,
-      { estado: EstadoReembolso.REEMBOLSADO },
+      { estado: EstadoReembolso.REEMBOLSADO, fecha_reembolso: new Date() },
       {
         tipo: TipoNotificacionReembolso.PROCESADO,
         titulo: 'Reembolso procesado',

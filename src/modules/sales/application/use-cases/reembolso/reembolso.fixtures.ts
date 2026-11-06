@@ -31,6 +31,7 @@ export const makeSolicitud = (
     null,
     new Date('2026-10-17T15:00:00.000Z'),
     null,
+    null,
     new Date('2026-10-17T15:00:00.000Z'),
     new Date('2026-10-17T15:00:00.000Z'),
   ),

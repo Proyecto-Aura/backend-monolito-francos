@@ -18,6 +18,7 @@ export class ReembolsoMapper {
       reembolso.resuelto_por,
       reembolso.fecha_solicitud,
       reembolso.fecha_resolucion,
+      reembolso.fecha_reembolso,
       reembolso.created_at,
       reembolso.updated_at,
     );

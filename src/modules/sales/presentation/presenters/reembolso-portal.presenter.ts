@@ -25,6 +25,7 @@ export class ReembolsoPortalPresenter {
       descripcion: reembolso.descripcion,
       fecha_solicitud: reembolso.fecha_solicitud,
       fecha_resolucion: reembolso.fecha_resolucion,
+      fecha_reembolso: reembolso.fecha_reembolso,
     };
   }
 

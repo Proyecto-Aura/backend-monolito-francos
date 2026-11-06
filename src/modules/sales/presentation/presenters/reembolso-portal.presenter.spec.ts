@@ -33,4 +33,19 @@ describe('ReembolsoPortalPresenter (HU-B-014)', () => {
     expect(http.motivo).toBe('Cobro duplicado');
     expect(http.descripcion).toBeNull();
   });
+
+  it('una solicitud sin devolución confirmada trae fecha_reembolso en null', () => {
+    const http = ReembolsoPortalPresenter.resumenToHttp(makeSolicitud());
+
+    expect(http.fecha_reembolso).toBeNull();
+  });
+
+  it('una solicitud reembolsada trae la fecha de la devolución', () => {
+    const solicitud = makeSolicitud();
+    solicitud.reembolso.fecha_reembolso = new Date('2026-11-03T09:30:00.000Z');
+
+    const http = ReembolsoPortalPresenter.resumenToHttp(solicitud);
+
+    expect(http.fecha_reembolso).toEqual(new Date('2026-11-03T09:30:00.000Z'));
+  });
 });
