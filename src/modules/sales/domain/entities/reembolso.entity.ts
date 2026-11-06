@@ -7,6 +7,8 @@ export class ReembolsoEntity {
     public pago_id: number,
     public monto: number,
     public motivo_cliente: string,
+    public motivo: string | null,
+    public descripcion: string | null,
     public evidencia_key: string | null,
     public estado: EstadoReembolso,
     public motivo_rechazo: string | null,

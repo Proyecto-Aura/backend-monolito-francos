@@ -7,6 +7,8 @@ export const makeSolicitud = (
     estado?: EstadoReembolso;
     evidencia_key?: string | null;
     motivo_cliente?: string;
+    motivo?: string | null;
+    descripcion?: string | null;
     metodo_pago?: MetodoPago;
   } = {},
 ): ReembolsoConPedido => ({
@@ -17,6 +19,10 @@ export const makeSolicitud = (
     249,
     overrides.motivo_cliente ??
       'Entrega incompleta: faltaron 4 packs de canchita serrana.',
+    overrides.motivo === undefined ? 'Entrega incompleta' : overrides.motivo,
+    overrides.descripcion === undefined
+      ? 'faltaron 4 packs de canchita serrana.'
+      : overrides.descripcion,
     overrides.evidencia_key === undefined
       ? 'reembolsos/SOL-000003/acta-recepcion.pdf'
       : overrides.evidencia_key,

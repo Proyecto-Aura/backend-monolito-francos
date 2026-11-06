@@ -101,6 +101,8 @@ describe('SolicitarReembolsoUseCase (HU-B-014)', () => {
       monto: 249.9,
       motivo_cliente:
         'Producto en mal estado: Llegaron 4 packs con la bolsa rota.',
+      motivo: 'Producto en mal estado',
+      descripcion: 'Llegaron 4 packs con la bolsa rota.',
       evidencia_key: KEY,
     });
     expect(urlDescarga).toHaveBeenCalledWith(KEY);

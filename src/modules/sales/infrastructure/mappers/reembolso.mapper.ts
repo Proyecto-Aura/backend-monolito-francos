@@ -10,6 +10,8 @@ export class ReembolsoMapper {
       reembolso.pago_id,
       reembolso.monto.toNumber(),
       reembolso.motivo_cliente,
+      reembolso.motivo,
+      reembolso.descripcion,
       reembolso.evidencia_key,
       reembolso.estado as EstadoReembolso,
       reembolso.motivo_rechazo,

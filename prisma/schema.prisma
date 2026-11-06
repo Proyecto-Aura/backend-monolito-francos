@@ -692,6 +692,9 @@ model Reembolso {
   pago_id          Int             @unique(map: "uq_reembolso_pago")
   monto            Decimal         @db.Decimal(10, 2)
   motivo_cliente   String          @db.Text
+  // HU-B-014: el motivo y la descripción que escribió el cliente, por separado.
+  motivo           String?         @db.VarChar(150)
+  descripcion      String?         @db.Text
   evidencia_key    String?         @db.VarChar(255)
   estado           EstadoReembolso @default(pendiente)
   motivo_rechazo   String?         @db.Text

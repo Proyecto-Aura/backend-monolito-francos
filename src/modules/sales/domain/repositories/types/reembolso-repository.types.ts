@@ -66,6 +66,8 @@ export interface CrearSolicitudReembolsoParams extends CodigoReembolsoReservado 
   pago_id: number;
   monto: number;
   motivo_cliente: string;
+  motivo: string;
+  descripcion: string;
   evidencia_key: string;
 }
 
