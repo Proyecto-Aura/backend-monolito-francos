@@ -692,6 +692,9 @@ model Reembolso {
   pago_id          Int             @unique(map: "uq_reembolso_pago")
   monto            Decimal         @db.Decimal(10, 2)
   motivo_cliente   String          @db.Text
+  // HU-B-014: el motivo y la descripción que escribió el cliente, por separado.
+  motivo           String?         @db.VarChar(150)
+  descripcion      String?         @db.Text
   evidencia_key    String?         @db.VarChar(255)
   estado           EstadoReembolso @default(pendiente)
   motivo_rechazo   String?         @db.Text
@@ -699,6 +702,8 @@ model Reembolso {
   resuelto_por     String?         @db.Uuid
   fecha_solicitud  DateTime        @default(now()) @db.Timestamptz(6)
   fecha_resolucion DateTime?       @db.Timestamptz(6)
+  // Cuando se confirmó la devolución del dinero (estado reembolsado).
+  fecha_reembolso  DateTime?       @db.Timestamptz(6)
   created_at       DateTime        @default(now()) @db.Timestamptz(6)
   updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
 

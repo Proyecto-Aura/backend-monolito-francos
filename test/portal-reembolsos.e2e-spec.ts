@@ -108,6 +108,8 @@ interface SolicitudBody {
   estado: string;
   fecha_solicitud: string;
   fecha_resolucion: string | null;
+  motivo: string | null;
+  descripcion: string | null;
   motivo_cliente: string;
   motivo_rechazo: string | null;
   evidencia: { nombre: string; url: string } | null;
@@ -557,6 +559,8 @@ describe('Solicitar reembolso desde el portal (e2e, HU-B-014)', () => {
         pedido: { id: pedidos.entregado, codigo: `${PREFIJO_PEDIDO}1` },
         monto: 170,
         estado: 'pendiente',
+        motivo: MOTIVO,
+        descripcion: DESCRIPCION,
         motivo_cliente: `${MOTIVO}: ${DESCRIPCION}`,
         motivo_rechazo: null,
         fecha_resolucion: null,

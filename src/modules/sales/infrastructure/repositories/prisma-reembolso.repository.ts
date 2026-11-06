@@ -235,6 +235,8 @@ export class PrismaReembolsoRepository implements ReembolsoRepository {
           pago_id: params.pago_id,
           monto: params.monto,
           motivo_cliente: params.motivo_cliente,
+          motivo: params.motivo,
+          descripcion: params.descripcion,
           evidencia_key: params.evidencia_key,
           estado: EstadoReembolso.PENDIENTE,
         },

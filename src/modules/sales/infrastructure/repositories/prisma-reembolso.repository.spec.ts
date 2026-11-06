@@ -21,6 +21,8 @@ describe('PrismaReembolsoRepository (portal del cliente)', () => {
     pago_id: 5,
     monto: 249.9,
     motivo_cliente: 'Producto en mal estado: bolsa rota en 4 packs.',
+    motivo: 'Producto en mal estado',
+    descripcion: 'bolsa rota en 4 packs.',
     evidencia_key: 'reembolsos/SOL-000042/acta.pdf',
   };
 
