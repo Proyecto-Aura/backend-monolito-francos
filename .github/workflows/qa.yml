@@ -1,0 +1,104 @@
+# Pipeline de QA. Es informativo: no es un check requerido de develop hasta que
+# el equipo lo acuerde. No reemplaza ni modifica ci.yml.
+#   - Jobs con prefijo qa- (nunca test-e2e ni security, que son los de ci.yml).
+#   - Grupo de concurrencia propio, para no cancelar corridas de ci.yml.
+#   - Sin workflow_call: cd.yml no lo invoca y no puede frenar un despliegue.
+#   - Todo corre en el runner: base, API y tienda efímeras. Nunca toca AWS.
+name: QA
+
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      tienda-ref:
+        description: Rama de frontend-cliente-angular que se prueba
+        required: false
+        default: develop
+
+concurrency:
+  group: qa-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PORT: 3000
+  DATABASE_URL: postgresql://qa:qa@localhost:5432/francos_qa
+  JWT_SECRET: qa-only-not-a-real-secret
+  FRONTEND_STORE_URL: http://localhost:4200
+  FRONTEND_PORTAL_URL: http://localhost:4201
+  SMTP_HOST: localhost
+  SMTP_PORT: 1025
+  SMTP_USER: qa
+  SMTP_PASS: qa
+  SMTP_FROM: qa@francos.test
+  S3_BUCKET_DOCS: francos-docs-qa
+  S3_BUCKET_MEDIA: francos-media-qa
+  # Datos demo del seed: productos visibles en la tienda y reembolsos de prueba.
+  SEED_DEMO: 'true'
+  # Pasarela simulada: QA nunca cobra con Culqi.
+  CULQI_SIMULADO: 'true'
+
+jobs:
+  qa-e2e:
+    name: qa-e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_USER: qa
+          POSTGRES_PASSWORD: qa
+          POSTGRES_DB: francos_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qa -d francos_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Descargar backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Levantar entorno QA
+        uses: ./.github/actions/qa-entorno
+        with:
+          tienda-ref: ${{ inputs.tienda-ref || 'develop' }}
+
+      - name: Instalar Playwright
+        working-directory: qa
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Pruebas E2E
+        working-directory: qa
+        run: npm run test:e2e
+
+      - name: Subir reporte de Playwright
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qa-playwright-report
+          path: |
+            qa/playwright-report/
+            qa/test-results/
+          retention-days: 7
+
+      - name: Subir logs del entorno
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qa-logs-entorno
+          # Sube los logs que existan: si falla la migración, todavía no hay
+          # api.log ni tienda.log.
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
+          retention-days: 7
