@@ -14,7 +14,6 @@ export default defineConfig({
   forbidOnly: enCI,
   // Un reintento en CI para que el reporte distinga "flaky" de "roto", pero una
   // prueba flaky deja el job en rojo: no se esconde con un reintento.
-  // Las pruebas inestables conocidas se aíslan con la etiqueta @quarantine.
   retries: enCI ? 1 : 0,
   failOnFlakyTests: enCI,
   workers: enCI ? 2 : undefined,

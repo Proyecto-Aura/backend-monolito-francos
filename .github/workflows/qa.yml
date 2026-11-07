@@ -40,8 +40,6 @@ env:
   SEED_DEMO: 'true'
   # Pasarela simulada: QA nunca cobra con Culqi.
   CULQI_SIMULADO: 'true'
-  # La prueba de carga (paso 2) supera el límite de 60/min del catálogo público.
-  CATALOGO_PUBLICO_RATE_LIMIT: 100000
 
 jobs:
   qa-e2e:
