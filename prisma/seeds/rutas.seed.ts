@@ -206,6 +206,14 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'folder-open',
     parent: 'gestion-estrategica-ti',
   },
+  // --- Despachos (HU-A-023) ---
+  {
+    nombre: 'despacho-pedidos',
+    etiqueta: 'Despachos',
+    icono: 'truck',
+    parent: 'inventario',
+  },
+
   // --- Producción ---
   // Menú dedicado al rol "produccion": duplica (con nombre propio, misma
   // etiqueta) las rutas de solicitudes que ya existen bajo Inventario, para
