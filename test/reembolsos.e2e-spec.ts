@@ -575,6 +575,11 @@ describe('Reembolsos (e2e)', () => {
       expect((response.body as unknown as ReembolsoBody).estado).toBe(
         'reembolsado',
       );
+      const guardada = await prisma.reembolso.findUniqueOrThrow({
+        where: { id: ids.conEvidencia },
+      });
+      expect(guardada.fecha_reembolso).toBeInstanceOf(Date);
+      expect(guardada.fecha_resolucion).toBeInstanceOf(Date);
 
       const tipos = (await notificacionesDe(ids.conEvidencia)).map(
         (n) => n.tipo,

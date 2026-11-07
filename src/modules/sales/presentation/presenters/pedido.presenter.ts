@@ -2,16 +2,50 @@ import { PaginatedResult } from '../../domain/repositories/types/pagination.type
 import {
   PedidoDetalle,
   PedidoResumen,
+  PedidoResumenPortal,
 } from '../../domain/repositories/types/pedido-repository.types';
+import { calcularDisponibilidad } from '../../application/utils/pedido.utils';
 
 export class PedidoPresenter {
-  // Fila del listado (RF-A030).
+  static resumenPortalToHttp({
+    pedido,
+    metodo_pago,
+    reembolso,
+  }: PedidoResumenPortal) {
+    return {
+      id: pedido.id,
+      codigo: pedido.codigo,
+      estado: pedido.estado,
+      tipo_entrega: pedido.tipo_entrega,
+      total: pedido.total,
+      metodo_pago,
+      fecha_entrega: pedido.fecha_entrega,
+      created_at: pedido.created_at,
+      reembolso,
+    };
+  }
+
+  static paginatedPortalToHttp(result: PaginatedResult<PedidoResumenPortal>) {
+    return {
+      data: result.data.map((resumen) => this.resumenPortalToHttp(resumen)),
+      meta: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        total_pages: Math.ceil(result.total / result.limit),
+      },
+    };
+  }
+
+  // Fila del listado (RF-A030). `disponibilidad` solo viene si el listado se
+  // pidió con conDisponibilidad (vista de inventario, "Pedidos por preparar").
   static resumenToHttp({
     pedido,
     cliente_nombre,
     metodo_pago,
     cantidad_productos,
     cantidad_unidades,
+    disponibilidad,
   }: PedidoResumen) {
     return {
       id: pedido.id,
@@ -26,6 +60,7 @@ export class PedidoPresenter {
       unidades: cantidad_unidades,
       fecha_entrega: pedido.fecha_entrega,
       created_at: pedido.created_at,
+      ...(disponibilidad ? { disponibilidad } : {}),
     };
   }
 
@@ -98,11 +133,7 @@ export class PedidoPresenter {
     return {
       ...base,
       items,
-      disponibilidad: items.every(
-        (item) => item.stock_disponible >= item.cantidad,
-      )
-        ? 'completo'
-        : 'insuficiente',
+      disponibilidad: calcularDisponibilidad(items),
     };
   }
 }

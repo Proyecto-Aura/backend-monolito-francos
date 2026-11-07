@@ -27,11 +27,13 @@ interface PedidoHttp {
   cliente: { id: string; nombre: string };
   productos: number;
   unidades: number;
+  disponibilidad?: 'completo' | 'parcial' | 'sin_stock';
   items: {
     producto_presentacion_id: number;
     cantidad: number;
     producto: string;
     sku: string;
+    stock_disponible: number;
   }[];
   pago: { metodo_pago: string; monto: number } | null;
 }
@@ -136,6 +138,9 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
       select: { id: true },
     });
     const ids = pedidos.map((p) => p.id);
+    await prisma.movimientoProductoTerminado.deleteMany({
+      where: { pedido_id: { in: ids } },
+    });
     await prisma.pago.deleteMany({ where: { pedido_id: { in: ids } } });
     await prisma.detallePedido.deleteMany({
       where: { pedido_id: { in: ids } },
@@ -539,6 +544,8 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
       include: { lote_producto_terminado: true },
     });
     expect(movimientos).toHaveLength(2);
+    for (const movimiento of movimientos)
+      expect(movimiento.pedido_id).toBe(pedido.id);
     for (const [i, producto_terminado_id] of productosTerminados.entries()) {
       const salida = movimientos.find(
         (m) =>
@@ -716,5 +723,258 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
         })
       ).data.map((p) => p.id),
     ).toEqual([pedidos[1]]);
+  });
+
+  it('conserva el pedido_id en todas las salidas al repartir FEFO entre lotes y pedidos', async () => {
+    const pedido = await sembrar(EstadoPedido.EN_PREPARACION);
+    const otro = await sembrar(EstadoPedido.EN_PREPARACION);
+    const loteA = await prisma.loteProductoTerminado.findFirstOrThrow({
+      where: { producto_terminado_id: productosTerminados[0] },
+    });
+    const vencimiento = new Date();
+    vencimiento.setDate(vencimiento.getDate() + 2);
+    const loteB = await prisma.loteProductoTerminado.create({
+      data: {
+        producto_terminado_id: productosTerminados[0],
+        codigo_lote: MARCA + '-traza-' + pedido.id,
+        fecha_produccion: new Date(),
+        fecha_vencimiento: vencimiento,
+        cantidad_inicial: 2,
+        cantidad_actual: 2,
+      },
+    });
+    await patch(
+      pedido.id,
+      'pendiente-entrega',
+      'inventario',
+      itemsPreparados(),
+    ).expect(200);
+    await patch(
+      otro.id,
+      'pendiente-entrega',
+      'inventario',
+      itemsPreparados(),
+    ).expect(200);
+    const salidas = await prisma.movimientoProductoTerminado.findMany({
+      where: { pedido_id: { in: [pedido.id, otro.id] }, tipo: 'salida' },
+      include: { lote_producto_terminado: true },
+    });
+    const primeras = salidas.filter((m) => m.pedido_id === pedido.id);
+    const otras = salidas.filter((m) => m.pedido_id === otro.id);
+    expect(primeras).toHaveLength(3);
+    expect(
+      primeras
+        .find((m) => m.lote_producto_terminado_id === loteB.id)
+        ?.cantidad.toNumber(),
+    ).toBe(2);
+    expect(
+      primeras
+        .find((m) => m.lote_producto_terminado_id === loteA.id)
+        ?.cantidad.toNumber(),
+    ).toBe(1);
+    expect(otras).toHaveLength(2);
+    expect(otras.some((m) => m.lote_producto_terminado_id === loteB.id)).toBe(
+      false,
+    );
+    for (const movimientos of [primeras, otras]) {
+      for (const [i, producto_terminado_id] of productosTerminados.entries()) {
+        const cantidad = movimientos
+          .filter(
+            (m) =>
+              m.lote_producto_terminado.producto_terminado_id ===
+              producto_terminado_id,
+          )
+          .reduce((total, m) => total + m.cantidad.toNumber(), 0);
+        expect(cantidad).toBe(i === 0 ? 3 : 5);
+      }
+    }
+  });
+
+  describe('Disponibilidad en las filas del listado', () => {
+    it('devuelve completo cuando todos los items tienen stock, incluyendo igualdad exacta', async () => {
+      const pedido = await sembrar(EstadoPedido.EN_ESPERA_INVENTARIO);
+      for (const producto_presentacion_id of presentaciones) {
+        const producto = await prisma.productoTerminado.findUniqueOrThrow({
+          where: { producto_presentacion_id },
+        });
+        const cantidad = producto.stock_actual.toNumber();
+        expect(cantidad).toBeGreaterThan(0);
+        await prisma.detallePedido.updateMany({
+          where: { pedido_id: pedido.id, producto_presentacion_id },
+          data: { cantidad },
+        });
+      }
+      const resultado = await listar({ search: pedido.codigo });
+      expect(resultado.data).toHaveLength(1);
+      expect(resultado.data[0]).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'completo',
+      });
+      // Se resuelve en la fila, sin solicitar el detalle del pedido.
+      expect(resultado.data[0]).not.toHaveProperty('items');
+      const detalle = await http()
+        .get(`${URL}/${pedido.id}`)
+        .set(auth())
+        .expect(200);
+      expect(detalle.body).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'completo',
+      });
+    });
+
+    it.each([true, false])(
+      'devuelve parcial si un item alcanza y el otro no tiene stock (registro existente=%s)',
+      async (registroExistente) => {
+        const pedido = await sembrar(EstadoPedido.EN_ESPERA_INVENTARIO);
+        const original = await prisma.productoPresentacion.findUniqueOrThrow({
+          where: { id: presentaciones[0] },
+        });
+        const presentacion = await prisma.presentacion.create({
+          data: {
+            cantidad: 262000 + secuencia,
+            unidad_medida: 'gr',
+            descripcion: MARCA,
+          },
+        });
+        const pp = await prisma.productoPresentacion.create({
+          data: {
+            producto_id: original.producto_id,
+            presentacion_id: presentacion.id,
+            sku: `${MARCA}-sin-stock-${secuencia}`,
+            precio_unitario: 10,
+          },
+        });
+        if (registroExistente) {
+          await prisma.productoTerminado.create({
+            data: { producto_presentacion_id: pp.id, stock_actual: 0 },
+          });
+        }
+        await prisma.detallePedido.updateMany({
+          where: {
+            pedido_id: pedido.id,
+            producto_presentacion_id: presentaciones[1],
+          },
+          data: { producto_presentacion_id: pp.id },
+        });
+        const conStock = await prisma.productoTerminado.findUniqueOrThrow({
+          where: { producto_presentacion_id: presentaciones[0] },
+        });
+        expect(conStock.stock_actual.toNumber()).toBeGreaterThanOrEqual(3);
+        const resultado = await listar({ search: pedido.codigo });
+        expect(resultado.data).toHaveLength(1);
+        expect(resultado.data[0]).toMatchObject({
+          id: pedido.id,
+          disponibilidad: 'parcial',
+        });
+        const detalle = await http()
+          .get(`${URL}/${pedido.id}`)
+          .set(auth())
+          .expect(200);
+        expect(detalle.body).toMatchObject({
+          id: pedido.id,
+          disponibilidad: 'parcial',
+        });
+      },
+    );
+
+    it('devuelve sin_stock cuando ninguno alcanza aunque todos tengan stock positivo, en listado y detalle', async () => {
+      const pedido = await sembrar(EstadoPedido.EN_ESPERA_INVENTARIO);
+      for (const producto_presentacion_id of presentaciones) {
+        const producto = await prisma.productoTerminado.findUniqueOrThrow({
+          where: { producto_presentacion_id },
+        });
+        const stock = producto.stock_actual.toNumber();
+        expect(stock).toBeGreaterThan(0);
+        await prisma.detallePedido.updateMany({
+          where: { pedido_id: pedido.id, producto_presentacion_id },
+          data: { cantidad: stock + 1 },
+        });
+      }
+      const lista = await listar({ search: pedido.codigo });
+      expect(lista.data).toHaveLength(1);
+      expect(lista.data[0]).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'sin_stock',
+      });
+      const detalle = await http()
+        .get(`${URL}/${pedido.id}`)
+        .set(auth())
+        .expect(200);
+      expect(detalle.body).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'sin_stock',
+      });
+    });
+
+    it('devuelve sin_stock si los dos items tienen cero disponible, incluyendo producto terminado ausente', async () => {
+      const pedido = await sembrar(EstadoPedido.EN_ESPERA_INVENTARIO);
+      const original = await prisma.productoPresentacion.findUniqueOrThrow({
+        where: { id: presentaciones[0] },
+      });
+      for (const [i, producto_presentacion_id] of presentaciones.entries()) {
+        const presentacion = await prisma.presentacion.create({
+          data: {
+            cantidad: 263000 + secuencia + i,
+            unidad_medida: 'gr',
+            descripcion: MARCA,
+          },
+        });
+        const pp = await prisma.productoPresentacion.create({
+          data: {
+            producto_id: original.producto_id,
+            presentacion_id: presentacion.id,
+            sku: `${MARCA}-cero-${secuencia}-${i}`,
+            precio_unitario: 10,
+          },
+        });
+        if (i === 0)
+          await prisma.productoTerminado.create({
+            data: { producto_presentacion_id: pp.id, stock_actual: 0 },
+          });
+        await prisma.detallePedido.updateMany({
+          where: { pedido_id: pedido.id, producto_presentacion_id },
+          data: { producto_presentacion_id: pp.id },
+        });
+      }
+      const lista = await listar({ search: pedido.codigo });
+      expect(lista.data).toHaveLength(1);
+      expect(lista.data[0]).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'sin_stock',
+      });
+      const detalle = await http()
+        .get(`${URL}/${pedido.id}`)
+        .set(auth())
+        .expect(200);
+      expect(detalle.body).toMatchObject({
+        id: pedido.id,
+        disponibilidad: 'sin_stock',
+      });
+      expect((detalle.body as PedidoHttp).items).toHaveLength(2);
+    });
+
+    it.each(['/api/v1/pedidos', '/api/v1/despacho/pedidos'])(
+      '%s omite disponibilidad aunque inventario sí la expone',
+      async (ruta) => {
+        const pedido = await prisma.pedido.findUniqueOrThrow({
+          where: { id: fixtures.pendiente_entrega },
+        });
+        const inventario = await listar({ search: pedido.codigo });
+        expect(inventario.data[0]).toHaveProperty('disponibilidad');
+        const query =
+          ruta === '/api/v1/pedidos'
+            ? { cliente_id: clienteId, limit: 100 }
+            : { estado: 'pendiente_entrega', limit: 100 };
+        const res = await http()
+          .get(ruta)
+          .set(auth('admin'))
+          .query(query)
+          .expect(200);
+        const resultado = res.body as ListaHttp;
+        expect(resultado.data.map((p) => p.id)).toContain(pedido.id);
+        for (const fila of resultado.data)
+          expect(fila).not.toHaveProperty('disponibilidad');
+      },
+    );
   });
 });

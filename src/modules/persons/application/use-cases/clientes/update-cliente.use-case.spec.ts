@@ -11,6 +11,7 @@ import {
 } from '../../../domain/errors/persons-domain.errors';
 import { ClienteRepository } from '../../../domain/repositories/cliente.repository';
 import { PersonaRepository } from '../../../domain/repositories/persona.repository';
+import { UbigeoRepository } from '../../../domain/repositories/ubigeo.repository';
 import { UpdateClienteDto } from '../../dto/cliente-dtos/update-cliente.dto';
 import { UpdateClienteUseCase } from './update-cliente.use-case';
 
@@ -24,6 +25,7 @@ const clienteNatural = new ClienteEntity(
   true,
   fecha,
   fecha,
+  1,
 );
 const persona = new PersonaEntity(
   'p1',
@@ -52,6 +54,9 @@ describe('UpdateClienteUseCase', () => {
   const useCase = new UpdateClienteUseCase(
     clienteRepository as unknown as ClienteRepository,
     personaRepository as unknown as PersonaRepository,
+    {
+      existsDistrito: jest.fn().mockResolvedValue(true),
+    } as unknown as UbigeoRepository,
   );
   const dto = (campos: Record<string, unknown>) => campos as UpdateClienteDto;
 

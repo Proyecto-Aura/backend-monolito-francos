@@ -77,6 +77,7 @@ export class EntregarPedidoADespachoUseCase {
         producto_terminado_id: d.producto_terminado_id,
         cantidad: preparado.cantidad_preparada,
         razon: `Salida por preparación de pedido ${pedido.codigo}`,
+        pedido_id: id,
       };
     });
 

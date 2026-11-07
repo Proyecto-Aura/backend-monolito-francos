@@ -7,9 +7,11 @@ import {
   CreatePedidoParams,
   IndicadoresPedidosInventario,
   ListPedidosParams,
+  ListPedidosDeClienteParams,
   NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
+  PedidoResumenPortal,
   PresentacionParaPedido,
 } from './types/pedido-repository.types';
 
@@ -36,6 +38,10 @@ export abstract class PedidoRepository {
   abstract findMany(
     params: ListPedidosParams,
   ): Promise<PaginatedResult<PedidoResumen>>;
+  abstract findManyDeCliente(
+    clienteId: string,
+    params: ListPedidosDeClienteParams,
+  ): Promise<PaginatedResult<PedidoResumenPortal>>;
   abstract findById(id: number): Promise<PedidoEntity | null>;
   abstract findDetalleById(id: number): Promise<PedidoDetalle | null>;
   // Cambia el estado solo si el pedido sigue en `desde`; devuelve false si en

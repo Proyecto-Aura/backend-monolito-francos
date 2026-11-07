@@ -21,8 +21,11 @@ export class ReembolsoPortalPresenter {
       pedido: { id: pedido_id, codigo: pedido_codigo },
       monto: reembolso.monto,
       estado: reembolso.estado,
+      motivo: reembolso.motivo,
+      descripcion: reembolso.descripcion,
       fecha_solicitud: reembolso.fecha_solicitud,
       fecha_resolucion: reembolso.fecha_resolucion,
+      fecha_reembolso: reembolso.fecha_reembolso,
     };
   }
 

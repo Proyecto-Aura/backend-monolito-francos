@@ -25,6 +25,7 @@ describe('ValidarRelacionesOeService', () => {
     perspectiva_bsc_id: 1,
     tipo_modulo_id: 7,
     oe_negocio_id: null,
+    oe_negocio: null,
     estado_objetivo_id: 1,
     responsable: 'Ana Torres',
     nombre: 'Reducir costos operativos',

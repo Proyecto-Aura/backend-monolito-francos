@@ -107,7 +107,10 @@ export class SolicitarReembolsoUseCase {
         pago_id: pedido.pago.id,
         // RF-B39 (S-1): se devuelve el total pagado, calculado en el servidor.
         monto: pedido.pago.monto,
+        // Se conserva el texto unido para el portal de la empresa (RF-A039).
         motivo_cliente: `${dto.motivo}: ${dto.descripcion}`,
+        motivo: dto.motivo,
+        descripcion: dto.descripcion,
         evidencia_key: key,
       });
     } catch (error) {

@@ -8,6 +8,8 @@ export interface CreateMovimientoInsumoParams {
   tipo: TipoMovimientoInsumo;
   cantidad: number;
   razon: string;
+  // Solicitud de insumos que originó esta salida, si aplica.
+  solicitud_insumos_id?: number;
 }
 
 export interface ListMovimientoInsumoParams extends PaginationParams {

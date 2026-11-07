@@ -180,11 +180,13 @@ describe('EntregarPedidoADespachoUseCase con items preparados', () => {
     expect(executeMany).toHaveBeenCalledWith([
       {
         producto_terminado_id: 501,
+        pedido_id: 7,
         cantidad: 7,
         razon: `Salida por preparación de pedido ${pedido.codigo}`,
       },
       {
         producto_terminado_id: 502,
+        pedido_id: 7,
         cantidad: 9,
         razon: `Salida por preparación de pedido ${pedido.codigo}`,
       },

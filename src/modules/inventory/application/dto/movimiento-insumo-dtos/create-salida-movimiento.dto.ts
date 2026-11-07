@@ -33,4 +33,8 @@ export class CreateSalidaMovimientoDto {
   @IsString()
   @MaxLength(255)
   razon!: string;
+
+  // Uso interno: declare evita crear una propiedad sin decoradores al
+  // transformar el body. Si un cliente la envía, forbidNonWhitelisted la rechaza.
+  declare solicitud_insumos_id?: number;
 }

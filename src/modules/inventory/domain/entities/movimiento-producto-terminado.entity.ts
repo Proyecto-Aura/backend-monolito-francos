@@ -26,6 +26,8 @@ export class MovimientoProductoTerminadoEntity {
     public readonly stock_anterior: number,
     public readonly stock_resultante: number,
     public readonly razon: string,
+    // Pedido de venta que originó esta salida; null si no viene de un pedido.
+    public readonly pedido_id: number | null,
     public readonly fecha: Date,
     public readonly created_at: Date,
   ) {}

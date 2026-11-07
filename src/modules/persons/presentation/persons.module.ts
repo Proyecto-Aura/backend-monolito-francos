@@ -89,6 +89,11 @@ import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios
 import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
 import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
 import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
+import { PortalNotificacionesController } from './controllers/portal-notificaciones.controller';
+import { ListNotificacionesUseCase } from '../application/use-cases/notificaciones/list-notificaciones.use-case';
+import { MarcarNotificacionLeidaUseCase } from '../application/use-cases/notificaciones/marcar-notificacion-leida.use-case';
+import { NotificacionRepository } from '../domain/repositories/notificacion.repository';
+import { PrismaNotificacionRepository } from '../infrastructure/repositories/prisma-notificacion.repository';
 
 @Module({
   controllers: [
@@ -103,6 +108,7 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     UbigeoController,
     UsuariosInternosController,
     PerfilController,
+    PortalNotificacionesController,
   ],
   providers: [
     CreateRolUseCase,
@@ -181,6 +187,9 @@ import { UsuariosInternosController } from './controllers/usuarios-internos.cont
     UpdateUsuarioInternoUseCase,
     ChangeUsuarioInternoStatusUseCase,
     SetUsuarioInternoRolesUseCase,
+    ListNotificacionesUseCase,
+    MarcarNotificacionLeidaUseCase,
+    { provide: NotificacionRepository, useClass: PrismaNotificacionRepository },
     {
       provide: UsuarioInternoRepository,
       useClass: PrismaUsuarioInternoRepository,

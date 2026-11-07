@@ -29,6 +29,7 @@ export class ListPedidosInventarioUseCase {
       search: dto.search,
       desde,
       hasta,
+      conDisponibilidad: true,
     });
   }
 }

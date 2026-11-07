@@ -8,6 +8,8 @@ export interface CreateMovimientoProductoTerminadoParams {
   tipo: TipoMovimientoProductoTerminado;
   cantidad: number;
   razon: string;
+  // Pedido de venta que originó esta salida (ver EntregarPedidoADespachoUseCase).
+  pedido_id?: number;
 }
 
 export interface ListMovimientoProductoTerminadoParams extends PaginationParams {

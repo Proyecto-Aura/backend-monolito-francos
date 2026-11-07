@@ -51,6 +51,7 @@ export class MovimientoProductoTerminadoMapper {
       movimiento.stock_anterior.toNumber(),
       movimiento.stock_resultante.toNumber(),
       movimiento.razon,
+      movimiento.pedido_id,
       movimiento.fecha,
       movimiento.created_at,
     );

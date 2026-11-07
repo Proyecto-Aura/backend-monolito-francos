@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, TipoDocumento } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import { formatCodigoPedido } from '../../application/utils/pedido.utils';
+import {
+  calcularDisponibilidad,
+  formatCodigoPedido,
+} from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
-import { EstadoPedido, MetodoPago } from '../../domain/enums';
+import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
 import { ResourceConflictError } from '../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../domain/repositories/pedido.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
@@ -13,9 +16,11 @@ import {
   CreatePedidoParams,
   IndicadoresPedidosInventario,
   ListPedidosParams,
+  ListPedidosDeClienteParams,
   NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
+  PedidoResumenPortal,
   PresentacionParaPedido,
 } from '../../domain/repositories/types/pedido-repository.types';
 import { ESTADOS_DE_INVENTARIO } from '../../domain/rules/transiciones-pedido';
@@ -262,12 +267,32 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: {
           cliente: clienteConPersona,
           pago: { select: { metodo_pago: true } },
-          detalles: { select: { cantidad: true } },
+          detalles: {
+            select: {
+              cantidad: true,
+              // Solo se usa cuando conDisponibilidad=true (vista de
+              // inventario), pero el join es barato (FK indexada) así que se
+              // pide siempre para no complicar el tipo del select con un
+              // condicional en tiempo de ejecución.
+              producto_presentacion: {
+                select: {
+                  producto_terminado: { select: { stock_actual: true } },
+                },
+              },
+            },
+          },
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        // Orden de llegada (RF-A030).
-        orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+        // Orden de llegada (RF-A030), salvo en la vista de inventario
+        // (conDisponibilidad=true): ahí primero por estado -- Postgres
+        // ordena un enum por el orden en que se declaró el tipo, así que
+        // `estado: 'asc'` ya deja en_espera_inventario, luego
+        // en_preparacion, luego pendiente_entrega (ver EstadoPedido en
+        // schema.prisma) -- y dentro de cada estado, por orden de llegada.
+        orderBy: params.conDisponibilidad
+          ? [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }]
+          : [{ created_at: 'asc' }, { id: 'asc' }],
       }),
       this.prisma.pedido.count({ where }),
     ]);
@@ -283,6 +308,18 @@ export class PrismaPedidoRepository implements PedidoRepository {
           (suma, detalle) => suma + detalle.cantidad,
           0,
         ),
+        ...(params.conDisponibilidad
+          ? {
+              disponibilidad: calcularDisponibilidad(
+                pedido.detalles.map((detalle) => ({
+                  cantidad: detalle.cantidad,
+                  stock_disponible:
+                    detalle.producto_presentacion.producto_terminado?.stock_actual.toNumber() ??
+                    0,
+                })),
+              ),
+            }
+          : {}),
       })),
       total,
       page: params.page,
@@ -294,6 +331,49 @@ export class PrismaPedidoRepository implements PedidoRepository {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
 
     return pedido ? PedidoMapper.toDomain(pedido) : null;
+  }
+
+  async findManyDeCliente(
+    clienteId: string,
+    params: ListPedidosDeClienteParams,
+  ): Promise<PaginatedResult<PedidoResumenPortal>> {
+    const where: Prisma.PedidoWhereInput = {
+      cliente_id: clienteId,
+      ...(params.estado ? { estado: params.estado } : {}),
+    };
+    const [pedidos, total] = await this.prisma.$transaction([
+      this.prisma.pedido.findMany({
+        where,
+        include: {
+          pago: {
+            select: {
+              metodo_pago: true,
+              reembolso: { select: { id: true, estado: true } },
+            },
+          },
+        },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.pedido.count({ where }),
+    ]);
+
+    return {
+      data: pedidos.map((pedido) => ({
+        pedido: PedidoMapper.toDomain(pedido),
+        metodo_pago: (pedido.pago?.metodo_pago as MetodoPago) ?? null,
+        reembolso: pedido.pago?.reembolso
+          ? {
+              id: pedido.pago.reembolso.id,
+              estado: pedido.pago.reembolso.estado as EstadoReembolso,
+            }
+          : null,
+      })),
+      total,
+      page: params.page,
+      limit: params.limit,
+    };
   }
 
   async findDetalleById(id: number): Promise<PedidoDetalle | null> {

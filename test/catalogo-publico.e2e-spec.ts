@@ -84,6 +84,9 @@ describe('Catálogo público (e2e)', () => {
     productoCategoriaInactiva: 0,
     productoPresentacionInactiva: 0,
     productoOculto: 0,
+    productoSoloEnAdmin: 0,
+    noPortalAlfa: 0,
+    noPortalSoloEnAdmin: 0,
     // Presentaciones visibles.
     alfa10: 0,
     alfa30: 0,
@@ -132,6 +135,7 @@ describe('Catálogo público (e2e)', () => {
     sufijo: string;
     precio: number;
     estado?: boolean;
+    visible_portal_b?: boolean;
     stock?: number;
   }) => {
     const pp = await prisma.productoPresentacion.create({
@@ -141,8 +145,10 @@ describe('Catálogo público (e2e)', () => {
         precio_unitario: params.precio,
         producto_id: params.producto_id,
         presentacion_id: params.presentacion_id,
-        // Lo único que decide si se ve en el Portal B es el estado (HU-A-008).
+        // Se ve en el Portal B si está activa (HU-A-008) y publicada en el
+        // portal (RF-A025). En la base nace oculta: aquí se publica por defecto.
         estado: params.estado ?? true,
+        visible_portal_b: params.visible_portal_b ?? true,
         producto_terminado: { create: { stock_actual: params.stock ?? 5 } },
       },
     });
@@ -217,6 +223,10 @@ describe('Catálogo público (e2e)', () => {
       categoriaA.id,
     );
     ids.productoOculto = await crearProducto('Zeta oculto', categoriaA.id);
+    ids.productoSoloEnAdmin = await crearProducto(
+      'Eta sin publicar en el portal',
+      categoriaA.id,
+    );
 
     ids.alfa10 = await crearPresentacionProducto({
       producto_id: ids.productoAlfa,
@@ -248,6 +258,28 @@ describe('Catálogo público (e2e)', () => {
       sufijo: 'alfa-1kg-oculta',
       precio: 5,
       estado: false,
+    });
+    // Activas y con stock, pero sin publicar en el portal (visible_portal_b
+    // false): el checkout las rechaza, así que el catálogo tampoco las muestra.
+    ids.noPortalAlfa = await crearPresentacionProducto({
+      producto_id: ids.productoAlfa,
+      presentacion_id: (
+        await prisma.presentacion.create({
+          data: { cantidad: 250, unidad_medida: 'gr', descripcion: PREFIJO },
+        })
+      ).id,
+      sufijo: 'alfa-250-sin-publicar',
+      precio: 5,
+      visible_portal_b: false,
+      stock: 5,
+    });
+    ids.noPortalSoloEnAdmin = await crearPresentacionProducto({
+      producto_id: ids.productoSoloEnAdmin,
+      presentacion_id: p200.id,
+      sufijo: 'eta-200',
+      precio: 5,
+      visible_portal_b: false,
+      stock: 5,
     });
     await crearPresentacionProducto({
       producto_id: ids.productoInactivo,
@@ -336,6 +368,16 @@ describe('Catálogo público (e2e)', () => {
         limit: 10,
         total_pages: 1,
       });
+    });
+
+    it('no muestra una presentación activa y con stock si no está publicada en el portal', async () => {
+      const response = await listar().expect(200);
+      const idsListados = (response.body as ListadoHttp).data.map(
+        ({ id }) => id,
+      );
+
+      expect(idsListados).not.toContain(ids.noPortalAlfa);
+      expect(idsListados).not.toContain(ids.noPortalSoloEnAdmin);
     });
 
     it('ignora un token inválido porque el endpoint es público', async () => {
@@ -493,6 +535,16 @@ describe('Catálogo público (e2e)', () => {
       }
     });
 
+    it('no muestra en el detalle una presentación activa y con stock si no está publicada en el portal', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/v1/catalogo/productos/${ids.productoAlfa}`)
+        .expect(200);
+
+      expect(
+        (response.body as DetalleHttp).presentaciones.map(({ id }) => id),
+      ).not.toContain(ids.noPortalAlfa);
+    });
+
     it('incluye la promoción nxm vigente hoy', async () => {
       const response = await request(app.getHttpServer())
         .get(`/api/v1/catalogo/productos/${ids.productoBeta}`)
@@ -517,6 +569,10 @@ describe('Catálogo público (e2e)', () => {
       ['de una categoría inactiva', () => ids.productoCategoriaInactiva],
       ['sin presentaciones activas', () => ids.productoPresentacionInactiva],
       ['oculto del Portal B', () => ids.productoOculto],
+      [
+        'con todas sus presentaciones sin publicar en el portal',
+        () => ids.productoSoloEnAdmin,
+      ],
       ['inexistente', () => 2147483000],
     ])('responde 404 si el producto está %s', async (_caso, id) => {
       await request(app.getHttpServer())

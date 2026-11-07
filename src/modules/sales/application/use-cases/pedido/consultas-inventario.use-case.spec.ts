@@ -44,6 +44,7 @@ describe('Consultas de pedidos de inventario OFT0-260', () => {
         search: undefined,
         desde: undefined,
         hasta: undefined,
+        conDisponibilidad: true,
       });
     });
 
@@ -65,6 +66,7 @@ describe('Consultas de pedidos de inventario OFT0-260', () => {
           search: 'cliente',
           desde: new Date('2026-10-31T05:00:00Z'),
           hasta: new Date('2026-11-01T05:00:00Z'),
+          conDisponibilidad: true,
         });
       },
     );
@@ -136,6 +138,7 @@ describe('Consultas de pedidos de inventario OFT0-260', () => {
         search: 'pedido',
         desde: desde ? new Date(desde) : undefined,
         hasta: hasta ? new Date(hasta) : undefined,
+        conDisponibilidad: true,
       });
     });
 

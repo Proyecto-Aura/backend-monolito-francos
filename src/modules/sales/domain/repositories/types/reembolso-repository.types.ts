@@ -36,6 +36,7 @@ export interface CambioEstadoReembolso {
   motivo_rechazo?: string;
   resuelto_por?: string;
   fecha_resolucion?: Date;
+  fecha_reembolso?: Date;
 }
 
 export interface NotificacionCliente {
@@ -66,6 +67,8 @@ export interface CrearSolicitudReembolsoParams extends CodigoReembolsoReservado 
   pago_id: number;
   monto: number;
   motivo_cliente: string;
+  motivo: string;
+  descripcion: string;
   evidencia_key: string;
 }
 

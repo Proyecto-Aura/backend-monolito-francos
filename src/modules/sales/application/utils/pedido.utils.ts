@@ -1,5 +1,8 @@
 import { InvalidRequestError } from '../../domain/errors/sales-domain.errors';
-import { PresentacionParaPedido } from '../../domain/repositories/types/pedido-repository.types';
+import {
+  DisponibilidadPedido,
+  PresentacionParaPedido,
+} from '../../domain/repositories/types/pedido-repository.types';
 
 // Lima no tiene horario de verano: siempre está en UTC-5.
 const OFFSET_LIMA = '-05:00';
@@ -77,4 +80,18 @@ export function rangoFechasLima(
   }
 
   return { desde, hasta };
+}
+
+// Vista de inventario ("Pedidos por preparar"): completo si TODOS los items
+// alcanzan, sin_stock si NINGUNO alcanza, parcial en cualquier otro caso.
+export function calcularDisponibilidad(
+  items: Array<{ stock_disponible: number; cantidad: number }>,
+): DisponibilidadPedido {
+  const conStockSuficiente = items.filter(
+    (item) => item.stock_disponible >= item.cantidad,
+  ).length;
+
+  if (conStockSuficiente === items.length) return 'completo';
+  if (conStockSuficiente === 0) return 'sin_stock';
+  return 'parcial';
 }

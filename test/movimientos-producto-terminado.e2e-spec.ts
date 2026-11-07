@@ -17,7 +17,7 @@ const MARCA = 'E2E OFT0-259-M';
 const CATEGORIAS_URL = '/api/v1/categorias';
 const PRESENTACIONES_URL = '/api/v1/presentaciones';
 const PRODUCTOS_URL = '/api/v1/productos';
-const LOTES_URL = '/api/v1/lotes-producto-terminado';
+const LOTES_URL = '/api/v1/produccion/lotes-producto-terminado';
 const MOVIMIENTOS_URL = '/api/v1/movimientos-producto-terminado';
 
 interface ProductoPresentacionHttp {
@@ -374,6 +374,28 @@ describe('Movimientos de producto terminado (e2e)', () => {
       .send({ lote_producto_terminado_id: 999999, cantidad: 10, razon: MARCA })
       .expect(404);
   });
+
+  it.each([false, true])(
+    'rechaza pedido_id enviado desde HTTP sin registrar salidas (array=%s)',
+    async (array) => {
+      const antes = await prisma.movimientoProductoTerminado.count();
+      const fila = {
+        producto_terminado_id: productoTerminadoId,
+        cantidad: 1,
+        razon: MARCA,
+        pedido_id: 2147483647,
+      };
+      const res = await request(app.getHttpServer())
+        .post(`${MOVIMIENTOS_URL}/salida`)
+        .set(auth(inventarioToken))
+        .send(array ? [fila] : fila)
+        .expect(400);
+      expect((res.body as { message: string[] }).message).toContain(
+        'property pedido_id should not exist',
+      );
+      expect(await prisma.movimientoProductoTerminado.count()).toBe(antes);
+    },
+  );
 
   it('salida reparte FEFO entre lotes (el que vence antes se agota primero) y marca el lote en 0 como agotado', async () => {
     const res = await request(app.getHttpServer())

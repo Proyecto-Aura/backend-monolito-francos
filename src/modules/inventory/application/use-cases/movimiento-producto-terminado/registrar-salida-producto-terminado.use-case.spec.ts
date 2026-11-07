@@ -1,14 +1,12 @@
-import {
-  LoteProductoTerminadoEntity,
-  ProductoTerminadoEntity,
-} from '../../../domain/entities';
-import { EstadoLoteProductoTerminado } from '../../../domain/enums';
+import { ProductoTerminadoEntity } from '../../../domain/entities';
+import { LoteProductoTerminadoEntity } from '../../../../production/domain/entities';
+import { EstadoLoteProductoTerminado } from '../../../../production/domain/enums';
 import { UnidadMedidaPresentacion } from '../../../../catalog/domain/enums';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../../catalog/domain/errors/catalog-domain.errors';
-import { LoteProductoTerminadoRepository } from '../../../domain/repositories/lote-producto-terminado.repository';
+import { LoteProductoTerminadoRepository } from '../../../../production/domain/repositories/lote-producto-terminado.repository';
 import { MovimientoProductoTerminadoRepository } from '../../../domain/repositories/movimiento-producto-terminado.repository';
 import { ProductoTerminadoRepository } from '../../../domain/repositories/producto-terminado.repository';
 import { RegistrarSalidaProductoTerminadoUseCase } from './registrar-salida-producto-terminado.use-case';
@@ -73,6 +71,7 @@ describe('RegistrarSalidaProductoTerminadoUseCase', () => {
     60,
     EstadoLoteProductoTerminado.ACTIVO,
     true,
+    null,
     fecha,
     fecha,
   );
@@ -94,6 +93,7 @@ describe('RegistrarSalidaProductoTerminadoUseCase', () => {
     100,
     EstadoLoteProductoTerminado.ACTIVO,
     true,
+    null,
     fecha,
     fecha,
   );
@@ -188,6 +188,46 @@ describe('RegistrarSalidaProductoTerminadoUseCase', () => {
   });
 
   describe('executeMany', () => {
+    it('propaga el pedido a cada movimiento aunque la salida se reparta entre lotes', async () => {
+      await useCase.executeMany([
+        {
+          producto_terminado_id: 1,
+          cantidad: 70,
+          razon: 'Pedido 7',
+          pedido_id: 7,
+        },
+        {
+          producto_terminado_id: 1,
+          cantidad: 10,
+          razon: 'Pedido 8',
+          pedido_id: 8,
+        },
+      ]);
+      expect(createMany).toHaveBeenCalledWith([
+        {
+          lote_producto_terminado_id: 10,
+          tipo: 'salida',
+          cantidad: 60,
+          razon: 'Pedido 7',
+          pedido_id: 7,
+        },
+        {
+          lote_producto_terminado_id: 11,
+          tipo: 'salida',
+          cantidad: 10,
+          razon: 'Pedido 7',
+          pedido_id: 7,
+        },
+        {
+          lote_producto_terminado_id: 11,
+          tipo: 'salida',
+          cantidad: 10,
+          razon: 'Pedido 8',
+          pedido_id: 8,
+        },
+      ]);
+    });
+
     it('junta varias filas del mismo producto en una sola llamada a createMany', async () => {
       await useCase.executeMany([
         { producto_terminado_id: 1, cantidad: 20, razon: 'Fila 1' },
