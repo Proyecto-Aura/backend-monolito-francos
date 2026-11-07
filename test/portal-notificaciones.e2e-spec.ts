@@ -106,6 +106,22 @@ describe('Notificaciones del portal (e2e, OFT0-557)', () => {
     return req;
   };
 
+  const getPreferencias = (token: string | undefined) => {
+    const req = request(app.getHttpServer()).get(
+      '/api/v1/portal/notificaciones/preferencias',
+    );
+    if (token) req.set('Authorization', `Bearer ${token}`);
+    return req;
+  };
+
+  const patchPreferencias = (token: string | undefined, body: object) => {
+    const req = request(app.getHttpServer()).patch(
+      '/api/v1/portal/notificaciones/preferencias',
+    );
+    if (token) req.set('Authorization', `Bearer ${token}`);
+    return req.send(body);
+  };
+
   const deleteTestData = async () => {
     const pedidosE2e = await prisma.pedido.findMany({
       where: { codigo: { startsWith: PREFIJO_PEDIDO } },
@@ -396,6 +412,57 @@ describe('Notificaciones del portal (e2e, OFT0-557)', () => {
 
     it('repetir la misma devuelve 404 (ya estaba leída)', async () => {
       await marcarLeida(notificacionAprobadaId, tokens.cliente).expect(404);
+    });
+  });
+
+  describe('preferencias (OFT0-577)', () => {
+    it('sin token devuelve 401', async () => {
+      await getPreferencias(undefined).expect(401);
+      await patchPreferencias(undefined, { pedido_en_camino: false }).expect(
+        401,
+      );
+    });
+
+    it('con rol ventas devuelve 403', async () => {
+      await getPreferencias(tokens.ventas).expect(403);
+      await patchPreferencias(tokens.ventas, {
+        pedido_en_camino: false,
+      }).expect(403);
+    });
+
+    it('CA-1: un cliente nuevo la tiene activa', async () => {
+      const response = await getPreferencias(tokens.cliente).expect(200);
+
+      expect(response.body).toEqual({ pedido_en_camino: true });
+    });
+
+    it.each([
+      ['vacío', {}],
+      ['texto en vez de booleano', { pedido_en_camino: 'false' }],
+      ['con un campo extra', { pedido_en_camino: false, user_id: 'otro' }],
+    ])('un cuerpo inválido (%s) devuelve 400', async (_caso, body) => {
+      await patchPreferencias(tokens.cliente, body).expect(400);
+    });
+
+    it('CA-2 y CA-5: desactiva la propia y no toca la del otro cliente', async () => {
+      const response = await patchPreferencias(tokens.cliente, {
+        pedido_en_camino: false,
+      }).expect(200);
+
+      expect(response.body).toEqual({ pedido_en_camino: false });
+      const propia = await getPreferencias(tokens.cliente).expect(200);
+      expect(propia.body).toEqual({ pedido_en_camino: false });
+      const ajena = await getPreferencias(tokens.otro).expect(200);
+      expect(ajena.body).toEqual({ pedido_en_camino: true });
+    });
+
+    it('CA-2: la vuelve a activar', async () => {
+      await patchPreferencias(tokens.cliente, {
+        pedido_en_camino: true,
+      }).expect(200);
+
+      const response = await getPreferencias(tokens.cliente).expect(200);
+      expect(response.body).toEqual({ pedido_en_camino: true });
     });
   });
 });

@@ -6,6 +6,7 @@ import { PaginatedResult } from '../../domain/repositories/types/pagination.type
 import {
   ListNotificacionesParams,
   NotificacionDeUsuario,
+  PreferenciasNotificacion,
 } from '../../domain/repositories/types/notificacion-repository.types';
 import { NotificacionMapper } from '../mappers/notificacion.mapper';
 
@@ -46,6 +47,27 @@ export class PrismaNotificacionRepository implements NotificacionRepository {
     const { count } = await this.prisma.notificacionUser.updateMany({
       where: { notificacion_id: notificacionId, user_id: userId, leido: false },
       data: { leido: true, fecha_leido: new Date() },
+    });
+    return count > 0;
+  }
+
+  async findPreferencias(
+    userId: string,
+  ): Promise<PreferenciasNotificacion | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificar_pedido_en_camino: true },
+    });
+    return user && { pedido_en_camino: user.notificar_pedido_en_camino };
+  }
+
+  async actualizarPreferencias(
+    userId: string,
+    preferencias: PreferenciasNotificacion,
+  ): Promise<boolean> {
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId },
+      data: { notificar_pedido_en_camino: preferencias.pedido_en_camino },
     });
     return count > 0;
   }

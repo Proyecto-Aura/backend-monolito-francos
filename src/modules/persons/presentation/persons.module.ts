@@ -90,8 +90,10 @@ import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno
 import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
 import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
 import { PortalNotificacionesController } from './controllers/portal-notificaciones.controller';
+import { ActualizarPreferenciasNotificacionUseCase } from '../application/use-cases/notificaciones/actualizar-preferencias-notificacion.use-case';
 import { ListNotificacionesUseCase } from '../application/use-cases/notificaciones/list-notificaciones.use-case';
 import { MarcarNotificacionLeidaUseCase } from '../application/use-cases/notificaciones/marcar-notificacion-leida.use-case';
+import { ObtenerPreferenciasNotificacionUseCase } from '../application/use-cases/notificaciones/obtener-preferencias-notificacion.use-case';
 import { NotificacionRepository } from '../domain/repositories/notificacion.repository';
 import { PrismaNotificacionRepository } from '../infrastructure/repositories/prisma-notificacion.repository';
 
@@ -189,6 +191,8 @@ import { PrismaNotificacionRepository } from '../infrastructure/repositories/pri
     SetUsuarioInternoRolesUseCase,
     ListNotificacionesUseCase,
     MarcarNotificacionLeidaUseCase,
+    ObtenerPreferenciasNotificacionUseCase,
+    ActualizarPreferenciasNotificacionUseCase,
     { provide: NotificacionRepository, useClass: PrismaNotificacionRepository },
     {
       provide: UsuarioInternoRepository,

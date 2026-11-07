@@ -418,14 +418,23 @@ export class PrismaPedidoRepository implements PedidoRepository {
         where: { id },
         select: {
           cliente: {
-            select: { persona: { select: { user: { select: { id: true } } } } },
+            select: {
+              persona: {
+                select: {
+                  user: {
+                    select: { id: true, notificar_pedido_en_camino: true },
+                  },
+                },
+              },
+            },
           },
         },
       });
-      const userId = cliente.persona.user?.id;
+      const user = cliente.persona.user;
 
       // Pedidos manuales: el cliente puede no tener cuenta en el portal.
-      if (userId) {
+      // HU-B-019: el cliente puede haber desactivado este aviso.
+      if (user?.notificar_pedido_en_camino) {
         await tx.notificacion.create({
           data: {
             tipo: 'pedido_en_camino',
@@ -433,7 +442,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
             mensaje: notificacion.mensaje,
             referencia_tipo: 'pedido',
             referencia_id: String(id),
-            notificacion_users: { create: { user_id: userId } },
+            notificacion_users: { create: { user_id: user.id } },
           },
         });
       }
