@@ -503,6 +503,49 @@ describe('Despacho de pedidos (e2e)', () => {
     });
   });
 
+  describe('menú: la pantalla Despachos dentro de Inventario', () => {
+    interface NodoMenu {
+      nombre: string;
+      etiqueta: string;
+      children: NodoMenu[];
+    }
+
+    const miMenu = async (token: string): Promise<NodoMenu[]> => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/rutas/mi-menu')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      return response.body as NodoMenu[];
+    };
+
+    const hijosDeInventario = (menu: NodoMenu[]) =>
+      menu.find((n) => n.nombre === 'inventario')?.children ?? [];
+
+    it('el rol despacho ve Inventario con solo Despachos adentro', async () => {
+      const menu = await miMenu(despachoToken);
+
+      expect(menu.map((n) => n.nombre)).toEqual(['inventario']);
+      expect(hijosDeInventario(menu)).toEqual([
+        expect.objectContaining({
+          nombre: 'despacho-pedidos',
+          etiqueta: 'Despachos',
+        }),
+      ]);
+    });
+
+    it('el admin también ve Despachos dentro de Inventario', async () => {
+      const hijos = hijosDeInventario(await miMenu(adminToken));
+
+      expect(hijos.map((n) => n.nombre)).toContain('despacho-pedidos');
+    });
+
+    it('el rol ventas no ve Despachos', async () => {
+      const menu = await miMenu(ventasToken);
+
+      expect(JSON.stringify(menu)).not.toContain('despacho-pedidos');
+    });
+  });
+
   describe('listar (CA-1 a CA-3)', () => {
     it('devuelve solo pendiente_entrega, en_camino y entregado', async () => {
       const response = await listar({ limit: 100 }).expect(200);
