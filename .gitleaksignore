@@ -94,3 +94,8 @@ c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-
 # solicitudes de produccion (OFT0-261). El test crea y elimina esos usuarios;
 # no es una credencial real. Se excluye solo esta huella del historial.
 7cad8631a728378de0de58acb7cea8c4da736d4c:test/solicitudes-produccion.e2e-spec.ts:generic-api-key:145
+
+# Falso positivo: contrasena ficticia del usuario de prueba inventario en
+# despacho-pedidos. El e2e crea y elimina este usuario; no es un secreto real.
+# Se excluye solo la huella reportada en el historial, no el archivo completo.
+1426d5f6e60dab9e68cf161e2ce85fa5a7254171:test/despacho-pedidos.e2e-spec.ts:generic-api-key:30
