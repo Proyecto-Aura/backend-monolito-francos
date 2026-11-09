@@ -20,6 +20,7 @@ import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import { ListPedidosDespachoQueryDto } from '../../application/dto/pedido-dtos/list-pedidos-despacho-query.dto';
 import { CompletarPedidoUseCase } from '../../application/use-cases/pedido/completar-pedido.use-case';
 import { DespacharPedidoUseCase } from '../../application/use-cases/pedido/despachar-pedido.use-case';
+import { GetIndicadoresPedidosDespachoUseCase } from '../../application/use-cases/pedido/get-indicadores-pedidos-despacho.use-case';
 import { GetPedidoDespachoUseCase } from '../../application/use-cases/pedido/get-pedido-despacho.use-case';
 import { ListPedidosDespachoUseCase } from '../../application/use-cases/pedido/list-pedidos-despacho.use-case';
 import { PedidoPresenter } from '../presenters/pedido.presenter';
@@ -33,9 +34,21 @@ export class DespachoPedidosController {
   constructor(
     private readonly listPedidosDespacho: ListPedidosDespachoUseCase,
     private readonly getPedidoDespacho: GetPedidoDespachoUseCase,
+    private readonly getIndicadoresPedidosDespacho: GetIndicadoresPedidosDespachoUseCase,
     private readonly despacharPedido: DespacharPedidoUseCase,
     private readonly completarPedido: CompletarPedidoUseCase,
   ) {}
+
+  @Get('indicadores')
+  @ApiOperation({
+    summary: 'Conteo de pedidos de despacho, por estado',
+  })
+  @ApiOkResponse({
+    description: 'Conteo de pendiente_entrega, en_camino y entregado',
+  })
+  async indicadores() {
+    return this.getIndicadoresPedidosDespacho.execute();
+  }
 
   @Get()
   @ApiOperation({
@@ -92,14 +105,13 @@ export class DespachoPedidosController {
   @ApiOperation({
     summary: 'Marcar como entregado un pedido en camino',
     description:
-      'Guarda la fecha de entrega y descuenta el stock de productos terminados en la misma transacción (RF-A098, RF-A036).',
+      'Guarda la fecha de entrega (RF-A098). El stock ya se descontó antes, al dejarlo pendiente_entrega (RF-A036) -- acá solo cambia el estado.',
   })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ description: 'Pedido entregado' })
   @ApiNotFoundResponse({ description: 'El pedido no existe' })
   @ApiConflictResponse({
-    description:
-      'El pedido no está en camino, o no hay stock suficiente; nada cambia',
+    description: 'El pedido no está en camino',
   })
   async marcarEntregado(@Param('id', ParseIntPipe) id: number) {
     await this.completarPedido.execute(id);

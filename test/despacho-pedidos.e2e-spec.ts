@@ -25,6 +25,13 @@ const TEST_USERS = {
     documento: '99999972',
     rol: 'ventas',
   },
+  inventario: {
+    identificador: 'e2e-inventario-despacho',
+    password: 'InventarioE2e123',
+    email: 'e2e-inventario-despacho@francos.test',
+    documento: '99999975',
+    rol: 'inventario',
+  },
 } as const;
 
 // Cliente con usuario del portal (recibe la notificación y tiene rol cliente)
@@ -65,13 +72,14 @@ describe('Despacho de pedidos (e2e)', () => {
   let adminToken: string;
   let despachoToken: string;
   let ventasToken: string;
+  let inventarioToken: string;
   let clienteToken: string;
   let clienteUserId: string;
   let presentacionConStockId: number;
   let presentacionSinStockId: number;
 
-  // Pedidos sembrados directo en la base: nadie los lleva todavía a
-  // pendiente_entrega (HU-A-018).
+  // El pedido principal pasa por inventario; los demás fijan estados
+  // específicos para probar las consultas y reglas de despacho.
   let pedidoPendienteId: number;
   let pedidoSinUsuarioId: number;
   let pedidoConfirmadoId: number;
@@ -126,6 +134,18 @@ describe('Despacho de pedidos (e2e)', () => {
     });
     const pedidoIds = pedidos.map(({ id }) => id);
     const referencias = pedidoIds.map(String);
+
+    const filtroProducto = {
+      producto_presentacion: { producto: { nombre: PRODUCTO_NOMBRE } },
+    };
+    await prisma.movimientoProductoTerminado.deleteMany({
+      where: {
+        lote_producto_terminado: { producto_terminado: filtroProducto },
+      },
+    });
+    await prisma.loteProductoTerminado.deleteMany({
+      where: { producto_terminado: filtroProducto },
+    });
 
     const notificaciones = await prisma.notificacion.findMany({
       where: { referencia_tipo: 'pedido', referencia_id: { in: referencias } },
@@ -223,7 +243,12 @@ describe('Despacho de pedidos (e2e)', () => {
 
   const sembrarPedido = async (
     clienteId: string,
-    estado: 'confirmado' | 'pendiente_entrega' | 'en_camino' | 'entregado',
+    estado:
+      | 'confirmado'
+      | 'en_preparacion'
+      | 'pendiente_entrega'
+      | 'en_camino'
+      | 'entregado',
     presentacionId: number,
     cantidad: number,
   ) => {
@@ -257,6 +282,25 @@ describe('Despacho de pedidos (e2e)', () => {
       select: { stock_actual: true },
     });
     return stock_actual.toNumber();
+  };
+
+  const snapshotInventario = async (presentacionId: number) => {
+    const producto = await prisma.productoTerminado.findUniqueOrThrow({
+      where: { producto_presentacion_id: presentacionId },
+    });
+    return {
+      producto,
+      lotes: await prisma.loteProductoTerminado.findMany({
+        where: { producto_terminado_id: producto.id },
+        orderBy: { id: 'asc' },
+      }),
+      movimientos: await prisma.movimientoProductoTerminado.findMany({
+        where: {
+          lote_producto_terminado: { producto_terminado_id: producto.id },
+        },
+        orderBy: { id: 'asc' },
+      }),
+    };
   };
 
   const estadoDe = async (id: number) =>
@@ -358,10 +402,7 @@ describe('Despacho de pedidos (e2e)', () => {
       });
       return productoPresentacion.id;
     };
-    presentacionConStockId = await crearPresentacion(
-      presentaciones[0].id,
-      STOCK_INICIAL,
-    );
+    presentacionConStockId = await crearPresentacion(presentaciones[0].id, 0);
     presentacionSinStockId = await crearPresentacion(presentaciones[1].id, 2);
 
     // Cliente con usuario del portal y rol cliente.
@@ -424,7 +465,7 @@ describe('Despacho de pedidos (e2e)', () => {
 
     pedidoPendienteId = await sembrarPedido(
       clienteConUsuarioId,
-      'pendiente_entrega',
+      'en_preparacion',
       presentacionConStockId,
       3,
     );
@@ -455,11 +496,47 @@ describe('Despacho de pedidos (e2e)', () => {
 
     await createTestUser(TEST_USERS.despacho);
     await createTestUser(TEST_USERS.ventas);
+    await createTestUser(TEST_USERS.inventario);
 
     despachoToken = await login(TEST_USERS.despacho);
     ventasToken = await login(TEST_USERS.ventas);
+    inventarioToken = await login(TEST_USERS.inventario);
     clienteToken = await login(CLIENTE_CON_USUARIO);
     adminToken = await login(ADMIN_CREDENTIALS);
+
+    const productoParaLote = await prisma.productoTerminado.findUniqueOrThrow({
+      where: { producto_presentacion_id: presentacionConStockId },
+    });
+    await request(app.getHttpServer())
+      .post('/api/v1/produccion/lotes-producto-terminado')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        producto_terminado_id: productoParaLote.id,
+        codigo_lote: `${CODIGO_PREFIJO}LOTE`,
+        fecha_produccion: new Date().toISOString().slice(0, 10),
+        fecha_vencimiento: new Date(Date.now() + 30 * 86400000)
+          .toISOString()
+          .slice(0, 10),
+        cantidad_inicial: STOCK_INICIAL,
+      })
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch(
+        `/api/v1/inventario/pedidos/${pedidoPendienteId}/pendiente-entrega`,
+      )
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        items: [
+          {
+            producto_presentacion_id: presentacionConStockId,
+            cantidad_preparada: 3,
+          },
+        ],
+      })
+      .expect(200);
+    await expect(stockDe(presentacionConStockId)).resolves.toBe(
+      STOCK_INICIAL - 3,
+    );
   });
 
   afterAll(async () => {
@@ -503,7 +580,62 @@ describe('Despacho de pedidos (e2e)', () => {
     });
   });
 
-  describe('menú: la pantalla Despachos dentro de Inventario', () => {
+  describe('indicadores de despacho', () => {
+    const indicadores = (token?: string) => {
+      const req = request(app.getHttpServer()).get(
+        '/api/v1/despacho/pedidos/indicadores',
+      );
+      return token ? req.set('Authorization', `Bearer ${token}`) : req;
+    };
+
+    it('sin token devuelve 401', async () => {
+      await indicadores().expect(401);
+    });
+
+    it.each(['ventas', 'inventario', 'cliente'] as const)(
+      'el rol %s no puede consultar indicadores: 403',
+      async (rol) => {
+        const tokens = {
+          ventas: ventasToken,
+          inventario: inventarioToken,
+          cliente: clienteToken,
+        };
+        await indicadores(tokens[rol]).expect(403);
+      },
+    );
+
+    it.each(['admin', 'despacho'] as const)(
+      'el rol %s obtiene los tres conteos correctos',
+      async (rol) => {
+        const estados = [
+          'pendiente_entrega',
+          'en_camino',
+          'entregado',
+        ] as const;
+        // Conteos independientes del groupBy de producción, incluyendo los
+        // pedidos de la semilla que puedan existir en la base de test.
+        const cantidades = await Promise.all(
+          estados.map((estado) => prisma.pedido.count({ where: { estado } })),
+        );
+        const esperado = Object.fromEntries(
+          estados.map((estado, indice) => [estado, cantidades[indice]]),
+        );
+
+        const response = await indicadores(
+          rol === 'admin' ? adminToken : despachoToken,
+        ).expect(200);
+
+        expect(response.body).toEqual(esperado);
+        expect(cantidades[0]).toBeGreaterThanOrEqual(2);
+        expect(cantidades[1]).toBeGreaterThanOrEqual(1);
+        expect(cantidades[2]).toBeGreaterThanOrEqual(1);
+        // El pedido confirmado no pertenece a ninguno de los KPI de despacho.
+        expect(response.body).not.toHaveProperty('confirmado');
+      },
+    );
+  });
+
+  describe('menú: módulo Despachos con Gestión de despachos', () => {
     interface NodoMenu {
       nombre: string;
       etiqueta: string;
@@ -521,28 +653,35 @@ describe('Despacho de pedidos (e2e)', () => {
     const hijosDeInventario = (menu: NodoMenu[]) =>
       menu.find((n) => n.nombre === 'inventario')?.children ?? [];
 
-    it('el rol despacho ve Inventario con solo Despachos adentro', async () => {
+    it('el rol despacho ve su módulo raíz con la pantalla de gestión', async () => {
       const menu = await miMenu(despachoToken);
 
-      expect(menu.map((n) => n.nombre)).toEqual(['inventario']);
-      expect(hijosDeInventario(menu)).toEqual([
+      expect(menu.map((n) => n.nombre)).toEqual(['despacho-pedidos']);
+      expect(menu[0]).toMatchObject({ etiqueta: 'Despachos' });
+      expect(menu[0].children).toEqual([
         expect.objectContaining({
-          nombre: 'despacho-pedidos',
-          etiqueta: 'Despachos',
+          nombre: 'gestion-despachos',
+          etiqueta: 'Gestión de despachos',
         }),
       ]);
     });
 
-    it('el admin también ve Despachos dentro de Inventario', async () => {
-      const hijos = hijosDeInventario(await miMenu(adminToken));
-
-      expect(hijos.map((n) => n.nombre)).toContain('despacho-pedidos');
+    it('el admin ve Despachos como raíz y no como hijo de Inventario', async () => {
+      const menu = await miMenu(adminToken);
+      expect(menu.find((n) => n.nombre === 'despacho-pedidos')).toMatchObject({
+        etiqueta: 'Despachos',
+        children: [expect.objectContaining({ nombre: 'gestion-despachos' })],
+      });
+      expect(hijosDeInventario(menu).map((n) => n.nombre)).not.toContain(
+        'despacho-pedidos',
+      );
     });
 
     it('el rol ventas no ve Despachos', async () => {
       const menu = await miMenu(ventasToken);
 
       expect(JSON.stringify(menu)).not.toContain('despacho-pedidos');
+      expect(JSON.stringify(menu)).not.toContain('gestion-despachos');
     });
   });
 
@@ -701,7 +840,14 @@ describe('Despacho de pedidos (e2e)', () => {
   });
 
   describe('entregado (CA-8 a CA-10)', () => {
-    it('marca el pedido como entregado, guarda la fecha y descuenta el stock', async () => {
+    it('marca entregado y guarda la fecha conservando el inventario ya descontado', async () => {
+      const inventarioAntes = await snapshotInventario(presentacionConStockId);
+      expect(inventarioAntes.producto.stock_actual.toNumber()).toBe(
+        STOCK_INICIAL - 3,
+      );
+      expect(
+        inventarioAntes.movimientos.filter((m) => m.tipo === 'salida'),
+      ).toEqual([expect.objectContaining({ pedido_id: pedidoPendienteId })]);
       const antes = Date.now();
       const response = await patch(pedidoPendienteId, 'entregado').expect(200);
       const body = response.body as unknown as PedidoBody;
@@ -720,24 +866,44 @@ describe('Despacho de pedidos (e2e)', () => {
       await expect(stockDe(presentacionConStockId)).resolves.toBe(
         STOCK_INICIAL - 3,
       );
+      expect(await snapshotInventario(presentacionConStockId)).toEqual(
+        inventarioAntes,
+      );
     });
 
-    it('no lo vuelve a entregar ni descuenta otra vez: 409', async () => {
+    it('repetir la entrega devuelve 409 sin alterar fecha ni inventario', async () => {
+      const inventarioAntes = await snapshotInventario(presentacionConStockId);
+      const pedidoAntes = await prisma.pedido.findUniqueOrThrow({
+        where: { id: pedidoPendienteId },
+      });
       await patch(pedidoPendienteId, 'entregado').expect(409);
       await expect(stockDe(presentacionConStockId)).resolves.toBe(
         STOCK_INICIAL - 3,
       );
+      expect(await snapshotInventario(presentacionConStockId)).toEqual(
+        inventarioAntes,
+      );
+      expect(
+        await prisma.pedido.findUniqueOrThrow({
+          where: { id: pedidoPendienteId },
+        }),
+      ).toEqual(pedidoAntes);
     });
 
-    it('sin stock suficiente devuelve 409 y no cambia nada', async () => {
-      await patch(pedidoSinStockId, 'entregado').expect(409);
+    it('permite entregar aunque el stock actual sea menor al pedido, sin tocar inventario', async () => {
+      const inventarioAntes = await snapshotInventario(presentacionSinStockId);
+      await patch(pedidoSinStockId, 'entregado').expect(200);
 
       const guardado = await prisma.pedido.findUniqueOrThrow({
         where: { id: pedidoSinStockId },
         select: { estado: true, fecha_entrega: true },
       });
-      expect(guardado).toEqual({ estado: 'en_camino', fecha_entrega: null });
+      expect(guardado.estado).toBe('entregado');
+      expect(guardado.fecha_entrega).toBeInstanceOf(Date);
       await expect(stockDe(presentacionSinStockId)).resolves.toBe(2);
+      expect(await snapshotInventario(presentacionSinStockId)).toEqual(
+        inventarioAntes,
+      );
     });
 
     it('con un pedido confirmado devuelve 409', async () => {

@@ -5,6 +5,7 @@ import {
   ClienteParaPedido,
   ClienteParaResumen,
   CreatePedidoParams,
+  IndicadoresPedidosDespacho,
   IndicadoresPedidosInventario,
   ListPedidosParams,
   ListPedidosDeClienteParams,
@@ -59,10 +60,11 @@ export abstract class PedidoRepository {
     id: number,
     notificacion: NotificacionPedidoParams,
   ): Promise<boolean>;
-  // Pasa el pedido a `entregado`, guarda la fecha de entrega y descuenta el stock
-  // de cada presentación en la misma transacción (RF-A036, RF-A098). Falla si
-  // alguna no tiene stock suficiente.
+  // Pasa el pedido a `entregado` y guarda la fecha de entrega (RF-A098). El
+  // stock ya se descontó antes, en `pendiente_entrega` (RF-A036).
   abstract marcarEntregado(id: number): Promise<PedidoEntity>;
   // Conteo de pedidos por preparar, por cada uno de los 3 estados de inventario.
   abstract getIndicadoresInventario(): Promise<IndicadoresPedidosInventario>;
+  // Conteo de pedidos de despacho, por cada uno de sus 3 estados.
+  abstract getIndicadoresDespacho(): Promise<IndicadoresPedidosDespacho>;
 }

@@ -105,6 +105,13 @@ export interface IndicadoresPedidosInventario {
   pendiente_entrega: number;
 }
 
+// Conteo de pedidos para las cards de la vista de despacho.
+export interface IndicadoresPedidosDespacho {
+  pendiente_entrega: number;
+  en_camino: number;
+  entregado: number;
+}
+
 // Aviso in-app al cliente: pedido en camino (RF-A097) o resultado del pago (RF-B26).
 export interface NotificacionPedidoParams {
   titulo: string;

@@ -14,6 +14,7 @@ import {
   ClienteParaPedido,
   ClienteParaResumen,
   CreatePedidoParams,
+  IndicadoresPedidosDespacho,
   IndicadoresPedidosInventario,
   ListPedidosParams,
   ListPedidosDeClienteParams,
@@ -23,7 +24,10 @@ import {
   PedidoResumenPortal,
   PresentacionParaPedido,
 } from '../../domain/repositories/types/pedido-repository.types';
-import { ESTADOS_DE_INVENTARIO } from '../../domain/rules/transiciones-pedido';
+import {
+  ESTADOS_DE_DESPACHO,
+  ESTADOS_DE_INVENTARIO,
+} from '../../domain/rules/transiciones-pedido';
 import { PedidoMapper } from '../mappers/pedido.mapper';
 
 const clienteConPersona = {
@@ -442,45 +446,27 @@ export class PrismaPedidoRepository implements PedidoRepository {
     });
   }
 
+  // El stock ya se descontó al dejar el pedido "pendiente_entrega" (salida
+  // FEFO real por lote, vía RegistrarSalidaProductoTerminadoUseCase) -- acá
+  // solo se registra la entrega, sin tocar stock de nuevo.
   async marcarEntregado(id: number): Promise<PedidoEntity> {
-    return this.prisma.$transaction(async (tx) => {
-      // El cambio de estado va primero y con condición: si dos peticiones llegan
-      // a la vez, solo una descuenta el stock.
-      const { count } = await tx.pedido.updateMany({
-        where: { id, estado: EstadoPedido.EN_CAMINO },
-        data: { estado: EstadoPedido.ENTREGADO, fecha_entrega: new Date() },
-      });
-
-      if (count === 0) {
-        throw new ResourceConflictError(
-          'Solo se puede completar un pedido que está en camino',
-        );
-      }
-
-      const detalles = await tx.detallePedido.findMany({
-        where: { pedido_id: id },
-        select: { producto_presentacion_id: true, cantidad: true },
-      });
-
-      for (const detalle of detalles) {
-        const descontado = await tx.productoTerminado.updateMany({
-          where: {
-            producto_presentacion_id: detalle.producto_presentacion_id,
-            stock_actual: { gte: detalle.cantidad },
-          },
-          data: { stock_actual: { decrement: detalle.cantidad } },
-        });
-
-        if (descontado.count === 0) {
-          throw new ResourceConflictError(
-            `No hay stock suficiente de la presentación ${detalle.producto_presentacion_id} para completar el pedido`,
-          );
-        }
-      }
-
-      const pedido = await tx.pedido.findUniqueOrThrow({ where: { id } });
-      return PedidoMapper.toDomain(pedido);
+    // Condición en el UPDATE: si dos peticiones llegan a la vez, solo una
+    // completa el pedido.
+    const { count } = await this.prisma.pedido.updateMany({
+      where: { id, estado: EstadoPedido.EN_CAMINO },
+      data: { estado: EstadoPedido.ENTREGADO, fecha_entrega: new Date() },
     });
+
+    if (count === 0) {
+      throw new ResourceConflictError(
+        'Solo se puede completar un pedido que está en camino',
+      );
+    }
+
+    const pedido = await this.prisma.pedido.findUniqueOrThrow({
+      where: { id },
+    });
+    return PedidoMapper.toDomain(pedido);
   }
 
   async getIndicadoresInventario(): Promise<IndicadoresPedidosInventario> {
@@ -498,6 +484,26 @@ export class PrismaPedidoRepository implements PedidoRepository {
 
     for (const { estado, _count } of conteos) {
       indicadores[estado as keyof IndicadoresPedidosInventario] = _count._all;
+    }
+
+    return indicadores;
+  }
+
+  async getIndicadoresDespacho(): Promise<IndicadoresPedidosDespacho> {
+    const conteos = await this.prisma.pedido.groupBy({
+      by: ['estado'],
+      where: { estado: { in: [...ESTADOS_DE_DESPACHO] } },
+      _count: { _all: true },
+    });
+
+    const indicadores: IndicadoresPedidosDespacho = {
+      pendiente_entrega: 0,
+      en_camino: 0,
+      entregado: 0,
+    };
+
+    for (const { estado, _count } of conteos) {
+      indicadores[estado as keyof IndicadoresPedidosDespacho] = _count._all;
     }
 
     return indicadores;

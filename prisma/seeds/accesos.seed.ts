@@ -17,8 +17,10 @@ const RUTAS_ESTRATEGICO = [
   'analisis-estrategico-ti',
 ];
 
-// El rol despacho solo ve su pantalla (HU-A-023); el menú muestra el padre solo.
-const RUTAS_DESPACHO = ['despacho-pedidos'];
+// El rol despacho solo ve su pantalla (HU-A-023). El padre (despacho-pedidos)
+// se muestra solo porque el árbol del menú incluye los ancestros de cada
+// ruta permitida (ver GetMiMenuUseCase), no hace falta darle acceso aparte.
+const RUTAS_DESPACHO = ['gestion-despachos'];
 
 export async function seedAccesos(prisma: PrismaClient) {
   const admin = await prisma.rol.findUnique({ where: { nombre: 'admin' } });

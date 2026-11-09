@@ -207,11 +207,22 @@ const RUTAS_BASE: RutaSeed[] = [
     parent: 'gestion-estrategica-ti',
   },
   // --- Despachos (HU-A-023) ---
+  // Módulo propio del rol "despacho" (RN6: ventas no despacha), no una
+  // subopción de Inventario: mismo nivel que Inventario o Producción.
   {
     nombre: 'despacho-pedidos',
     etiqueta: 'Despachos',
     icono: 'truck',
-    parent: 'inventario',
+    descripcion: 'Seguimiento y entrega de pedidos',
+  },
+  // Hijo único, mismo criterio que productos-terminados/pedidos-por-preparar:
+  // un nivel intermedio (aunque hoy solo tenga una pantalla real) para que el
+  // sidebar del módulo no quede vacío.
+  {
+    nombre: 'gestion-despachos',
+    etiqueta: 'Gestión de despachos',
+    icono: 'clipboard-list',
+    parent: 'despacho-pedidos',
   },
 
   // --- Producción ---

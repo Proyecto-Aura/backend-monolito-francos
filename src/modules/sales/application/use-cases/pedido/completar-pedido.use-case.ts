@@ -7,9 +7,11 @@ import {
 } from '../../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 
-// RF-A036: al completarse (entregarse) un pedido se descuenta el stock de sus
-// productos. Según RN6, solo el operario de despacho lo marca como entregado y
-// solo desde "en camino"; lo dispara PATCH /despacho/pedidos/:id/entregado.
+// RF-A036: el stock ya se descontó cuando inventario dejó el pedido
+// "pendiente_entrega" (EntregarPedidoADespachoUseCase, salida FEFO real).
+// Acá solo se registra la entrega -- según RN6, solo el operario de despacho
+// la marca, y solo desde "en camino"; lo dispara
+// PATCH /despacho/pedidos/:id/entregado.
 @Injectable()
 export class CompletarPedidoUseCase {
   constructor(private readonly pedidoRepository: PedidoRepository) {}
