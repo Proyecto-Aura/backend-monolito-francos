@@ -28,6 +28,10 @@ import {
   ESTADOS_DE_DESPACHO,
   ESTADOS_DE_INVENTARIO,
 } from '../../domain/rules/transiciones-pedido';
+import {
+  ComprobanteMapper,
+  comprobanteConSerie,
+} from '../mappers/comprobante.mapper';
 import { PedidoMapper } from '../mappers/pedido.mapper';
 
 const clienteConPersona = {
@@ -54,7 +58,7 @@ const pedidoDetalleInclude = {
     },
     orderBy: { id: 'asc' },
   },
-  pago: true,
+  pago: { include: { comprobante: { include: comprobanteConSerie } } },
 } satisfies Prisma.PedidoInclude;
 
 type PedidoConDetalle = Prisma.PedidoGetPayload<{
@@ -525,6 +529,9 @@ export class PrismaPedidoRepository implements PedidoRepository {
           detalle.producto_presentacion.producto_terminado?.id ?? null,
       })),
       pago: pedido.pago ? PedidoMapper.pagoToDomain(pedido.pago) : null,
+      comprobante: pedido.pago?.comprobante
+        ? ComprobanteMapper.toDomain(pedido.pago.comprobante)
+        : null,
     };
   }
 }

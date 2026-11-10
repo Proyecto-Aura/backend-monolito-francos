@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MetodoPago, OrigenPedido, TipoEntrega } from '../../../domain/enums';
 import {
   PagoRechazadoError,
@@ -9,16 +9,20 @@ import { PedidoRepository } from '../../../domain/repositories/pedido.repository
 import { PedidoDetalle } from '../../../domain/repositories/types/pedido-repository.types';
 import { PasarelaPagoService } from '../../../domain/services/pasarela-pago.service';
 import { CrearPedidoPortalDto } from '../../dto/pedido-dtos/crear-pedido-portal.dto';
+import { GenerarComprobanteUseCase } from '../comprobante/generar-comprobante.use-case';
 import { ResumirPedidoPortalUseCase } from './resumir-pedido-portal.use-case';
 
 const DESCRIPCION_COBRO = "Pedido Franco's";
 
 @Injectable()
 export class CrearPedidoPortalUseCase {
+  private readonly logger = new Logger(CrearPedidoPortalUseCase.name);
+
   constructor(
     private readonly pedidoRepository: PedidoRepository,
     private readonly pasarelaPago: PasarelaPagoService,
     private readonly resumirPedidoPortal: ResumirPedidoPortalUseCase,
+    private readonly generarComprobante: GenerarComprobanteUseCase,
   ) {}
 
   // HU-B-008 (RF-B24 a RF-B28). El total se recalcula en el servidor con el mismo
@@ -61,7 +65,7 @@ export class CrearPedidoPortalUseCase {
       throw new PagoRechazadoError(resultado.mensaje);
     }
 
-    return this.pedidoRepository.create({
+    const pedido = await this.pedidoRepository.create({
       cliente_id: cliente.id,
       user_id: userId,
       origen: OrigenPedido.PORTAL,
@@ -89,6 +93,26 @@ export class CrearPedidoPortalUseCase {
         mensaje: `Recibimos tu pago de ${monto(resumen.total)}. Tu pedido está pagado y confirmado.`,
       },
     });
+
+    // HU-B-010: con el pago confirmado se emite la boleta o factura y se envía
+    // al correo. El cobro ya se hizo y el pedido ya existe, así que un fallo
+    // aquí (sin serie activa, sin empresa emisora) no lo deshace: el pedido
+    // queda sin comprobante y el error se registra.
+    try {
+      const comprobante = await this.generarComprobante.execute({
+        pedido,
+        datos: resumen.comprobante,
+        subtotal: resumen.subtotal,
+        email: cliente.email,
+      });
+      return { ...pedido, comprobante };
+    } catch (error) {
+      this.logger.error(
+        `No se pudo emitir el comprobante del pedido ${pedido.pedido.codigo}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return pedido;
+    }
   }
 }
 

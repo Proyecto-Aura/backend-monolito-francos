@@ -4,6 +4,7 @@ import {
   PedidoResumen,
   PedidoResumenPortal,
 } from '../../domain/repositories/types/pedido-repository.types';
+import { codigoComprobante } from '../../application/utils/comprobante.utils';
 import { calcularDisponibilidad } from '../../application/utils/pedido.utils';
 
 export class PedidoPresenter {
@@ -82,6 +83,7 @@ export class PedidoPresenter {
     cliente_nombre,
     detalles,
     pago,
+    comprobante,
   }: PedidoDetalle) {
     return {
       id: pedido.id,
@@ -114,8 +116,23 @@ export class PedidoPresenter {
             monto: pago.monto,
             numero_operacion: pago.numero_operacion,
             fecha_pago: pago.fecha_pago,
-            // La boleta o factura la genera HU-B-010; hasta entonces va vacía.
-            comprobante: null,
+            // Boleta o factura (HU-B-010); null si aún no se emitió.
+            comprobante: comprobante
+              ? {
+                  tipo: comprobante.tipo,
+                  codigo: codigoComprobante(
+                    comprobante.serie,
+                    comprobante.numero,
+                  ),
+                  serie: comprobante.serie,
+                  numero: comprobante.numero,
+                  ruc: comprobante.ruc,
+                  razon_social: comprobante.razon_social,
+                  subtotal: comprobante.subtotal,
+                  total: comprobante.total,
+                  fecha_emision: comprobante.created_at,
+                }
+              : null,
           }
         : null,
     };

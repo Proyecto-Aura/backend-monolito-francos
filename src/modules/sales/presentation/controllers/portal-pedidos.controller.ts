@@ -95,7 +95,7 @@ export class PortalPedidosController {
   @ApiOperation({
     summary: 'Pagar el carrito y crear el pedido',
     description:
-      'Recalcula el total en el servidor (igual que el resumen) y cobra con el token del checkout de Culqi (tarjeta, Yape o Plin). Solo si el pago se confirma se guarda el pedido ya pagado (RN5) y se avisa al cliente. Si el pago se rechaza responde 402, no se guarda nada y el cliente puede reintentar con otro token sin duplicar el pedido.',
+      'Recalcula el total en el servidor (igual que el resumen) y cobra con el token del checkout de Culqi (tarjeta, Yape o Plin). Solo si el pago se confirma se guarda el pedido ya pagado (RN5) y se avisa al cliente. Con el pago confirmado se emite la boleta o factura elegida y se envía al correo del cliente (HU-B-010); si no se puede emitir (sin serie activa o sin empresa emisora), el pedido queda pagado y `pago.comprobante` va en null. Si el pago se rechaza responde 402, no se guarda nada y el cliente puede reintentar con otro token sin duplicar el pedido.',
   })
   @ApiCreatedResponse({ description: 'Pedido creado y pago confirmado' })
   @ApiBadRequestResponse({

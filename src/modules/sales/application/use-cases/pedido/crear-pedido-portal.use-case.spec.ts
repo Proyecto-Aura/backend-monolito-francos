@@ -12,6 +12,7 @@ import {
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 import { ClienteParaResumen } from '../../../domain/repositories/types/pedido-repository.types';
 import { CrearPedidoPortalDto } from '../../dto/pedido-dtos/crear-pedido-portal.dto';
+import { GenerarComprobanteUseCase } from '../comprobante/generar-comprobante.use-case';
 import { CrearPedidoPortalUseCase } from './crear-pedido-portal.use-case';
 import {
   ResumenPedidoPortal,
@@ -24,6 +25,7 @@ describe('CrearPedidoPortalUseCase', () => {
   const notificarPagoRechazado = jest.fn();
   const cobrar = jest.fn();
   const resumir = jest.fn();
+  const generarComprobante = jest.fn();
 
   const useCase = new CrearPedidoPortalUseCase(
     {
@@ -33,6 +35,7 @@ describe('CrearPedidoPortalUseCase', () => {
     } as unknown as PedidoRepository,
     { cobrar },
     { execute: resumir } as unknown as ResumirPedidoPortalUseCase,
+    { execute: generarComprobante } as unknown as GenerarComprobanteUseCase,
   );
 
   const USER_ID = 'b6a1f1d2-1111-4c1a-9a0e-3b5b2f6f0001';
@@ -84,6 +87,19 @@ describe('CrearPedidoPortalUseCase', () => {
     ...overrides,
   });
 
+  const comprobanteEmitido = {
+    id: 7,
+    pago_id: 3,
+    tipo: TipoComprobante.BOLETA,
+    serie: 'B001',
+    numero: 1,
+    ruc: null,
+    razon_social: null,
+    subtotal: 165.6,
+    total: 165.6,
+    created_at: new Date('2026-11-02T10:00:00Z'),
+  };
+
   const dto = (): CrearPedidoPortalDto => ({
     items: [
       { producto_presentacion_id: 10, cantidad: 30 },
@@ -103,7 +119,8 @@ describe('CrearPedidoPortalUseCase', () => {
       numero_operacion: 'chr_1',
       fecha: new Date('2026-11-02T10:00:00Z'),
     });
-    create.mockResolvedValue({ pedido: { id: 1 } });
+    create.mockResolvedValue({ pedido: { id: 1, codigo: 'PED-000001' } });
+    generarComprobante.mockResolvedValue(comprobanteEmitido);
   });
 
   it('cobra el total que calcula el servidor con el correo del cliente', async () => {
@@ -224,5 +241,47 @@ describe('CrearPedidoPortalUseCase', () => {
 
     expect(cobrar).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  describe('comprobante (HU-B-010)', () => {
+    it('con el pago confirmado emite el comprobante elegido y lo devuelve con el pedido (RF-B30)', async () => {
+      const factura = {
+        tipo_comprobante: TipoComprobante.FACTURA,
+        ruc: '20601234565',
+        razon_social: 'Distribuidora Andina S.A.C.',
+      };
+      resumir.mockResolvedValue(resumen({ comprobante: factura }));
+
+      const resultado = await useCase.execute(dto(), USER_ID);
+
+      expect(generarComprobante).toHaveBeenCalledWith({
+        pedido: { pedido: { id: 1, codigo: 'PED-000001' } },
+        datos: factura,
+        subtotal: 165.6,
+        email: EMAIL,
+      });
+      expect(resultado.comprobante).toBe(comprobanteEmitido);
+    });
+
+    it('si el comprobante no se puede emitir, el pedido pagado se devuelve igual sin comprobante', async () => {
+      generarComprobante.mockRejectedValue(
+        new Error('No hay ninguna serie de tipo boleta configurada'),
+      );
+
+      const resultado = await useCase.execute(dto(), USER_ID);
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(resultado).toEqual({ pedido: { id: 1, codigo: 'PED-000001' } });
+    });
+
+    it('no emite comprobante si el pago se rechaza', async () => {
+      cobrar.mockResolvedValue({ aprobado: false, mensaje: 'Rechazado.' });
+
+      await expect(useCase.execute(dto(), USER_ID)).rejects.toThrow(
+        PagoRechazadoError,
+      );
+
+      expect(generarComprobante).not.toHaveBeenCalled();
+    });
   });
 });
