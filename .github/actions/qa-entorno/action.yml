@@ -1,12 +1,17 @@
 name: Levantar entorno QA
 description: >
-  Levanta en el runner la API (migraciones + seed demo) y la tienda
-  frontend-cliente-angular, y espera a que respondan. Necesita un servicio
-  postgres en el job. Nunca apunta a AWS.
+  Levanta en el runner la API (migraciones + seed demo), la tienda
+  frontend-cliente-angular y el portal de la empresa frontend-angular-francos,
+  y espera a que respondan. Necesita un servicio postgres en el job. Nunca
+  apunta a AWS.
 
 inputs:
   tienda-ref:
     description: Rama de frontend-cliente-angular que se prueba
+    required: false
+    default: develop
+  portal-ref:
+    description: Rama de frontend-angular-francos que se prueba
     required: false
     default: develop
 
@@ -34,7 +39,7 @@ runs:
         done
         echo "La API no respondió en 120 s" && cat "$RUNNER_TEMP/api.log" && exit 1
 
-    # Solo lectura: QA nunca modifica la tienda, solo la compila y la sirve.
+    # Solo lectura: QA nunca modifica los frontends, solo los compila y los sirve.
     - name: Descargar la tienda
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -43,25 +48,38 @@ runs:
         path: tienda
         persist-credentials: false
 
-    # Deja constancia de qué versión exacta de la tienda se probó, para poder
-    # reproducir un rojo aunque develop de la tienda avance.
+    - name: Descargar el portal de la empresa
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Proyecto-Aura/frontend-angular-francos
+        ref: ${{ inputs.portal-ref }}
+        path: portal
+        persist-credentials: false
+
+    # Deja constancia de qué versión exacta de cada frontend se probó, para
+    # poder reproducir un rojo aunque su develop avance.
     - name: Registrar versiones probadas
       shell: bash
       env:
         TIENDA_REF: ${{ inputs.tienda-ref }}
+        PORTAL_REF: ${{ inputs.portal-ref }}
       run: |
         {
           echo "### Entorno QA"
           echo "- backend: \`$(git rev-parse --short HEAD)\`"
           echo "- tienda ($TIENDA_REF): \`$(git -C tienda rev-parse --short HEAD)\`"
+          echo "- portal de la empresa ($PORTAL_REF): \`$(git -C portal rev-parse --short HEAD)\`"
         } >> "$GITHUB_STEP_SUMMARY"
 
-    - name: Instalar Node de la tienda
+    # Los dos frontends fijan Node 24 en su .nvmrc; se toma el de la tienda.
+    - name: Instalar Node de los frontends
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: tienda/.nvmrc
         cache: npm
-        cache-dependency-path: tienda/package-lock.json
+        cache-dependency-path: |
+          tienda/package-lock.json
+          portal/package-lock.json
 
     # La configuración development usa environment.ts, que apunta a
     # http://localhost:3000/api/v1: la misma API que acabamos de levantar.
@@ -77,3 +95,19 @@ runs:
           sleep 2
         done
         echo "La tienda no respondió en 60 s" && cat "$RUNNER_TEMP/tienda.log" && exit 1
+
+    # Igual que la tienda: development usa environment.ts, que apunta a la API
+    # local. El puerto 4201 coincide con FRONTEND_PORTAL_URL, que la API admite
+    # en CORS.
+    - name: Compilar y servir el portal de la empresa
+      shell: bash
+      working-directory: portal
+      run: |
+        npm ci --no-audit --no-fund
+        npx ng build --configuration development
+        nohup npx --yes serve@14.2.6 -s dist/francos-front/browser -l 4201 > "$RUNNER_TEMP/portal.log" 2>&1 &
+        for i in $(seq 1 30); do
+          curl -sf http://localhost:4201/ > /dev/null && exit 0
+          sleep 2
+        done
+        echo "El portal no respondió en 60 s" && cat "$RUNNER_TEMP/portal.log" && exit 1
