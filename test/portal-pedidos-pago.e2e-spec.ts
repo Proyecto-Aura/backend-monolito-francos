@@ -151,6 +151,10 @@ describe('Pago del pedido del portal (e2e, HU-B-008)', () => {
     });
     const pedidoIds = pedidos.map(({ id }) => id);
 
+    // HU-B-010: si hay serie y emisora activas, el pago deja un comprobante.
+    await prisma.comprobante.deleteMany({
+      where: { pago: { pedido_id: { in: pedidoIds } } },
+    });
     await prisma.pago.deleteMany({ where: { pedido_id: { in: pedidoIds } } });
     await prisma.detallePedido.deleteMany({
       where: { pedido_id: { in: pedidoIds } },

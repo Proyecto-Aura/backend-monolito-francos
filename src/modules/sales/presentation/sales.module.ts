@@ -40,6 +40,11 @@ import { ReembolsoRepository } from '../domain/repositories/reembolso.repository
 import { SerieComprobanteRepository } from '../domain/repositories/serie-comprobante.repository';
 import { EvidenciaReembolsoService } from '../domain/services/evidencia-reembolso.service';
 import { PasarelaPagoService } from '../domain/services/pasarela-pago.service';
+import { EnvioComprobanteService } from '../domain/services/envio-comprobante.service';
+import { ComprobanteRepository } from '../domain/repositories/comprobante.repository';
+import { PrismaComprobanteRepository } from '../infrastructure/repositories/prisma-comprobante.repository';
+import { NodemailerEnvioComprobanteService } from '../infrastructure/email/nodemailer-envio-comprobante.service';
+import { GenerarComprobanteUseCase } from '../application/use-cases/comprobante/generar-comprobante.use-case';
 import { CulqiPasarelaPagoService } from '../infrastructure/payment/culqi-pasarela-pago.service';
 import { SimuladaPasarelaPagoService } from '../infrastructure/payment/simulada-pasarela-pago.service';
 import { PrismaPedidoRepository } from '../infrastructure/repositories/prisma-pedido.repository';
@@ -109,6 +114,12 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     UpdateSerieComprobanteUseCase,
     ChangeSerieComprobanteStatusUseCase,
     ReservarCorrelativoUseCase,
+    GenerarComprobanteUseCase,
+    { provide: ComprobanteRepository, useClass: PrismaComprobanteRepository },
+    {
+      provide: EnvioComprobanteService,
+      useClass: NodemailerEnvioComprobanteService,
+    },
     {
       provide: SerieComprobanteRepository,
       useClass: PrismaSerieComprobanteRepository,

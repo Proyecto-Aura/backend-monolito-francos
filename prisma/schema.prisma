@@ -656,8 +656,9 @@ model Pago {
   fecha_pago       DateTime   @db.Timestamptz(6)
   created_at       DateTime   @default(now()) @db.Timestamptz(6)
 
-  pedido    Pedido     @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
-  reembolso Reembolso?
+  pedido      Pedido       @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pago_pedido")
+  reembolso   Reembolso?
+  comprobante Comprobante?
 
   @@map("pago")
   @@schema("commerce")
@@ -679,7 +680,33 @@ model SerieComprobante {
   created_at         DateTime        @default(now()) @db.Timestamptz(6)
   updated_at         DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
 
+  comprobantes Comprobante[]
+
   @@map("serie_comprobante")
+  @@schema("commerce")
+}
+
+// Boleta o factura de un pago del portal (HU-B-010, RF-B30). Un pago tiene un
+// solo comprobante; el número es el correlativo reservado en su serie, así que la
+// pareja serie + número no se repite. El tipo sale de la serie. RUC y razón
+// social son los que el cliente escribió al pagar con factura (HU-B-009): pueden
+// no ser los de su perfil, por eso se guardan aquí; con boleta quedan vacíos.
+model Comprobante {
+  id                   Int      @id(map: "pk_comprobante") @default(autoincrement())
+  pago_id              Int      @unique(map: "uq_comprobante_pago")
+  serie_comprobante_id Int
+  numero               Int
+  ruc                  String?  @db.Char(11)
+  razon_social         String?  @db.VarChar(200)
+  subtotal             Decimal  @db.Decimal(10, 2)
+  total                Decimal  @db.Decimal(10, 2)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  pago  Pago             @relation(fields: [pago_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobante_pago")
+  serie SerieComprobante @relation(fields: [serie_comprobante_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobante_serie_comprobante")
+
+  @@unique([serie_comprobante_id, numero], map: "uq_comprobante_serie_numero")
+  @@map("comprobante")
   @@schema("commerce")
 }
 

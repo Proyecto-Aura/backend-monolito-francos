@@ -6,6 +6,7 @@ import {
   OrigenPedido,
   TipoEntrega,
 } from '../../enums';
+import { ComprobanteEmitido } from './comprobante-repository.types';
 import { PaginationParams } from './pagination.types';
 
 // Lo que un pedido necesita saber del cliente: si está activo y a qué correo
@@ -153,4 +154,6 @@ export interface PedidoDetalle {
   cliente_nombre: string;
   detalles: DetallePedidoConProducto[];
   pago: PagoEntity | null;
+  // Boleta o factura del pago (HU-B-010); null mientras no se emita.
+  comprobante?: ComprobanteEmitido | null;
 }
