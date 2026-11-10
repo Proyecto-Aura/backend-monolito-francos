@@ -3,7 +3,8 @@
 #   - Jobs con prefijo qa- (nunca test-e2e ni security, que son los de ci.yml).
 #   - Grupo de concurrencia propio, para no cancelar corridas de ci.yml.
 #   - Sin workflow_call: cd.yml no lo invoca y no puede frenar un despliegue.
-#   - Todo corre en el runner: base, API y tienda efímeras. Nunca toca AWS.
+#   - Todo corre en el runner: base, API, tienda y portal de la empresa
+#     efímeros. Nunca toca AWS.
 name: QA
 
 on:
@@ -13,6 +14,10 @@ on:
     inputs:
       tienda-ref:
         description: Rama de frontend-cliente-angular que se prueba
+        required: false
+        default: develop
+      portal-ref:
+        description: Rama de frontend-angular-francos que se prueba
         required: false
         default: develop
 
@@ -71,6 +76,7 @@ jobs:
         uses: ./.github/actions/qa-entorno
         with:
           tienda-ref: ${{ inputs.tienda-ref || 'develop' }}
+          portal-ref: ${{ inputs.portal-ref || 'develop' }}
 
       - name: Instalar Playwright
         working-directory: qa
