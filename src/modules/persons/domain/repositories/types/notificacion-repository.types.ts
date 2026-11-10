@@ -10,3 +10,7 @@ export interface NotificacionDeUsuario {
   leido: boolean;
   fecha_leido: Date | null;
 }
+
+export interface PreferenciasNotificacion {
+  pedido_en_camino: boolean;
+}

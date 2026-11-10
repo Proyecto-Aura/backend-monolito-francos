@@ -82,6 +82,7 @@ describe('Despacho de pedidos (e2e)', () => {
   // específicos para probar las consultas y reglas de despacho.
   let pedidoPendienteId: number;
   let pedidoSinUsuarioId: number;
+  let pedidoPreferenciaId: number;
   let pedidoConfirmadoId: number;
   let pedidoSinStockId: number;
   let pedidoEntregadoId: number;
@@ -475,6 +476,12 @@ describe('Despacho de pedidos (e2e)', () => {
       presentacionConStockId,
       1,
     );
+    pedidoPreferenciaId = await sembrarPedido(
+      clienteConUsuarioId,
+      'pendiente_entrega',
+      presentacionConStockId,
+      1,
+    );
     pedidoConfirmadoId = await sembrarPedido(
       clienteConUsuarioId,
       'confirmado',
@@ -796,6 +803,32 @@ describe('Despacho de pedidos (e2e)', () => {
       expect(notificaciones[0].notificacion_users).toEqual([
         expect.objectContaining({ user_id: clienteUserId, leido: false }),
       ]);
+    });
+
+    it('si el cliente desactivó el aviso lo pasa a en camino sin notificar (OFT0-577)', async () => {
+      await prisma.user.update({
+        where: { id: clienteUserId },
+        data: { notificar_pedido_en_camino: false },
+      });
+
+      try {
+        await patch(pedidoPreferenciaId, 'en-camino').expect(200);
+      } finally {
+        await prisma.user.update({
+          where: { id: clienteUserId },
+          data: { notificar_pedido_en_camino: true },
+        });
+      }
+
+      await expect(estadoDe(pedidoPreferenciaId)).resolves.toBe('en_camino');
+      await expect(
+        prisma.notificacion.count({
+          where: {
+            referencia_tipo: 'pedido',
+            referencia_id: String(pedidoPreferenciaId),
+          },
+        }),
+      ).resolves.toBe(0);
     });
 
     it('si el cliente no tiene usuario lo pasa a en camino sin notificar', async () => {

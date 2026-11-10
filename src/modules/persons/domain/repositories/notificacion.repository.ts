@@ -2,6 +2,7 @@ import { PaginatedResult } from './types/pagination.types';
 import {
   ListNotificacionesParams,
   NotificacionDeUsuario,
+  PreferenciasNotificacion,
 } from './types/notificacion-repository.types';
 
 export abstract class NotificacionRepository {
@@ -12,5 +13,12 @@ export abstract class NotificacionRepository {
   abstract marcarLeida(
     notificacionId: number,
     userId: string,
+  ): Promise<boolean>;
+  abstract findPreferencias(
+    userId: string,
+  ): Promise<PreferenciasNotificacion | null>;
+  abstract actualizarPreferencias(
+    userId: string,
+    preferencias: PreferenciasNotificacion,
   ): Promise<boolean>;
 }
