@@ -177,6 +177,9 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
 
     return ProductoPresentacionMapper.toDomain(producto_presentacion);
   }
+  // El botón Activar/Desactivar (HU-A-008) es el único interruptor del Portal
+  // B: activar también publica la presentación (visible_portal_b = true), y
+  // desactivar la vuelve a ocultar, ambos en la misma operación.
   async setStatus(
     id: number,
     estado: boolean,
@@ -184,7 +187,7 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
     const producto_presentacion = await this.prisma.productoPresentacion.update(
       {
         where: { id },
-        data: { estado },
+        data: { estado, visible_portal_b: estado },
       },
     );
 
