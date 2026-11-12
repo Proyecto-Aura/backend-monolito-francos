@@ -7,5 +7,6 @@ export * from './notificacion-user.entity';
 export * from './persona.entity';
 export * from './rol.entity';
 export * from './ruta.entity';
+export * from './solicitud-cambio-email.entity';
 export * from './user.entity';
 export * from './usuario-rol.entity';

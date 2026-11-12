@@ -76,6 +76,10 @@ import { PrismaUbigeoRepository } from '../infrastructure/repositories/prisma-ub
 import { UserRepository } from '../domain/repositories/user.repository';
 import { GetPerfilUseCase } from '../application/use-cases/perfil/get-perfil.use-case';
 import { UpdatePerfilUseCase } from '../application/use-cases/perfil/update-perfil.use-case';
+import { VerifyEmailChangeUseCase } from '../application/use-cases/perfil/verify-email-change.use-case';
+import { SolicitudCambioEmailRepository } from '../domain/repositories/solicitud-cambio-email.repository';
+import { PrismaSolicitudCambioEmailRepository } from '../infrastructure/repositories/prisma-solicitud-cambio-email.repository';
+import { EmailModule } from '../../auth/presentation/email.module';
 import { PerfilController } from './controllers/perfil.controller';
 import { PrismaUserRepository } from '../infrastructure/repositories/prisma-user.repository';
 import { UsuarioRolRepository } from '../domain/repositories/usuario-rol.repository';
@@ -98,6 +102,7 @@ import { NotificacionRepository } from '../domain/repositories/notificacion.repo
 import { PrismaNotificacionRepository } from '../infrastructure/repositories/prisma-notificacion.repository';
 
 @Module({
+  imports: [EmailModule],
   controllers: [
     RolesController,
     RutasController,
@@ -182,6 +187,11 @@ import { PrismaNotificacionRepository } from '../infrastructure/repositories/pri
     { provide: UserRepository, useClass: PrismaUserRepository },
     GetPerfilUseCase,
     UpdatePerfilUseCase,
+    VerifyEmailChangeUseCase,
+    {
+      provide: SolicitudCambioEmailRepository,
+      useClass: PrismaSolicitudCambioEmailRepository,
+    },
     { provide: UsuarioRolRepository, useClass: PrismaUsuarioRolRepository },
     CreateUsuarioInternoUseCase,
     ListUsuariosInternosUseCase,

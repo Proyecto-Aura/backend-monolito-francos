@@ -1,17 +1,28 @@
+import { hashToken } from '../../../../auth/application/utils/token.util';
+import { EmailService } from '../../../../auth/domain/services/email.service';
 import { ResourceConflictError } from '../../../domain/errors/persons-domain.errors';
+import { SolicitudCambioEmailEntity } from '../../../domain/entities/solicitud-cambio-email.entity';
+import { SolicitudCambioEmailRepository } from '../../../domain/repositories/solicitud-cambio-email.repository';
 import { UserRepository } from '../../../domain/repositories/user.repository';
 import { GetPerfilUseCase, PerfilCliente } from './get-perfil.use-case';
 import { UpdatePerfilUseCase } from './update-perfil.use-case';
 
-describe('UpdatePerfilUseCase (HU-B-015)', () => {
+const EMAIL_ACTUAL = 'rosa@francos.test';
+const EMAIL_NUEVO = 'rosa.nueva@francos.test';
+
+describe('UpdatePerfilUseCase (HU-B-015 / HU-B-016)', () => {
   const perfil = {
-    user: { id: 'user-1', email: 'rosa@francos.test' },
-    persona: { id: 'persona-1' },
+    user: { id: 'user-1', email: EMAIL_ACTUAL },
+    persona: { id: 'persona-1', nombres: 'Rosa' },
     cliente: null,
   } as unknown as PerfilCliente;
 
   const existsByEmail = jest.fn();
   const updateWithPersona = jest.fn();
+  const findByUserId = jest.fn();
+  const save = jest.fn();
+  const deleteByUserId = jest.fn();
+  const sendEmailChangeVerificationEmail = jest.fn();
   const getPerfil = { execute: jest.fn() };
 
   const useCase = new UpdatePerfilUseCase(
@@ -19,45 +30,93 @@ describe('UpdatePerfilUseCase (HU-B-015)', () => {
       existsByEmail,
       updateWithPersona,
     } as unknown as jest.Mocked<UserRepository>,
+    {
+      findByUserId,
+      save,
+      deleteByUserId,
+    } as unknown as jest.Mocked<SolicitudCambioEmailRepository>,
+    {
+      sendEmailChangeVerificationEmail,
+    } as unknown as jest.Mocked<EmailService>,
     getPerfil as unknown as GetPerfilUseCase,
   );
+
+  const solicitud = (
+    cambios: Partial<SolicitudCambioEmailEntity> = {},
+  ): SolicitudCambioEmailEntity => ({
+    id: 'solicitud-1',
+    user_id: 'user-1',
+    email_nuevo: EMAIL_NUEVO,
+    token_hash: 'hash-viejo',
+    expira_at: new Date(Date.now() + 60 * 60 * 1000),
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...cambios,
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
     getPerfil.execute.mockResolvedValue(perfil);
     existsByEmail.mockResolvedValue(false);
+    findByUserId.mockResolvedValue(null);
+    sendEmailChangeVerificationEmail.mockResolvedValue(undefined);
   });
 
-  it('updates name, email and phone of the logged-in client in one go', async () => {
-    await useCase.execute('user-1', {
-      nombres: 'Rosa María',
-      email: 'rosa.nueva@francos.test',
-      telefono: '987654321',
+  it('con email nuevo no lo aplica: guarda el hash y envía el correo al nuevo', async () => {
+    const resultado = await useCase.execute('user-1', {
+      email: `  ${EMAIL_NUEVO.toUpperCase()}  `,
     });
 
-    expect(existsByEmail).toHaveBeenCalledWith(
-      'rosa.nueva@francos.test',
-      'user-1',
-    );
-    expect(updateWithPersona).toHaveBeenCalledWith(
-      'user-1',
-      { email: 'rosa.nueva@francos.test' },
-      { nombres: 'Rosa María', telefono: '987654321' },
-    );
+    expect(save).toHaveBeenCalledTimes(1);
+    const [userId, emailNuevo, tokenHash] = save.mock.calls[0] as [
+      string,
+      string,
+      string,
+    ];
+    const [[enviado]] = sendEmailChangeVerificationEmail.mock
+      .calls as unknown as [
+      [{ token: string; to: string; nombre: string; frontend: string }],
+    ];
+    expect(userId).toBe('user-1');
+    expect(emailNuevo).toBe(EMAIL_NUEVO);
+    expect(tokenHash).not.toBe(enviado.token);
+    expect(tokenHash).toBe(hashToken(enviado.token));
+    expect(enviado.to).toBe(EMAIL_NUEVO);
+    expect(enviado.nombre).toBe('Rosa');
+    expect(enviado.frontend).toBe('tienda');
+
+    // El email actual de la cuenta no se toca.
+    expect(updateWithPersona).not.toHaveBeenCalled();
+    expect(resultado.cambioEmailPendiente).toBe(true);
   });
 
-  it('only changes what is sent', async () => {
-    await useCase.execute('user-1', { telefono: '912345678' });
+  it('aplica nombres y teléfono en la misma petición aunque el email quede pendiente', async () => {
+    await useCase.execute('user-1', {
+      email: EMAIL_NUEVO,
+      nombres: 'Rosa María',
+      telefono: '912345678',
+    });
+
+    expect(updateWithPersona).toHaveBeenCalledWith(
+      'user-1',
+      {},
+      { nombres: 'Rosa María', telefono: '912345678' },
+    );
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('si el email es el mismo (normalizado) no envía ni guarda nada', async () => {
+    const resultado = await useCase.execute('user-1', {
+      email: `  ${EMAIL_ACTUAL.toUpperCase()} `,
+    });
 
     expect(existsByEmail).not.toHaveBeenCalled();
-    expect(updateWithPersona).toHaveBeenCalledWith(
-      'user-1',
-      { email: undefined },
-      { nombres: undefined, telefono: '912345678' },
-    );
+    expect(save).not.toHaveBeenCalled();
+    expect(sendEmailChangeVerificationEmail).not.toHaveBeenCalled();
+    expect(resultado.cambioEmailPendiente).toBe(false);
   });
 
-  it('rejects an email that another account already uses (409)', async () => {
+  it('rechaza un email que ya usa otra cuenta (409) y no guarda nada', async () => {
     existsByEmail.mockResolvedValue(true);
 
     await expect(
@@ -65,13 +124,51 @@ describe('UpdatePerfilUseCase (HU-B-015)', () => {
     ).rejects.toThrow(
       new ResourceConflictError('Ese correo ya está registrado en otra cuenta'),
     );
-    expect(updateWithPersona).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(sendEmailChangeVerificationEmail).not.toHaveBeenCalled();
   });
 
-  it('keeps the same email without looking it up', async () => {
-    await useCase.execute('user-1', { email: 'rosa@francos.test' });
+  it('dentro del cooldown no reenvía y mantiene el pendiente', async () => {
+    findByUserId.mockResolvedValue(
+      solicitud({ created_at: new Date(Date.now() - 10 * 1000) }),
+    );
 
-    expect(existsByEmail).not.toHaveBeenCalled();
-    expect(updateWithPersona).toHaveBeenCalled();
+    const resultado = await useCase.execute('user-1', { email: EMAIL_NUEVO });
+
+    expect(save).not.toHaveBeenCalled();
+    expect(sendEmailChangeVerificationEmail).not.toHaveBeenCalled();
+    expect(resultado.cambioEmailPendiente).toBe(true);
+  });
+
+  it('fuera del cooldown reemplaza la solicitud con un token nuevo', async () => {
+    findByUserId.mockResolvedValue(
+      solicitud({ created_at: new Date(Date.now() - 61 * 1000) }),
+    );
+
+    await useCase.execute('user-1', { email: EMAIL_NUEVO });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(sendEmailChangeVerificationEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('descarta una solicitud vencida y envía una nueva', async () => {
+    findByUserId.mockResolvedValue(
+      solicitud({ expira_at: new Date(Date.now() - 1000) }),
+    );
+
+    const resultado = await useCase.execute('user-1', { email: EMAIL_NUEVO });
+
+    expect(deleteByUserId).toHaveBeenCalledWith('user-1');
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(resultado.cambioEmailPendiente).toBe(true);
+  });
+
+  it('si falla el envío del correo, el PATCH no se rompe', async () => {
+    sendEmailChangeVerificationEmail.mockRejectedValue(new Error('SMTP caído'));
+
+    const resultado = await useCase.execute('user-1', { email: EMAIL_NUEVO });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(resultado.cambioEmailPendiente).toBe(true);
   });
 });

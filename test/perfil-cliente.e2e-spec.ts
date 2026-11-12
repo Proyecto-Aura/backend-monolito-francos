@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { EmailService } from '../src/modules/auth/domain/services/email.service';
 
 // Usuarios que crea este archivo (HU-B-015); se borran antes y después.
 const PREFIJO = 'e2e-perfil-';
@@ -104,7 +105,12 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(EmailService)
+      .useValue({
+        sendEmailChangeVerificationEmail: jest.fn(() => Promise.resolve()),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -139,7 +145,7 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
     });
   });
 
-  it('edits name, email and phone (RF-B43)', async () => {
+  it('edits name and phone, and leaves the new email pending verification (RF-B43/RF-B44)', async () => {
     const jwt = await token(CLIENTE.username);
     const nuevoEmail = `${PREFIJO}rosa.nueva@francos.test`;
 
@@ -151,15 +157,17 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
 
     expect(response.body).toMatchObject({
       nombres: 'Rosa María',
-      email: nuevoEmail,
+      email: `${CLIENTE.username}@francos.test`,
       telefono: '912345678',
       apellido_paterno: 'Quispe',
+      cambio_email_pendiente: true,
     });
-    // Con el email nuevo ya puede iniciar sesión.
+    // Sin confirmar el enlace, el email nuevo todavía no sirve para entrar.
     await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ identificador: nuevoEmail, password: PASSWORD })
-      .expect(201);
+      .expect(401);
+    await token(CLIENTE.username);
   });
 
   it('rejects an email that another account uses (409)', async () => {
