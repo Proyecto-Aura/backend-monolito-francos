@@ -38,13 +38,14 @@ describe('JwtStrategy (HU-B-004)', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('con la sesión abierta deja pasar al usuario', async () => {
+  it('con la sesión abierta deja pasar al usuario, con el id de su sesión', async () => {
     findById.mockResolvedValue(makeSesion(null));
 
     await expect(strategy.validate(payload)).resolves.toEqual({
       userId: 'user-1',
       email: 'rosa@francos.test',
       roles: ['cliente'],
+      sesionId: 'sesion-1',
     });
     expect(findById).toHaveBeenCalledWith('sesion-1');
   });

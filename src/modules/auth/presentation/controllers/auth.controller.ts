@@ -37,6 +37,8 @@ import { ResetPasswordUseCase } from '../../application/use-cases/reset-password
 import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from '../../application/use-cases/resend-verification.use-case';
 import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
+import { CambiarContrasenaDto } from '../../application/dto/cambiar-contrasena.dto';
+import { CambiarContrasenaUseCase } from '../../application/use-cases/cambiar-contrasena.use-case';
 import { AuthPresenter } from '../presenters/auth.presenter';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
@@ -49,6 +51,7 @@ const FORGOT_PASSWORD_MESSAGE =
   'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña';
 const RESET_PASSWORD_MESSAGE = 'Contraseña restablecida correctamente';
 const VERIFY_EMAIL_MESSAGE = 'Correo verificado correctamente';
+const CAMBIAR_CONTRASENA_MESSAGE = 'Contraseña actualizada';
 const RESEND_VERIFICATION_MESSAGE =
   'Si el correo está registrado, recibirás un enlace de verificación';
 
@@ -67,6 +70,7 @@ export class AuthController {
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
     private readonly resendVerificationUseCase: ResendVerificationUseCase,
     private readonly getMeUseCase: GetMeUseCase,
+    private readonly cambiarContrasenaUseCase: CambiarContrasenaUseCase,
   ) {}
 
   @Get('me')
@@ -190,6 +194,33 @@ export class AuthController {
   async resetPasswordFromToken(@Body() dto: ResetPasswordDto) {
     await this.resetPassword.execute(dto);
     return { message: RESET_PASSWORD_MESSAGE };
+  }
+
+  @Post('cambiar-contrasena')
+  @HttpCode(200)
+  @Roles('cliente')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Cambiar la contraseña validando la actual (HU-B-017)',
+    description:
+      'El cliente escribe su contraseña actual y la nueva dos veces. Sigue conectado en esta sesión; las demás sesiones abiertas se cierran.',
+  })
+  @ApiOkResponse({ description: 'Contraseña cambiada' })
+  @ApiBadRequestResponse({
+    description:
+      'La contraseña actual no es correcta, la nueva es igual a la actual, tiene menos de 8 caracteres o no coincide con la confirmación',
+  })
+  @ApiForbiddenResponse({ description: 'Solo para clientes' })
+  async cambiarContrasena(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CambiarContrasenaDto,
+  ) {
+    await this.cambiarContrasenaUseCase.execute(
+      user.userId,
+      user.sesionId ?? null,
+      dto,
+    );
+    return { message: CAMBIAR_CONTRASENA_MESSAGE };
   }
 
   @Post('verify-email')
