@@ -108,3 +108,69 @@ jobs:
           path: ${{ runner.temp }}/*.log
           if-no-files-found: ignore
           retention-days: 7
+
+  # Compara el contrato OpenAPI (/api/docs-json) del PR con el de la rama
+  # destino y falla si el PR rompe a quien lo consume: los dos frontends.
+  # Solo en PR: en una corrida manual no hay rama destino con la que comparar.
+  qa-contrato:
+    name: qa-contrato
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Las dos API solo necesitan conectarse a la base para arrancar.
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_USER: qa
+          POSTGRES_PASSWORD: qa
+          POSTGRES_DB: francos_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qa -d francos_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Descargar backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Historial completo para poder sacar la rama destino como worktree.
+          fetch-depth: 0
+
+      - name: Preparar backend
+        uses: ./.github/actions/setup
+
+      - name: Contrato del PR
+        run: |
+          pnpm build
+          bash qa/contrato/extraer.sh . 3000 "$RUNNER_TEMP/contrato/pr.json"
+
+      # La rama destino va fuera del workspace para que su código no entre en
+      # el build ni en el lint del PR.
+      - name: Contrato de la rama destino
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "origin/$BASE_REF"
+          cd "$RUNNER_TEMP/base"
+          pnpm install --frozen-lockfile
+          pnpm exec prisma generate
+          pnpm build
+          bash "$GITHUB_WORKSPACE/qa/contrato/extraer.sh" . 3001 "$RUNNER_TEMP/contrato/base.json"
+          echo "- rama destino ($BASE_REF): \`$(git rev-parse --short HEAD)\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comparar contratos
+        run: bash qa/contrato/comparar.sh "$RUNNER_TEMP/contrato/base.json" "$RUNNER_TEMP/contrato/pr.json"
+
+      - name: Subir contratos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qa-contratos
+          path: ${{ runner.temp }}/contrato/
+          if-no-files-found: ignore
+          retention-days: 7
