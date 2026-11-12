@@ -29,6 +29,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { AuthController } from './controllers/auth.controller';
+import { CambiarContrasenaUseCase } from '../application/use-cases/cambiar-contrasena.use-case';
+import { CambioContrasenaRepository } from '../domain/repositories/cambio-contrasena.repository';
+import { PrismaCambioContrasenaRepository } from '../infrastructure/repositories/prisma-cambio-contrasena.repository';
 import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filter';
 
 @Module({
@@ -57,6 +60,11 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
     GetMeUseCase,
     VerifyEmailUseCase,
     ResendVerificationUseCase,
+    CambiarContrasenaUseCase,
+    {
+      provide: CambioContrasenaRepository,
+      useClass: PrismaCambioContrasenaRepository,
+    },
     JwtStrategy,
     {
       provide: APP_GUARD,

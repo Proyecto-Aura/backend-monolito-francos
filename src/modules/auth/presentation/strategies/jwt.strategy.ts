@@ -17,6 +17,8 @@ export interface AuthenticatedUser {
   userId: string;
   email: string;
   roles: string[];
+  // Sesión (refresh token) del token: HU-B-017 la mantiene al cambiar la contraseña.
+  sesionId?: string;
 }
 
 export const SESION_CERRADA_MESSAGE = 'La sesión fue cerrada';
@@ -41,6 +43,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException(SESION_CERRADA_MESSAGE);
     }
 
-    return { userId: payload.sub, email: payload.email, roles: payload.roles };
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      roles: payload.roles,
+      sesionId: sesion.id,
+    };
   }
 }
