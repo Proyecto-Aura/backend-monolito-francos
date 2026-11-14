@@ -7,6 +7,7 @@ import { configureApp } from '../src/app.setup';
 import { envs } from '../src/config/envs';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { hashToken } from '../src/modules/auth/application/utils/token.util';
 
 // Cliente del portal (HU-B-001): inicia sesión con email o username.
 const CLIENTE = {
@@ -161,5 +162,102 @@ describe('Iniciar sesión del cliente (e2e, HU-B-001)', () => {
       password: CLIENTE.password,
       recordar: 'si',
     }).expect(400);
+  });
+
+  // Portal cliente y portal empresa comparten este backend: si usaran la
+  // misma cookie, loguearse en uno pisaría la sesión del otro en el mismo
+  // navegador. Cada Origin debe recibir y poder renovar SU PROPIA cookie.
+  describe('la cookie de sesión se separa por app (Origin)', () => {
+    const cookieLlamada = (
+      setCookie: string[] | string | undefined,
+      nombre: string,
+    ) => [setCookie ?? []].flat().find((c) => c.startsWith(`${nombre}=`));
+
+    it('con Origin del portal cliente, la cookie se llama refresh_token_cliente', async () => {
+      const response = await login({
+        identificador: CLIENTE.username,
+        password: CLIENTE.password,
+      })
+        .set('Origin', envs.frontendStoreUrl)
+        .expect(201);
+
+      expect(
+        cookieLlamada(response.headers['set-cookie'], 'refresh_token_cliente'),
+      ).toBeDefined();
+    });
+
+    it('con Origin del portal empresa, la cookie se llama refresh_token_empresa', async () => {
+      const response = await login({
+        identificador: CLIENTE.username,
+        password: CLIENTE.password,
+      })
+        .set('Origin', envs.frontendPortalUrl)
+        .expect(201);
+
+      expect(
+        cookieLlamada(response.headers['set-cookie'], 'refresh_token_empresa'),
+      ).toBeDefined();
+    });
+
+    it('sin un Origin reconocido, usa el nombre histórico refresh_token', async () => {
+      const response = await login({
+        identificador: CLIENTE.username,
+        password: CLIENTE.password,
+      })
+        .set('Origin', 'http://un-origen-desconocido.test')
+        .expect(201);
+
+      expect(
+        cookieLlamada(response.headers['set-cookie'], 'refresh_token'),
+      ).toBeDefined();
+    });
+
+    it('con ambas cookies presentes, /auth/refresh usa la del Origin correcto y no una sesión revocada de la otra app', async () => {
+      const loginCliente = await login({
+        identificador: CLIENTE.username,
+        password: CLIENTE.password,
+      })
+        .set('Origin', envs.frontendStoreUrl)
+        .expect(201);
+      const loginEmpresa = await login({
+        identificador: CLIENTE.username,
+        password: CLIENTE.password,
+      })
+        .set('Origin', envs.frontendPortalUrl)
+        .expect(201);
+
+      const cookieCliente = cookieLlamada(
+        loginCliente.headers['set-cookie'],
+        'refresh_token_cliente',
+      )!.split(';')[0];
+      const cookieEmpresa = cookieLlamada(
+        loginEmpresa.headers['set-cookie'],
+        'refresh_token_empresa',
+      )!.split(';')[0];
+
+      // Simula que la sesión del portal empresa ya se cerró/revocó en algún
+      // momento: si /auth/refresh igual la usara por error, esto fallaría.
+      const tokenPlanoEmpresa = decodeURIComponent(cookieEmpresa.split('=')[1]);
+      await prisma.refreshToken.updateMany({
+        where: { token_hash: hashToken(tokenPlanoEmpresa) },
+        data: { revoked_at: new Date() },
+      });
+
+      // El navegador manda las dos cookies juntas (mismo dominio); con
+      // Origin del portal cliente debe renovar con la de cliente, vigente.
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .set('Origin', envs.frontendStoreUrl)
+        .set('Cookie', `${cookieCliente}; ${cookieEmpresa}`)
+        .expect(201);
+
+      // Y con Origin del portal empresa, como esa sesión está revocada, debe
+      // fallar — confirma que antes no "se coló" la de cliente por error.
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .set('Origin', envs.frontendPortalUrl)
+        .set('Cookie', `${cookieCliente}; ${cookieEmpresa}`)
+        .expect(401);
+    });
   });
 });
