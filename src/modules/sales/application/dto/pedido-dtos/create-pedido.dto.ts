@@ -8,6 +8,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsPositive,
   IsString,
   IsUUID,
@@ -18,6 +19,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { MetodoPago, TipoEntrega } from '../../../domain/enums';
+import { DatosComprobanteDto } from './datos-comprobante.dto';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -91,4 +93,14 @@ export class CreatePedidoDto {
   @IsNotEmpty()
   @MaxLength(100)
   culqi_token?: string;
+
+  @ApiPropertyOptional({
+    type: DatosComprobanteDto,
+    description:
+      'Tipo de comprobante (HU-B-010 también para el registro manual); si no viene, boleta',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DatosComprobanteDto)
+  comprobante?: DatosComprobanteDto;
 }
