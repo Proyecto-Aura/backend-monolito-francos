@@ -85,7 +85,8 @@ export interface ListPedidosParams extends PaginationParams {
   hasta?: Date;
   // Vista de inventario (RF-A030 inventario): trae el stock de cada item para
   // calcular `disponibilidad` por pedido. Solo se pide acá porque implica un
-  // join extra que las demás listas (despacho, general) no necesitan.
+  // join extra que las demás listas (despacho, general) no necesitan. No
+  // afecta el orden: todas las listas ordenan primero por estado.
   conDisponibilidad?: boolean;
 }
 

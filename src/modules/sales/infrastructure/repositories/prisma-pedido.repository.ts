@@ -292,15 +292,12 @@ export class PrismaPedidoRepository implements PedidoRepository {
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        // Orden de llegada (RF-A030), salvo en la vista de inventario
-        // (conDisponibilidad=true): ahí primero por estado -- Postgres
-        // ordena un enum por el orden en que se declaró el tipo, así que
-        // `estado: 'asc'` ya deja en_espera_inventario, luego
-        // en_preparacion, luego pendiente_entrega (ver EstadoPedido en
+        // Primero por estado (RF-A030): Postgres ordena un enum por el orden
+        // en que se declaró el tipo, así que `estado: 'asc'` ya deja
+        // confirmado, en_espera_inventario, en_preparacion, pendiente_entrega,
+        // en_camino, entregado y cancelado al final (ver EstadoPedido en
         // schema.prisma) -- y dentro de cada estado, por orden de llegada.
-        orderBy: params.conDisponibilidad
-          ? [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }]
-          : [{ created_at: 'asc' }, { id: 'asc' }],
+        orderBy: [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       }),
       this.prisma.pedido.count({ where }),
     ]);
