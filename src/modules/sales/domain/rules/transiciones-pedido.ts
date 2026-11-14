@@ -2,11 +2,16 @@ import { EstadoPedido } from '../enums';
 
 // RN6: cambios de estado que hace el operador de ventas. Pasa el pedido a
 // "en espera de inventario" para que el operador de productos terminados lo vea
-// (HU-A-010, RF-A038).
+// (HU-A-010, RF-A038), o lo cancela mientras nadie empezó a prepararlo —
+// antes de "en_espera_inventario" el stock todavía no se descontó (RF-A036),
+// así que cancelar aquí nunca necesita revertirlo.
 export const TRANSICIONES_DE_VENTAS: Partial<
   Record<EstadoPedido, EstadoPedido[]>
 > = {
-  [EstadoPedido.CONFIRMADO]: [EstadoPedido.EN_ESPERA_INVENTARIO],
+  [EstadoPedido.CONFIRMADO]: [
+    EstadoPedido.EN_ESPERA_INVENTARIO,
+    EstadoPedido.CANCELADO,
+  ],
 };
 
 export function esTransicionDeVentas(
