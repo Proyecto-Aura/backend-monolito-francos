@@ -50,6 +50,7 @@ const pedidoDetalleInclude = {
       producto_presentacion: {
         select: {
           sku: true,
+          imagen_key: true,
           producto: { select: { nombre: true } },
           presentacion: { select: { cantidad: true, unidad_medida: true } },
           producto_terminado: { select: { id: true, stock_actual: true } },
@@ -526,6 +527,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
       detalles: pedido.detalles.map((detalle) => ({
         detalle: PedidoMapper.detalleToDomain(detalle),
         sku: detalle.producto_presentacion.sku,
+        imagen_key: detalle.producto_presentacion.imagen_key,
         producto_nombre: detalle.producto_presentacion.producto.nombre,
         presentacion: `${detalle.producto_presentacion.presentacion.cantidad} ${detalle.producto_presentacion.presentacion.unidad_medida}`,
         stock_disponible:

@@ -140,6 +140,9 @@ export type DisponibilidadPedido = 'completo' | 'parcial' | 'sin_stock';
 export interface DetallePedidoConProducto {
   detalle: DetallePedidoEntity;
   sku: string;
+  // Clave en el storage de medios; el presenter arma la URL completa (igual
+  // que el catálogo). Null si el producto no tiene imagen.
+  imagen_key: string | null;
   producto_nombre: string;
   presentacion: string;
   // Stock actual de productos terminados de esa presentación (vista de inventario).

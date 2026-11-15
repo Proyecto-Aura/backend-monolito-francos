@@ -6,6 +6,7 @@ import {
 } from '../../domain/repositories/types/pedido-repository.types';
 import { codigoComprobante } from '../../application/utils/comprobante.utils';
 import { calcularDisponibilidad } from '../../application/utils/pedido.utils';
+import { envs } from '../../../../config/envs';
 
 export class PedidoPresenter {
   static resumenPortalToHttp({
@@ -98,10 +99,11 @@ export class PedidoPresenter {
       created_at: pedido.created_at,
       updated_at: pedido.updated_at,
       items: detalles.map(
-        ({ detalle, sku, producto_nombre, presentacion }) => ({
+        ({ detalle, sku, imagen_key, producto_nombre, presentacion }) => ({
           id: detalle.id,
           producto_presentacion_id: detalle.producto_presentacion_id,
           sku,
+          imagen_url: imagen_key ? `${envs.mediaBaseUrl}/${imagen_key}` : null,
           producto: producto_nombre,
           presentacion,
           cantidad: detalle.cantidad,
