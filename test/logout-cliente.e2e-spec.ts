@@ -137,6 +137,23 @@ describe('Cerrar sesión del cliente (e2e, HU-B-004)', () => {
       .expect(401);
   });
 
+  it('limpia las cookies de las 3 apps aunque solo haya iniciado sesión en una', async () => {
+    const { cookie } = await iniciarSesion();
+
+    const response = await logout(cookie).expect(201);
+    const cookiesBorradas = [response.headers['set-cookie'] ?? []].flat();
+
+    for (const nombre of [
+      'refresh_token_cliente',
+      'refresh_token_empresa',
+      'refresh_token',
+    ]) {
+      expect(cookiesBorradas.some((c) => c.startsWith(`${nombre}=;`))).toBe(
+        true,
+      );
+    }
+  });
+
   it('cerrar sesión en un dispositivo no cierra las demás sesiones', async () => {
     const primera = await iniciarSesion();
     const segunda = await iniciarSesion();

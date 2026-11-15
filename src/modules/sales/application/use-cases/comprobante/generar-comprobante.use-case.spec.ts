@@ -180,6 +180,16 @@ describe('GenerarComprobanteUseCase (HU-B-010)', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
+  // RF-A032: el registro manual en efectivo permite un cliente sin correo.
+  it('sin correo del cliente, igual emite el comprobante pero no intenta enviarlo', async () => {
+    await expect(useCase.execute(params({ email: null }))).resolves.toEqual(
+      emitido(),
+    );
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(enviar).not.toHaveBeenCalled();
+  });
+
   it('no emite otro comprobante si el pago ya tiene uno, ni gasta otro número', async () => {
     findByPagoId.mockResolvedValue(emitido());
 

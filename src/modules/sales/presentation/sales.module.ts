@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { InventoryModule } from '../../inventory/presentation/inventory.module';
 import { ActualizarEstadoPedidoUseCase } from '../application/use-cases/pedido/actualizar-estado-pedido.use-case';
+import { CancelarPedidoPortalUseCase } from '../application/use-cases/pedido/cancelar-pedido-portal.use-case';
 import { CompletarPedidoUseCase } from '../application/use-cases/pedido/completar-pedido.use-case';
 import { CreatePedidoUseCase } from '../application/use-cases/pedido/create-pedido.use-case';
 import { DespacharPedidoUseCase } from '../application/use-cases/pedido/despachar-pedido.use-case';
@@ -87,6 +88,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     ResumirPedidoPortalUseCase,
     CrearPedidoPortalUseCase,
     GetPedidoPortalUseCase,
+    CancelarPedidoPortalUseCase,
     ListPedidosDespachoUseCase,
     GetPedidoDespachoUseCase,
     GetIndicadoresPedidosDespachoUseCase,

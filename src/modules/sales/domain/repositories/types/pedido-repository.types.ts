@@ -85,7 +85,8 @@ export interface ListPedidosParams extends PaginationParams {
   hasta?: Date;
   // Vista de inventario (RF-A030 inventario): trae el stock de cada item para
   // calcular `disponibilidad` por pedido. Solo se pide acá porque implica un
-  // join extra que las demás listas (despacho, general) no necesitan.
+  // join extra que las demás listas (despacho, general) no necesitan. No
+  // afecta el orden: todas las listas ordenan primero por estado.
   conDisponibilidad?: boolean;
 }
 
@@ -139,6 +140,9 @@ export type DisponibilidadPedido = 'completo' | 'parcial' | 'sin_stock';
 export interface DetallePedidoConProducto {
   detalle: DetallePedidoEntity;
   sku: string;
+  // Clave en el storage de medios; el presenter arma la URL completa (igual
+  // que el catálogo). Null si el producto no tiene imagen.
+  imagen_key: string | null;
   producto_nombre: string;
   presentacion: string;
   // Stock actual de productos terminados de esa presentación (vista de inventario).

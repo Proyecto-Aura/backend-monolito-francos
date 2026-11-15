@@ -519,4 +519,107 @@ describe('Pago del pedido del portal (e2e, HU-B-008)', () => {
       await consultar('abc', tokens.cliente).expect(400);
     });
   });
+
+  describe('cancelar mi pedido', () => {
+    const cancelar = (id: number | string, token?: string) => {
+      const req = request(app.getHttpServer()).patch(
+        `/api/v1/portal/pedidos/${id}/cancelar`,
+      );
+      if (token) {
+        req.set('Authorization', `Bearer ${token}`);
+      }
+      return req;
+    };
+
+    it('sin token devuelve 401', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await cancelar(pedidoId).expect(401);
+    });
+
+    it.each(['admin', 'ventas'] as const)(
+      'con rol %s devuelve 403',
+      async (rol) => {
+        const response = await pagar(payload(), tokens.cliente).expect(201);
+        const pedidoId = (response.body as PedidoCreadoBody).id;
+
+        await cancelar(pedidoId, tokens[rol]).expect(403);
+      },
+    );
+
+    it('el cliente cancela su pedido confirmado', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      const cancelado = await cancelar(pedidoId, tokens.cliente).expect(200);
+      expect((cancelado.body as PedidoCreadoBody).estado).toBe('cancelado');
+
+      const guardado = await prisma.pedido.findUniqueOrThrow({
+        where: { id: pedidoId },
+        select: { estado: true },
+      });
+      expect(guardado.estado).toBe('cancelado');
+    });
+
+    it('ya cancelado, no se puede volver a cancelar (409)', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await cancelar(pedidoId, tokens.cliente).expect(200);
+      await cancelar(pedidoId, tokens.cliente).expect(409);
+    });
+
+    it('también se puede cancelar en en_espera_inventario: para el cliente es el mismo paso "Confirmado"', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/pedidos/${pedidoId}/estado`)
+        .set('Authorization', `Bearer ${tokens.ventas}`)
+        .send({ estado: 'en_espera_inventario' })
+        .expect(200);
+
+      const cancelado = await cancelar(pedidoId, tokens.cliente).expect(200);
+      expect((cancelado.body as PedidoCreadoBody).estado).toBe('cancelado');
+    });
+
+    it('ya no se puede cancelar en en_preparacion (409)', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/pedidos/${pedidoId}/estado`)
+        .set('Authorization', `Bearer ${tokens.ventas}`)
+        .send({ estado: 'en_espera_inventario' })
+        .expect(200);
+      await prisma.pedido.update({
+        where: { id: pedidoId },
+        data: { estado: 'en_preparacion' },
+      });
+
+      await cancelar(pedidoId, tokens.cliente).expect(409);
+    });
+
+    it('otro cliente no puede cancelarlo: responde 404 como si no existiera', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await cancelar(pedidoId, tokens.otro).expect(404);
+
+      const guardado = await prisma.pedido.findUniqueOrThrow({
+        where: { id: pedidoId },
+        select: { estado: true },
+      });
+      expect(guardado.estado).toBe('confirmado');
+    });
+
+    it('un pedido que no existe devuelve 404', async () => {
+      await cancelar(999999, tokens.cliente).expect(404);
+    });
+
+    it('un id que no es número devuelve 400', async () => {
+      await cancelar('abc', tokens.cliente).expect(400);
+    });
+  });
 });

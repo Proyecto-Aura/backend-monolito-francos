@@ -17,8 +17,10 @@ export interface GenerarComprobanteParams {
   // Lo que el cliente eligió al pagar (HU-B-009), ya validado por el resumen.
   datos: ComprobanteResumen;
   subtotal: number;
-  // Correo del cliente al que se envía (RF-B31).
-  email: string;
+  // Correo del cliente al que se envía (RF-B31). Null si no tiene uno
+  // registrado (posible en el registro manual en efectivo, RF-A032): el
+  // comprobante igual se emite y se guarda, solo no se envía por correo.
+  email: string | null;
 }
 
 // HU-B-010. Emite la boleta o factura de un pedido ya pagado (RF-B30) y la envía
@@ -70,30 +72,32 @@ export class GenerarComprobanteUseCase {
       total: pedido.pedido.total,
     });
 
-    // El comprobante ya quedó emitido: si el correo falla no se deshace, solo
-    // se registra para reenviarlo.
-    try {
-      await this.envioComprobante.enviar({
-        to: params.email,
-        cliente_nombre: pedido.cliente_nombre,
-        pedido_codigo: pedido.pedido.codigo,
-        comprobante,
-        emisor,
-        lineas: pedido.detalles.map(
-          ({ detalle, producto_nombre, presentacion }) => ({
-            producto: producto_nombre,
-            presentacion,
-            cantidad: detalle.cantidad,
-            precio_aplicado: detalle.precio_aplicado,
-            subtotal: detalle.subtotal,
-          }),
-        ),
-      });
-    } catch (error) {
-      this.logger.error(
-        `No se pudo enviar el comprobante ${codigoComprobante(comprobante.serie, comprobante.numero)} del pedido ${pedido.pedido.codigo}`,
-        error instanceof Error ? error.stack : String(error),
-      );
+    // El comprobante ya quedó emitido: si el correo falla (o no hay a quién
+    // enviarlo) no se deshace, solo se registra para reenviarlo a mano.
+    if (params.email) {
+      try {
+        await this.envioComprobante.enviar({
+          to: params.email,
+          cliente_nombre: pedido.cliente_nombre,
+          pedido_codigo: pedido.pedido.codigo,
+          comprobante,
+          emisor,
+          lineas: pedido.detalles.map(
+            ({ detalle, producto_nombre, presentacion }) => ({
+              producto: producto_nombre,
+              presentacion,
+              cantidad: detalle.cantidad,
+              precio_aplicado: detalle.precio_aplicado,
+              subtotal: detalle.subtotal,
+            }),
+          ),
+        });
+      } catch (error) {
+        this.logger.error(
+          `No se pudo enviar el comprobante ${codigoComprobante(comprobante.serie, comprobante.numero)} del pedido ${pedido.pedido.codigo}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
     }
 
     return comprobante;
