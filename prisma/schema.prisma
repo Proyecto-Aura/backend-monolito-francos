@@ -814,6 +814,24 @@ model Insumo {
   @@schema("commerce")
 }
 
+// Parámetros de ventas (HU-A-045, RF-A193 a RF-A195). Fila única (id = 1): el
+// umbral mayorista global, si los umbrales propios de cada presentación se
+// respetan, el interruptor general de promociones y los métodos de pago que el
+// portal del cliente ofrece.
+model ParametroVenta {
+  id                      Int      @id(map: "pk_parametro_venta") @default(1)
+  umbral_mayorista_global Int      @default(24)
+  umbral_por_producto     Boolean  @default(true)
+  promociones_activas     Boolean  @default(true)
+  culqi_activo            Boolean  @default(true)
+  efectivo_activo         Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("parametro_venta")
+  @@schema("commerce")
+}
+
 // Sin edición: una vez creado un lote, solo cambia su cantidad_actual (vía
 // movimientos, cuando ese módulo exista) o se da de baja lógicamente (activo).
 // "estado" es el ciclo de vida de negocio (se agota o vence solo); "activo" es

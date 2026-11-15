@@ -1,3 +1,4 @@
+import { ParametroVentaEntity } from '../../domain/entities/parametro-venta.entity';
 import { InvalidRequestError } from '../../domain/errors/sales-domain.errors';
 import {
   DisponibilidadPedido,
@@ -10,6 +11,33 @@ const OFFSET_LIMA = '-05:00';
 // RF-A034: PED-000001, a partir del id del pedido.
 export function formatCodigoPedido(id: number): string {
   return `PED-${String(id).padStart(6, '0')}`;
+}
+
+// HU-A-045 (RF-A193): umbral que rige para una presentación. Sin precio
+// mayorista no hay nada que cotizar, así que no hay umbral. Con "umbral por
+// producto" activo manda el propio y, si no tiene, el global; con él apagado
+// rige el global para todas. Sin parámetros guardados se respeta solo el propio.
+export function umbralMayoristaEfectivo(
+  precioMayorista: number | null,
+  umbralPropio: number | null,
+  parametros: Pick<
+    ParametroVentaEntity,
+    'umbral_mayorista_global' | 'umbral_por_producto'
+  > | null,
+): number | null {
+  if (precioMayorista === null) {
+    return null;
+  }
+
+  if (!parametros) {
+    return umbralPropio;
+  }
+
+  if (parametros.umbral_por_producto && umbralPropio !== null) {
+    return umbralPropio;
+  }
+
+  return parametros.umbral_mayorista_global;
 }
 
 // RN17: se cobra el precio mayorista cuando la cantidad supera el umbral de la

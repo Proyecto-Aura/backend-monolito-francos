@@ -172,7 +172,19 @@ describe('CreateProductoUseCase', () => {
       );
     });
 
-    it('lanza 409 si envía precio mayorista sin umbral mayorista', async () => {
+    it('lanza 409 si envía umbral mayorista sin precio mayorista', async () => {
+      await expect(
+        useCase.execute(
+          dto({
+            producto_presentaciones: [
+              { presentacion_id: 1, precio_unitario: 10, umbral_mayorista: 12 },
+            ],
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ResourceConflictError);
+    });
+
+    it('permite precio mayorista sin umbral propio: rige el global (HU-A-045)', async () => {
       await expect(
         useCase.execute(
           dto({
@@ -181,7 +193,7 @@ describe('CreateProductoUseCase', () => {
             ],
           }),
         ),
-      ).rejects.toBeInstanceOf(ResourceConflictError);
+      ).resolves.toBeDefined();
     });
 
     it('lanza 409 si el precio mayorista no es menor que el unitario', async () => {

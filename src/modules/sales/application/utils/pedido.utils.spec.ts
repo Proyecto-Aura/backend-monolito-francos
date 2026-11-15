@@ -7,6 +7,7 @@ import {
   formatCodigoPedido,
   precioAplicado,
   rangoFechasLima,
+  umbralMayoristaEfectivo,
 } from './pedido.utils';
 
 const presentacion = (
@@ -115,6 +116,34 @@ describe('pedido.utils', () => {
       expect(
         precioAplicado(presentacion({ umbral_mayorista: null }), 500),
       ).toBe(5.5);
+    });
+  });
+
+  describe('umbralMayoristaEfectivo (RF-A193)', () => {
+    const global = (umbral_por_producto: boolean) => ({
+      umbral_mayorista_global: 24,
+      umbral_por_producto,
+    });
+
+    it('no hay umbral si la presentación no tiene precio mayorista', () => {
+      expect(umbralMayoristaEfectivo(null, 12, global(true))).toBeNull();
+    });
+
+    it('sin parámetros guardados respeta solo el umbral propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, null)).toBe(12);
+      expect(umbralMayoristaEfectivo(4.2, null, null)).toBeNull();
+    });
+
+    it('con umbral por producto activo manda el propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, global(true))).toBe(12);
+    });
+
+    it('con umbral por producto activo y sin propio rige el global', () => {
+      expect(umbralMayoristaEfectivo(4.2, null, global(true))).toBe(24);
+    });
+
+    it('con umbral por producto apagado rige el global aunque haya propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, global(false))).toBe(24);
     });
   });
 

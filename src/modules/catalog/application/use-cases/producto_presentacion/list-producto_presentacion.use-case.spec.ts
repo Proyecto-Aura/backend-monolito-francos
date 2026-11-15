@@ -32,6 +32,7 @@ describe('ListProductoPresentacionesUseCase', () => {
       categoria_id: 1,
       presentacion_id: 3,
       con_stock: false,
+      con_mayorista: true,
       nivel: NivelStockProductoTerminado.BAJO,
     });
 
@@ -43,6 +44,7 @@ describe('ListProductoPresentacionesUseCase', () => {
       categoria_id: 1,
       presentacion_id: 3,
       con_stock: false,
+      con_mayorista: true,
       nivel: NivelStockProductoTerminado.BAJO,
       fecha_referencia: new Date('2026-10-08T00:00:00.000Z'),
     });

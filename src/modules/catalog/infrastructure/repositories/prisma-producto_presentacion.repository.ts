@@ -100,6 +100,13 @@ export class PrismaProductoPresentacionRepository implements ProductoPresentacio
               } satisfies Prisma.ProductoPresentacionWhereInput,
             ]
           : []),
+        ...(params.con_mayorista === undefined
+          ? []
+          : [
+              params.con_mayorista
+                ? { precio_mayorista: { not: null } }
+                : { precio_mayorista: null },
+            ]),
         ...(params.con_stock === undefined
           ? []
           : [

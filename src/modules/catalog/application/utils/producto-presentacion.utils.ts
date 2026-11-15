@@ -35,9 +35,11 @@ export function validateWholesalePrice(
   const tieneUmbralMayorista =
     umbralMayorista !== null && umbralMayorista !== undefined;
 
-  if (tienePrecioMayorista !== tieneUmbralMayorista) {
+  // HU-A-045: el umbral propio es opcional; sin él rige el global de
+  // Parámetros de ventas. Lo que no tiene sentido es un umbral sin precio.
+  if (tieneUmbralMayorista && !tienePrecioMayorista) {
     throw new ResourceConflictError(
-      'El precio mayorista y el umbral mayorista deben enviarse juntos',
+      'El umbral mayorista requiere un precio mayorista',
     );
   }
 

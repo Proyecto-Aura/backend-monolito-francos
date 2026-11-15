@@ -40,6 +40,8 @@ export interface ListProductoPresentacionesParams extends PaginationParams {
   presentacion_id?: number;
   // true: solo con stock disponible; false: agotadas (sin stock).
   con_stock?: boolean;
+  // true: solo con precio mayorista; false: sin él (HU-A-045).
+  con_mayorista?: boolean;
   // Mismo criterio que /productos-terminados/indicadores (90%, sin tope
   // definido nunca cuenta como "alto").
   nivel?: NivelStockProductoTerminado;
