@@ -69,6 +69,30 @@ describe('ActualizarEstadoPedidoUseCase', () => {
     );
   });
 
+  it('también cancela uno en en_espera_inventario: para el cliente es el mismo paso "Confirmado"', async () => {
+    findById.mockResolvedValue(makePedido(EstadoPedido.EN_ESPERA_INVENTARIO));
+    const detalle = { pedido: makePedido(EstadoPedido.CANCELADO) };
+    findDetalleById.mockResolvedValue(detalle);
+
+    await expect(useCase.execute(7, EstadoPedido.CANCELADO)).resolves.toBe(
+      detalle,
+    );
+    expect(cambiarEstado).toHaveBeenCalledWith(
+      7,
+      EstadoPedido.EN_ESPERA_INVENTARIO,
+      EstadoPedido.CANCELADO,
+    );
+  });
+
+  it('ya no se puede cancelar uno en en_preparacion', async () => {
+    findById.mockResolvedValue(makePedido(EstadoPedido.EN_PREPARACION));
+
+    await expect(useCase.execute(7, EstadoPedido.CANCELADO)).rejects.toThrow(
+      ResourceConflictError,
+    );
+    expect(cambiarEstado).not.toHaveBeenCalled();
+  });
+
   it.each([
     EstadoPedido.CONFIRMADO,
     EstadoPedido.EN_PREPARACION,

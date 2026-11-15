@@ -64,9 +64,25 @@ describe('CancelarPedidoPortalUseCase', () => {
     expect(resultado.pedido.estado).toBe(EstadoPedido.CANCELADO);
   });
 
-  it('no deja cancelar un pedido que ya no está confirmado', async () => {
+  it('cancela un pedido en en_espera_inventario: para el cliente es el mismo paso "Confirmado"', async () => {
+    findDetalleById
+      .mockResolvedValueOnce({
+        pedido: makePedido(EstadoPedido.EN_ESPERA_INVENTARIO),
+      })
+      .mockResolvedValueOnce({ pedido: makePedido(EstadoPedido.CANCELADO) });
+
+    await useCase.execute(7, USER_ID);
+
+    expect(cambiarEstado).toHaveBeenCalledWith(
+      7,
+      EstadoPedido.EN_ESPERA_INVENTARIO,
+      EstadoPedido.CANCELADO,
+    );
+  });
+
+  it('no deja cancelar un pedido que ya está en preparación', async () => {
     findDetalleById.mockResolvedValue({
-      pedido: makePedido(EstadoPedido.EN_ESPERA_INVENTARIO),
+      pedido: makePedido(EstadoPedido.EN_PREPARACION),
     });
 
     await expect(useCase.execute(7, USER_ID)).rejects.toThrow(

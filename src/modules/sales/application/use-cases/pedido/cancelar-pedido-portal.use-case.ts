@@ -6,10 +6,12 @@ import {
 } from '../../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 import { PedidoDetalle } from '../../../domain/repositories/types/pedido-repository.types';
+import { esPedidoCancelable } from '../../../domain/rules/transiciones-pedido';
 
-// El cliente cancela su propio pedido mientras siga "confirmado": antes de
-// que inventario empiece a prepararlo. No toca el pago ni dispara un
-// reembolso — eso se maneja aparte.
+// El cliente cancela su propio pedido mientras siga cancelable ("confirmado"
+// o "en_espera_inventario" — para el cliente son el mismo paso visual,
+// "Confirmado"), antes de que inventario empiece a prepararlo. No toca el
+// pago ni dispara un reembolso — eso se maneja aparte.
 @Injectable()
 export class CancelarPedidoPortalUseCase {
   constructor(private readonly pedidoRepository: PedidoRepository) {}
@@ -32,7 +34,7 @@ export class CancelarPedidoPortalUseCase {
       throw new ResourceNotFoundError('Pedido no encontrado');
     }
 
-    if (detalle.pedido.estado !== EstadoPedido.CONFIRMADO) {
+    if (!esPedidoCancelable(detalle.pedido.estado)) {
       throw new ResourceConflictError(
         `El pedido ${detalle.pedido.codigo} ya no se puede cancelar: pasó a ${detalle.pedido.estado}`,
       );
@@ -40,7 +42,7 @@ export class CancelarPedidoPortalUseCase {
 
     const cambiado = await this.pedidoRepository.cambiarEstado(
       id,
-      EstadoPedido.CONFIRMADO,
+      detalle.pedido.estado,
       EstadoPedido.CANCELADO,
     );
 

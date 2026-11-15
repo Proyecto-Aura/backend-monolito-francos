@@ -2,9 +2,11 @@ import { EstadoPedido } from '../enums';
 
 // RN6: cambios de estado que hace el operador de ventas. Pasa el pedido a
 // "en espera de inventario" para que el operador de productos terminados lo vea
-// (HU-A-010, RF-A038), o lo cancela mientras nadie empezó a prepararlo —
-// antes de "en_espera_inventario" el stock todavía no se descontó (RF-A036),
-// así que cancelar aquí nunca necesita revertirlo.
+// (HU-A-010, RF-A038). Se puede cancelar en "confirmado" o "en_espera_inventario"
+// — para el cliente del portal ambos son el mismo paso visual ("Confirmado") —
+// pero ya no en "en_preparacion" en adelante. Antes de "en_preparacion" el
+// stock todavía no se descontó (RF-A036), así que cancelar aquí nunca
+// necesita revertirlo.
 export const TRANSICIONES_DE_VENTAS: Partial<
   Record<EstadoPedido, EstadoPedido[]>
 > = {
@@ -12,6 +14,7 @@ export const TRANSICIONES_DE_VENTAS: Partial<
     EstadoPedido.EN_ESPERA_INVENTARIO,
     EstadoPedido.CANCELADO,
   ],
+  [EstadoPedido.EN_ESPERA_INVENTARIO]: [EstadoPedido.CANCELADO],
 };
 
 export function esTransicionDeVentas(
@@ -19,6 +22,13 @@ export function esTransicionDeVentas(
   hacia: EstadoPedido,
 ): boolean {
   return TRANSICIONES_DE_VENTAS[desde]?.includes(hacia) ?? false;
+}
+
+// Mismo criterio para ventas (PATCH /pedidos/:id/estado) y para el cliente
+// del portal (PATCH /portal/pedidos/:id/cancelar): se puede cancelar en
+// "confirmado" o "en_espera_inventario", nunca más allá.
+export function esPedidoCancelable(estado: EstadoPedido): boolean {
+  return esTransicionDeVentas(estado, EstadoPedido.CANCELADO);
 }
 
 // RN6: estados que ve el operador de despacho (HU-A-023, RF-A094). Los demás

@@ -570,6 +570,37 @@ describe('Pago del pedido del portal (e2e, HU-B-008)', () => {
       await cancelar(pedidoId, tokens.cliente).expect(409);
     });
 
+    it('también se puede cancelar en en_espera_inventario: para el cliente es el mismo paso "Confirmado"', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/pedidos/${pedidoId}/estado`)
+        .set('Authorization', `Bearer ${tokens.ventas}`)
+        .send({ estado: 'en_espera_inventario' })
+        .expect(200);
+
+      const cancelado = await cancelar(pedidoId, tokens.cliente).expect(200);
+      expect((cancelado.body as PedidoCreadoBody).estado).toBe('cancelado');
+    });
+
+    it('ya no se puede cancelar en en_preparacion (409)', async () => {
+      const response = await pagar(payload(), tokens.cliente).expect(201);
+      const pedidoId = (response.body as PedidoCreadoBody).id;
+
+      await request(app.getHttpServer())
+        .patch(`/api/v1/pedidos/${pedidoId}/estado`)
+        .set('Authorization', `Bearer ${tokens.ventas}`)
+        .send({ estado: 'en_espera_inventario' })
+        .expect(200);
+      await prisma.pedido.update({
+        where: { id: pedidoId },
+        data: { estado: 'en_preparacion' },
+      });
+
+      await cancelar(pedidoId, tokens.cliente).expect(409);
+    });
+
     it('otro cliente no puede cancelarlo: responde 404 como si no existiera', async () => {
       const response = await pagar(payload(), tokens.cliente).expect(201);
       const pedidoId = (response.body as PedidoCreadoBody).id;
