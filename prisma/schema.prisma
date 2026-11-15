@@ -356,8 +356,25 @@ model User {
   reembolsos_resueltos                Reembolso[]
   solicitudes_produccion              SolicitudProduccion[]
   solicitudes_insumos                 SolicitudInsumos[]
+  solicitud_cambio_email              SolicitudCambioEmail?
 
   @@map("user")
+  @@schema("persons")
+}
+
+// HU-B-016: correo nuevo pendiente de verificar. Uno por usuario; el token
+// se guarda hasheado y el cambio se aplica solo al confirmarlo.
+model SolicitudCambioEmail {
+  id          String   @id(map: "pk_solicitud_cambio_email") @default(uuid()) @db.Uuid
+  user_id     String   @unique(map: "uq_solicitud_cambio_email_user_id") @db.Uuid
+  email_nuevo String   @db.VarChar(150)
+  token_hash  String   @unique(map: "uq_solicitud_cambio_email_token_hash") @db.VarChar(255)
+  expira_at   DateTime @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_solicitud_cambio_email_user")
+
+  @@map("solicitud_cambio_email")
   @@schema("persons")
 }
 

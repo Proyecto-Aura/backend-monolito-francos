@@ -6,6 +6,7 @@ import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
   SendPasswordResetEmailParams,
+  SendEmailChangeVerificationEmailParams,
   FrontendDestino,
   SendClienteBienvenidaEmailParams,
 } from '../../domain/services/types/email-service.types';
@@ -76,6 +77,21 @@ export class NodemailerEmailService implements EmailService {
       to: params.to,
       subject: "Restablece tu contraseña — Franco's",
       html: `<p>Hola ${nombre}, recibimos una solicitud para restablecer tu contraseña.</p><p>Usa este enlace: <a href="${url}">${url}</a></p><p>El enlace vence en 1 hora.</p><p>Si no solicitaste este cambio, puedes ignorar este correo.</p>`,
+    });
+  }
+
+  // HU-B-016: confirma la dirección nueva antes de cambiarla en la cuenta.
+  async sendEmailChangeVerificationEmail(
+    params: SendEmailChangeVerificationEmailParams,
+  ): Promise<void> {
+    const url = `${this.getFrontendUrl(params.frontend)}/verificar-cambio-email?token=${params.token}`;
+    const nombre = this.escapeHtml(params.nombre);
+
+    await this.transporter.sendMail({
+      from: envs.smtpFrom,
+      to: params.to,
+      subject: "Confirma tu nuevo correo — Franco's",
+      html: `<p>Hola ${nombre}, recibimos una solicitud para cambiar el correo de tu cuenta.</p><p>Confírmalo con este enlace: <a href="${url}">${url}</a></p><p>El enlace vence en 1 hora.</p><p>Si no fuiste tú, ignora este correo.</p>`,
     });
   }
 

@@ -18,3 +18,8 @@ export class ResourceNotFoundError extends PersonsDomainError {
 export class ResourceConflictError extends PersonsDomainError {
   readonly statusCode = 409;
 }
+
+// HU-B-016: el enlace de verificación no existe, venció o ya se usó.
+export class InvalidEmailChangeTokenError extends PersonsDomainError {
+  readonly statusCode = 400;
+}

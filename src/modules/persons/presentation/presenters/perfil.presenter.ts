@@ -2,7 +2,10 @@ import { PerfilCliente } from '../../application/use-cases/perfil/get-perfil.use
 
 // Perfil del cliente (HU-B-015): lo editable y lo que se muestra en "Mi perfil".
 export class PerfilPresenter {
-  static toHttp({ user, persona, cliente }: PerfilCliente) {
+  static toHttp(
+    { user, persona, cliente }: PerfilCliente,
+    cambioEmailPendiente?: boolean,
+  ) {
     return {
       nombres: persona.nombres,
       apellido_paterno: persona.apellido_paterno,
@@ -13,6 +16,9 @@ export class PerfilPresenter {
       numero_documento: persona.numero_documento,
       tipo_cliente: cliente?.tipo_cliente ?? null,
       razon_social: cliente?.razon_social ?? null,
+      ...(cambioEmailPendiente === undefined
+        ? {}
+        : { cambio_email_pendiente: cambioEmailPendiente }),
     };
   }
 }
