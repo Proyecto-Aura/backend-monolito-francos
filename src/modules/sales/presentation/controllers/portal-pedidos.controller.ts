@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import type { AuthenticatedUser } from '../../../auth/presentation/strategies/jw
 import { CrearPedidoPortalDto } from '../../application/dto/pedido-dtos/crear-pedido-portal.dto';
 import { ResumenPedidoPortalDto } from '../../application/dto/pedido-dtos/resumen-pedido-portal.dto';
 import { ListPedidosPortalQueryDto } from '../../application/dto/pedido-dtos/list-pedidos-portal-query.dto';
+import { CancelarPedidoPortalUseCase } from '../../application/use-cases/pedido/cancelar-pedido-portal.use-case';
 import { CrearPedidoPortalUseCase } from '../../application/use-cases/pedido/crear-pedido-portal.use-case';
 import { GetPedidoPortalUseCase } from '../../application/use-cases/pedido/get-pedido-portal.use-case';
 import { ResumirPedidoPortalUseCase } from '../../application/use-cases/pedido/resumir-pedido-portal.use-case';
@@ -43,6 +45,7 @@ export class PortalPedidosController {
     private readonly crearPedidoPortal: CrearPedidoPortalUseCase,
     private readonly listPedidosPortal: ListPedidosPortalUseCase,
     private readonly getPedidoPortal: GetPedidoPortalUseCase,
+    private readonly cancelarPedidoPortal: CancelarPedidoPortalUseCase,
   ) {}
 
   @Get()
@@ -145,6 +148,29 @@ export class PortalPedidosController {
   ) {
     return PedidoPresenter.detalleToHttp(
       await this.getPedidoPortal.execute(id, user.userId),
+    );
+  }
+
+  @Patch(':id/cancelar')
+  @ApiOperation({
+    summary: 'Cancelar mi pedido',
+    description:
+      'Solo mientras siga "confirmado", antes de que empiece a prepararse. No afecta el pago; si ya se cobró, el reembolso se gestiona aparte.',
+  })
+  @ApiBadRequestResponse({ description: 'El id del pedido no es un número' })
+  @ApiNotFoundResponse({
+    description:
+      'El usuario no tiene un cliente, o el pedido no existe o es de otro cliente',
+  })
+  @ApiConflictResponse({
+    description: 'El pedido ya no está "confirmado" y no se puede cancelar',
+  })
+  async cancelar(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.cancelarPedidoPortal.execute(id, user.userId),
     );
   }
 }

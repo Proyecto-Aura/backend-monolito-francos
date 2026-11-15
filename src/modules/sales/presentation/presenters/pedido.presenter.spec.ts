@@ -1,3 +1,9 @@
+// El presenter importa config/envs; sin este mock la validación de Joi corre al
+// importarse y explota en CI (no hay .env).
+jest.mock('../../../../config/envs', () => ({
+  envs: { mediaBaseUrl: '/media' },
+}));
+
 import { DetallePedidoEntity, PedidoEntity } from '../../domain/entities';
 import { EstadoPedido, OrigenPedido, TipoEntrega } from '../../domain/enums';
 import {
