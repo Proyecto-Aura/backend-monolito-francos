@@ -70,7 +70,10 @@ describe('Usuarios internos (e2e)', () => {
   let ventasToken: string;
   let adminUserId: string;
   let existingAdminRefreshTokenIds: string[];
-  let rolIds: Record<'admin' | 'ventas' | 'inventario' | 'cliente', number>;
+  let rolIds: Record<
+    'admin' | 'ventas' | 'inventario_insumos' | 'cliente',
+    number
+  >;
   let luciaId: string;
   let inactivoId: string;
   let clienteUserId: string;
@@ -159,7 +162,9 @@ describe('Usuarios internos (e2e)', () => {
     await deleteSuiteData();
 
     const roles = await prisma.rol.findMany({
-      where: { nombre: { in: ['admin', 'ventas', 'inventario', 'cliente'] } },
+      where: {
+        nombre: { in: ['admin', 'ventas', 'inventario_insumos', 'cliente'] },
+      },
     });
     rolIds = Object.fromEntries(
       roles.map((rol) => [rol.nombre, rol.id]),
@@ -306,7 +311,7 @@ describe('Usuarios internos (e2e)', () => {
           email: INACTIVO.email,
           username: INACTIVO.username,
           contrasena: INACTIVO.password,
-          rol_ids: [rolIds.inventario],
+          rol_ids: [rolIds.inventario_insumos],
           estado: false,
         }),
       )
@@ -338,7 +343,10 @@ describe('Usuarios internos (e2e)', () => {
     expect(usernames).not.toContain(CLIENTE.username);
     expect(todos.meta).toMatchObject({ total: 3, page: 1, limit: 100 });
 
-    const porRol = await buscar({ search: 'e2e-485', rol: 'inventario' });
+    const porRol = await buscar({
+      search: 'e2e-485',
+      rol: 'inventario_insumos',
+    });
     expect(porRol.data.map((usuario) => usuario.username)).toEqual([
       INACTIVO.username,
     ]);
@@ -428,25 +436,25 @@ describe('Usuarios internos (e2e)', () => {
     await http()
       .put(`/api/v1/usuarios/${luciaId}/roles`)
       .set(auth(adminToken))
-      .send({ rol_ids: [rolIds.inventario, rolIds.ventas] })
+      .send({ rol_ids: [rolIds.inventario_insumos, rolIds.ventas] })
       .expect(200)
       .expect((response) => {
         expect(
           (response.body as UsuarioHttp).roles.map((rol) => rol.nombre).sort(),
-        ).toEqual(['inventario', 'ventas']);
+        ).toEqual(['inventario_insumos', 'ventas']);
       });
 
     await http()
       .put(`/api/v1/usuarios/${luciaId}/roles`)
       .set(auth(adminToken))
-      .send({ rol_ids: [rolIds.inventario] })
+      .send({ rol_ids: [rolIds.inventario_insumos] })
       .expect(200);
     const response = await login(
       LUCIA.username_nuevo,
       LUCIA.password_nueva,
     ).expect(201);
     expect((response.body as { roles: string[] }).roles).toEqual([
-      'inventario',
+      'inventario_insumos',
     ]);
 
     await http()
@@ -482,7 +490,7 @@ describe('Usuarios internos (e2e)', () => {
     await http()
       .put(`/api/v1/usuarios/${mixtoId}/roles`)
       .set(auth(adminToken))
-      .send({ rol_ids: [rolIds.inventario] })
+      .send({ rol_ids: [rolIds.inventario_insumos] })
       .expect(200);
 
     const filas = await prisma.usuarioRol.findMany({
@@ -494,7 +502,7 @@ describe('Usuarios internos (e2e)', () => {
     expect(filas).toHaveLength(3);
     expect(estadoDe(rolIds.cliente)).toBe(true);
     expect(estadoDe(rolIds.ventas)).toBe(false);
-    expect(estadoDe(rolIds.inventario)).toBe(true);
+    expect(estadoDe(rolIds.inventario_insumos)).toBe(true);
   });
 
   it('DELETE desactiva: el login y el refresh fallan; PATCH /activate reactiva', async () => {

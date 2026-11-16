@@ -28,7 +28,7 @@ const TEST_USERS = {
     password: 'InventarioE2e123',
     email: 'e2e-inventario-catalogo@francos.test',
     documento: '99999995',
-    rol: 'inventario',
+    rol: 'inventario_productos_terminados',
   },
 } as const;
 

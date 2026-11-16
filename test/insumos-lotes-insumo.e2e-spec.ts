@@ -41,7 +41,7 @@ const TEST_USERS = {
     password: 'InventarioE2e123',
     email: 'e2e-inventario-oft255@francos.test',
     documento: '99999990',
-    rol: 'inventario',
+    rol: 'inventario_insumos',
   },
   produccion: {
     identificador: 'e2e-produccion-oft255',

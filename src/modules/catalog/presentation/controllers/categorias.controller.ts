@@ -51,7 +51,7 @@ export class CategoriasController {
   // Lectura abierta a ventas (formulario de productos) e inventario (pantalla
   // de stock de producto terminado, OFT0-258). Crear, editar y desactivar
   // siguen siendo solo admin (@Roles de la clase).
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Get()
   @ApiOperation({ summary: 'Listar categorías' })
   @ApiOkResponse({ description: 'Lista paginada de categorías' })
@@ -61,7 +61,7 @@ export class CategoriasController {
     );
   }
 
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una categoría por ID' })
   @ApiParam({ name: 'id', type: Number })

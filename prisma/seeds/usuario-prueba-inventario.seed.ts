@@ -1,8 +1,8 @@
 import { PrismaClient, TipoDocumento } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-// Usuario de prueba con rol "inventario", con acceso SOLO a la rama de
-// "insumos" (y sus hijas), nada de "productos-terminados" -- para probar
+// Usuario de prueba con rol "inventario_insumos", con acceso SOLO a la rama
+// de "insumos" (y sus hijas), nada de "productos-terminados" -- para probar
 // que GET /rutas/mi-menu filtra bien por rol.
 const USUARIO_DNI = '00000002';
 const USUARIO_PASSWORD = 'inventario123';
@@ -14,12 +14,12 @@ const RUTAS_PERMITIDAS = ['insumos', 'stock-insumos', 'solicitudes-insumos'];
 
 export async function seedUsuarioPruebaInventario(prisma: PrismaClient) {
   const rolInventario = await prisma.rol.findUnique({
-    where: { nombre: 'inventario' },
+    where: { nombre: 'inventario_insumos' },
   });
 
   if (!rolInventario) {
     console.log(
-      'Rol "inventario" no existe todavia, se omite el usuario de prueba',
+      'Rol "inventario_insumos" no existe todavia, se omite el usuario de prueba',
     );
     return;
   }
@@ -80,7 +80,7 @@ export async function seedUsuarioPruebaInventario(prisma: PrismaClient) {
       update: { estado: true },
       create: { rol_id: rolInventario.id, ruta_id: ruta.id, estado: true },
     });
-    console.log(`Acceso: inventario -> "${nombreRuta}" listo`);
+    console.log(`Acceso: inventario_insumos -> "${nombreRuta}" listo`);
   }
 
   console.log(

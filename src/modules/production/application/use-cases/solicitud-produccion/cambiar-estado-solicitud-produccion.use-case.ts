@@ -57,7 +57,9 @@ export class CambiarEstadoSolicitudProduccionUseCase {
     const esProduccion = roles.includes('produccion');
     const puedeAvanzar = esProduccion || esAdmin;
     const puedeRechazar =
-      esAdmin || roles.includes('inventario') || esProduccion;
+      esAdmin ||
+      roles.includes('inventario_productos_terminados') ||
+      esProduccion;
 
     if (nuevoEstado === EstadoSolicitudProduccion.RECHAZADO) {
       if (!puedeRechazar) {

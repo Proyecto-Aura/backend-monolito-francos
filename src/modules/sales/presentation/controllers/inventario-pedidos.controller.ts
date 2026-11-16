@@ -31,7 +31,7 @@ import { PedidoPresenter } from '../presenters/pedido.presenter';
 // pedidos que ventas ya puso en espera de inventario (RN6).
 @ApiTags('Inventario - Pedidos')
 @ApiBearerAuth()
-@Roles('admin', 'inventario')
+@Roles('admin', 'inventario_productos_terminados')
 @Controller('inventario/pedidos')
 export class InventarioPedidosController {
   constructor(

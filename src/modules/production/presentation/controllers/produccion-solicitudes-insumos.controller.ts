@@ -75,7 +75,7 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get()
   @ApiOperation({
     summary: 'Consultar solicitudes de insumos',
@@ -89,7 +89,7 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get('indicadores')
   @ApiOperation({ summary: 'Conteo de solicitudes de insumos por estado' })
   @ApiOkResponse({
@@ -99,7 +99,7 @@ export class ProduccionSolicitudesInsumosController {
     return this.getIndicadoresSolicitudInsumos.execute();
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una solicitud de insumos con su detalle' })
   @ApiParam({ name: 'id', type: Number })
@@ -125,7 +125,7 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Patch(':id/estado')
   @ApiOperation({
     summary: 'Iniciar, entregar o rechazar una solicitud de insumos',

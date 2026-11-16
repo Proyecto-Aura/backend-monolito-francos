@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { seedRoles } from './seeds/roles.seed';
+import { seedDividirRolInventario } from './seeds/dividir-rol-inventario.seed';
 import { seedAdmin } from './seeds/admin.seed';
 import { seedEstadoPlanEstrategico } from './seeds/estado-plan-estrategico.seed';
 import { seedCategorias } from './seeds/categoria.seed';
@@ -27,6 +28,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await seedRoles(prisma);
+  await seedDividirRolInventario(prisma);
   await seedAdmin(prisma);
   await seedEstadoPlanEstrategico(prisma);
   await seedCategorias(prisma);

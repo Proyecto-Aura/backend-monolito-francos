@@ -68,7 +68,7 @@ export class ProductoPresentacionesController {
   // de producto terminado (OFT0-258) necesita categoría, presentación y
   // stock embebidos, que ya devuelve este listado. Crear, editar y
   // desactivar siguen siendo solo admin/ventas (@Roles de la clase).
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Get()
   @ApiOperation({ summary: 'Listar producto-presentaciones' })
   @ApiOkResponse({ description: 'Lista paginada de producto-presentaciones' })
@@ -78,7 +78,7 @@ export class ProductoPresentacionesController {
     );
   }
 
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una producto-presentación por ID' })
   @ApiParam({ name: 'id', type: Number })
@@ -105,7 +105,7 @@ export class ProductoPresentacionesController {
   // a inventario además de admin/ventas para la pantalla de stock de
   // producto terminado (OFT0-258) — ambas pantallas leen y escriben la misma
   // fila, así que nunca pueden quedar desincronizadas entre sí.
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Delete(':id')
   @ApiOperation({ summary: 'Desactivar una producto-presentación' })
   @ApiParam({ name: 'id', type: Number })
@@ -146,7 +146,7 @@ export class ProductoPresentacionesController {
     );
   }
 
-  @Roles('admin', 'ventas', 'inventario')
+  @Roles('admin', 'ventas', 'inventario_productos_terminados')
   @Patch(':id/activate')
   @ApiOperation({ summary: 'Reactivar una producto-presentación' })
   @ApiParam({ name: 'id', type: Number })

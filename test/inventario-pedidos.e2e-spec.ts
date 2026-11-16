@@ -12,7 +12,7 @@ const MARCA = 'E2E260';
 const URL = '/api/v1/inventario/pedidos';
 const ROLES = [
   'admin',
-  'inventario',
+  'inventario_productos_terminados',
   'ventas',
   'despacho',
   'produccion',
@@ -57,7 +57,7 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
   const tokens = {} as Record<Rol, string>;
   let secuencia = 0;
   const http = () => request(app.getHttpServer());
-  const auth = (rol: Rol = 'inventario') => ({
+  const auth = (rol: Rol = 'inventario_productos_terminados') => ({
     Authorization: `Bearer ${tokens[rol]}`,
   });
   const listar = async (query: Record<string, string | number> = {}) => {
@@ -72,7 +72,7 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
   const patch = (
     id: number | string,
     accion: Accion,
-    rol: Rol = 'inventario',
+    rol: Rol = 'inventario_productos_terminados',
     items = itemsPreparados(),
   ) => {
     const req = http().patch(`${URL}/${id}/${accion}`).set(auth(rol));
@@ -416,7 +416,7 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
     });
   });
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'inventario_productos_terminados'] as const)(
     '%s consulta y completa el flujo hasta pendiente_entrega',
     async (rol) => {
       const pedido = await sembrar(EstadoPedido.EN_ESPERA_INVENTARIO);
@@ -530,9 +530,12 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
     const items = itemsPreparados()
       .map((item, i) => ({ ...item, cantidad_preparada: i === 0 ? 7 : 9 }))
       .reverse();
-    await patch(pedido.id, 'pendiente-entrega', 'inventario', items).expect(
-      200,
-    );
+    await patch(
+      pedido.id,
+      'pendiente-entrega',
+      'inventario_productos_terminados',
+      items,
+    ).expect(200);
     const despues = await snapshotStock();
     expect(despues.productos.map((p) => p.stock_actual.toNumber())).toEqual(
       antes.productos.map(
@@ -557,9 +560,12 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
     }
     expect(await estadoDe(pedido.id)).toBe('pendiente_entrega');
     // Reintentar no debe generar otro descuento.
-    await patch(pedido.id, 'pendiente-entrega', 'inventario', items).expect(
-      409,
-    );
+    await patch(
+      pedido.id,
+      'pendiente-entrega',
+      'inventario_productos_terminados',
+      items,
+    ).expect(409);
     expect(await snapshotStock()).toEqual(despues);
   });
 
@@ -581,9 +587,12 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
               ? [originales[0], extra]
               : [...originales, originales[0]];
       const antes = await snapshotStock();
-      await patch(pedido.id, 'pendiente-entrega', 'inventario', items).expect(
-        400,
-      );
+      await patch(
+        pedido.id,
+        'pendiente-entrega',
+        'inventario_productos_terminados',
+        items,
+      ).expect(400);
       expect(await estadoDe(pedido.id)).toBe('en_preparacion');
       expect(await snapshotStock()).toEqual(antes);
     },
@@ -597,9 +606,12 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
       cantidad_preparada:
         i === 0 ? 1 : antes.productos[i].stock_actual.toNumber() + 1,
     }));
-    await patch(pedido.id, 'pendiente-entrega', 'inventario', items).expect(
-      409,
-    );
+    await patch(
+      pedido.id,
+      'pendiente-entrega',
+      'inventario_productos_terminados',
+      items,
+    ).expect(409);
     expect(await estadoDe(pedido.id)).toBe('en_preparacion');
     expect(await snapshotStock()).toEqual(antes);
   });
@@ -746,13 +758,13 @@ describe('Inventario - pedidos por preparar OFT0-260 (e2e)', () => {
     await patch(
       pedido.id,
       'pendiente-entrega',
-      'inventario',
+      'inventario_productos_terminados',
       itemsPreparados(),
     ).expect(200);
     await patch(
       otro.id,
       'pendiente-entrega',
-      'inventario',
+      'inventario_productos_terminados',
       itemsPreparados(),
     ).expect(200);
     const salidas = await prisma.movimientoProductoTerminado.findMany({

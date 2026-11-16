@@ -12,7 +12,7 @@ const URL = '/api/v1/produccion/lotes-producto-terminado';
 const ROLES = [
   'admin',
   'produccion',
-  'inventario',
+  'inventario_productos_terminados',
   'ventas',
   'cliente',
 ] as const;
@@ -190,7 +190,7 @@ describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
     expect(await snapshot()).toEqual(antes);
   });
 
-  it.each(['inventario', 'ventas', 'cliente'] as const)(
+  it.each(['inventario_productos_terminados', 'ventas', 'cliente'] as const)(
     '%s no puede registrar lotes',
     async (rol) => {
       const antes = await snapshot();
@@ -234,7 +234,11 @@ describe('Registrar lote de producto terminado OFT0-263 (e2e)', () => {
       });
       expect(persistido.cantidad_actual.toNumber()).toBe(100);
       expect(await stockDe()).toBe(stockAnterior + 100);
-      for (const lector of ['admin', 'inventario', 'produccion'] as const) {
+      for (const lector of [
+        'admin',
+        'inventario_productos_terminados',
+        'produccion',
+      ] as const) {
         const leido = await http()
           .get(`${URL}/${lote.id}`)
           .set(auth(lector))

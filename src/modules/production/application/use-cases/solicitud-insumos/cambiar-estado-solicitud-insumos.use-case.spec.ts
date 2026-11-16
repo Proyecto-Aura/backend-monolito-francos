@@ -46,7 +46,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
   const estados = Object.values(Estado);
   const roles = [
     'admin',
-    'inventario',
+    'inventario_insumos',
     'produccion',
     'ventas',
     'cliente',
@@ -66,8 +66,8 @@ describe('Cambiar estado de solicitud de insumos', () => {
       (desde === Estado.EN_PROCESO && hasta === Estado.ENTREGADO);
     const permiso =
       hasta === Estado.RECHAZADO
-        ? ['admin', 'inventario', 'produccion'].includes(rol)
-        : ['admin', 'inventario'].includes(rol);
+        ? ['admin', 'inventario_insumos', 'produccion'].includes(rol)
+        : ['admin', 'inventario_insumos'].includes(rol);
     const asignados = rol === 'sin rol' ? [] : [rol];
     if (!transicion || !permiso) {
       await expect(useCase.execute(7, hasta, asignados)).rejects.toBeInstanceOf(
@@ -103,7 +103,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
     }
   });
 
-  it.each(['admin', 'inventario'])(
+  it.each(['admin', 'inventario_insumos'])(
     '%s entrega las cantidades explícitas asociándolas por id y no por posición',
     async (rol) => {
       repo.findById.mockResolvedValue(solicitud(Estado.EN_PROCESO));
@@ -180,7 +180,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
   ])('rechaza items $caso antes de tocar stock o estado', async ({ items }) => {
     repo.findById.mockResolvedValue(solicitud(Estado.EN_PROCESO));
     await expect(
-      useCase.execute(7, Estado.ENTREGADO, ['inventario'], items),
+      useCase.execute(7, Estado.ENTREGADO, ['inventario_insumos'], items),
     ).rejects.toThrow(
       new InvalidRequestError(
         'Las cantidades entregadas no coinciden con las líneas del detalle',
@@ -190,7 +190,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
     expect(repo.updateEstado).not.toHaveBeenCalled();
   });
 
-  it.each(['admin', 'inventario'])(
+  it.each(['admin', 'inventario_insumos'])(
     '%s no actualiza estado si las cantidades explícitas no tienen stock',
     async (rol) => {
       repo.findById.mockResolvedValue(solicitud(Estado.EN_PROCESO));
@@ -225,7 +225,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
     },
   );
 
-  it.each(['admin', 'inventario'])(
+  it.each(['admin', 'inventario_insumos'])(
     '%s no cambia estado si executeMany rechaza por stock insuficiente',
     async (rol) => {
       repo.findById.mockResolvedValue(solicitud(Estado.EN_PROCESO));
@@ -244,7 +244,7 @@ describe('Cambiar estado de solicitud de insumos', () => {
     const error = new Error('Fallo de persistencia');
     salida.executeMany.mockRejectedValue(error);
     await expect(
-      useCase.execute(7, Estado.ENTREGADO, ['inventario']),
+      useCase.execute(7, Estado.ENTREGADO, ['inventario_insumos']),
     ).rejects.toBe(error);
     expect(repo.updateEstado).not.toHaveBeenCalled();
   });
@@ -261,7 +261,10 @@ describe('Cambiar estado de solicitud de insumos', () => {
 
   it('permite avanzar a un usuario que también tiene inventario', async () => {
     repo.findById.mockResolvedValue(solicitud(Estado.PENDIENTE));
-    await useCase.execute(7, Estado.EN_PROCESO, ['produccion', 'inventario']);
+    await useCase.execute(7, Estado.EN_PROCESO, [
+      'produccion',
+      'inventario_insumos',
+    ]);
     expect(repo.updateEstado).toHaveBeenCalledWith(7, Estado.EN_PROCESO);
   });
 });

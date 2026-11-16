@@ -31,7 +31,7 @@ import { InsumoPresenter } from '../presenters/insumo.presenter';
 
 @ApiTags('Insumos')
 @ApiBearerAuth()
-@Roles('admin', 'inventario')
+@Roles('admin', 'inventario_insumos')
 @Controller('insumos')
 export class InsumosController {
   constructor(
@@ -51,7 +51,7 @@ export class InsumosController {
   }
 
   // Lectura abierta a producción: necesita ver el stock disponible.
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get()
   @ApiOperation({ summary: 'Listar insumos' })
   @ApiOkResponse({ description: 'Lista paginada de insumos' })
@@ -62,7 +62,7 @@ export class InsumosController {
   }
 
   // Debe ir antes de GET :id — si no, Nest intenta parsear "indicadores" como id numérico.
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get('indicadores')
   @ApiOperation({ summary: 'Conteo de insumos activos por nivel de stock' })
   @ApiOkResponse({ description: 'KPIs: agotado, bajo, normal, alto, total' })
@@ -70,7 +70,7 @@ export class InsumosController {
     return this.getIndicadoresInsumo.execute();
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_insumos', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un insumo por ID' })
   @ApiParam({ name: 'id', type: Number })

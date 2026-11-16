@@ -75,7 +75,7 @@ describe('Cambiar estado de solicitud de producción', () => {
     },
   );
 
-  it.each(['admin', 'inventario'])(
+  it.each(['admin', 'inventario_productos_terminados'])(
     '%s puede rechazar desde pendiente',
     async (rol) => {
       repository.findById.mockResolvedValue(solicitud(Estado.PENDIENTE));
@@ -86,8 +86,8 @@ describe('Cambiar estado de solicitud de producción', () => {
   );
 
   it.each(
-    ['admin', 'inventario'].flatMap((rol) => [
-      ...(rol === 'inventario'
+    ['admin', 'inventario_productos_terminados'].flatMap((rol) => [
+      ...(rol === 'inventario_productos_terminados'
         ? [
             { rol, desde: Estado.PENDIENTE, hasta: Estado.EN_PROCESO },
             { rol, desde: Estado.EN_PROCESO, hasta: Estado.ENTREGADO },
@@ -130,7 +130,10 @@ describe('Cambiar estado de solicitud de producción', () => {
 
   it('un usuario con varios roles puede avanzar si tiene producción', async () => {
     repository.findById.mockResolvedValue(solicitud(Estado.PENDIENTE));
-    await useCase.execute(1, Estado.EN_PROCESO, ['inventario', 'produccion']);
+    await useCase.execute(1, Estado.EN_PROCESO, [
+      'inventario_productos_terminados',
+      'produccion',
+    ]);
     expect(repository.updateEstado).toHaveBeenCalledWith(1, Estado.EN_PROCESO);
   });
 

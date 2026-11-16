@@ -28,7 +28,7 @@ import { ProductoTerminadoPresenter } from '../presenters/producto-terminado.pre
 // devuelve el listado del catálogo), no por un id propio de esta tabla.
 @ApiTags('Productos terminados')
 @ApiBearerAuth()
-@Roles('admin', 'inventario')
+@Roles('admin', 'inventario_productos_terminados')
 @Controller('productos-terminados')
 export class ProductosTerminadosController {
   constructor(
@@ -36,7 +36,7 @@ export class ProductosTerminadosController {
     private readonly getIndicadoresProductoTerminado: GetIndicadoresProductoTerminadoUseCase,
   ) {}
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get('indicadores')
   @ApiOperation({
     summary: 'Conteo de productos terminados activos por nivel de stock',

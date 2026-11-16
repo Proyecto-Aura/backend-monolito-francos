@@ -59,7 +59,7 @@ function bodySchema(dto: new () => object) {
   CreateSalidaMovimientoProductoTerminadoDto,
   CreateAjusteMovimientoProductoTerminadoDto,
 )
-@Roles('admin', 'inventario')
+@Roles('admin', 'inventario_productos_terminados')
 @Controller('movimientos-producto-terminado')
 export class MovimientosProductoTerminadoController {
   constructor(
@@ -158,7 +158,7 @@ export class MovimientosProductoTerminadoController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get()
   @ApiOperation({
     summary: 'Listar movimientos de producto terminado (kardex)',
@@ -170,7 +170,7 @@ export class MovimientosProductoTerminadoController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get(':id')
   @ApiOperation({
     summary: 'Obtener un movimiento de producto terminado por ID',

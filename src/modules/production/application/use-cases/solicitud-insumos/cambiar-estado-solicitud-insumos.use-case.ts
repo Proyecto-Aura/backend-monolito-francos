@@ -57,7 +57,7 @@ export class CambiarEstadoSolicitudInsumosUseCase {
     // en_proceso/entregado es cosa de inventario. Admin tiene acceso total,
     // así que puede hacer lo mismo que inventario además de rechazar.
     const esAdmin = roles.includes('admin');
-    const esInventario = roles.includes('inventario');
+    const esInventario = roles.includes('inventario_insumos');
     const puedeAvanzar = esInventario || esAdmin;
     const puedeRechazar =
       esAdmin || roles.includes('produccion') || esInventario;

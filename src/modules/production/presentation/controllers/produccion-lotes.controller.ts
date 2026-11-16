@@ -45,7 +45,7 @@ export class ProduccionLotesController {
     return LoteProductoTerminadoPresenter.toHttp(await this.crear.execute(dto));
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get()
   @ApiOperation({ summary: 'Consultar lotes de producto terminado' })
   async findAll(@Query() query: ListLoteProductoTerminadoQueryDto) {
@@ -54,7 +54,7 @@ export class ProduccionLotesController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Consultar un lote de producto terminado' })
   async findOne(@Param('id', ParseIntPipe) id: number) {

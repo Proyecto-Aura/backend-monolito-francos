@@ -58,7 +58,7 @@ export class ProduccionSolicitudesController {
     private readonly eliminarDetalleLinea: EliminarDetalleLineaUseCase,
   ) {}
 
-  @Roles('admin', 'inventario')
+  @Roles('admin', 'inventario_productos_terminados')
   @Post()
   @ApiOperation({
     summary:
@@ -73,7 +73,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get()
   @ApiOperation({
     summary: 'Consultar solicitudes de producción',
@@ -87,7 +87,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get('indicadores')
   @ApiOperation({ summary: 'Conteo de solicitudes de producción por estado' })
   @ApiOkResponse({
@@ -97,7 +97,7 @@ export class ProduccionSolicitudesController {
     return this.getIndicadoresSolicitudProduccion.execute();
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Get(':id')
   @ApiOperation({
     summary: 'Obtener una solicitud de producción con su detalle',
@@ -111,7 +111,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario')
+  @Roles('admin', 'inventario_productos_terminados')
   @Patch(':id')
   @ApiOperation({
     summary:
@@ -127,7 +127,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'inventario_productos_terminados', 'produccion')
   @Patch(':id/estado')
   @ApiOperation({
     summary: 'Iniciar, completar o rechazar una solicitud de producción',
@@ -154,7 +154,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario')
+  @Roles('admin', 'inventario_productos_terminados')
   @Post(':id/detalle')
   @ApiOperation({
     summary:
@@ -170,7 +170,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario')
+  @Roles('admin', 'inventario_productos_terminados')
   @Patch('detalle/:detalleId')
   @ApiOperation({
     summary:
@@ -186,7 +186,7 @@ export class ProduccionSolicitudesController {
     );
   }
 
-  @Roles('admin', 'inventario')
+  @Roles('admin', 'inventario_productos_terminados')
   @Delete('detalle/:detalleId')
   @ApiOperation({
     summary:

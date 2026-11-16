@@ -11,7 +11,7 @@ const MARCA = 'E2E-OFT261';
 const URL = '/api/v1/produccion/solicitudes';
 const ROLES = [
   'admin',
-  'inventario',
+  'inventario_productos_terminados',
   'produccion',
   'ventas',
   'cliente',
@@ -68,7 +68,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
   const usuarios = {} as Record<Rol, string>;
   const productos: number[] = [];
   let secuencia = 0;
-  const auth = (rol: Rol = 'inventario') => ({
+  const auth = (rol: Rol = 'inventario_productos_terminados') => ({
     Authorization: `Bearer ${tokens[rol]}`,
   });
   const codigo = () => `${MARCA}-${++secuencia}`;
@@ -77,7 +77,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     cantidad_solicitada: cantidad,
   });
   const http = () => request(app.getHttpServer());
-  const crear = async (rol: Rol = 'inventario') => {
+  const crear = async (rol: Rol = 'inventario_productos_terminados') => {
     const res = await http()
       .post(URL)
       .set(auth(rol))
@@ -85,7 +85,10 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       .expect(201);
     return res.body as SolicitudHttp;
   };
-  const obtener = async (id: number, rol: Rol = 'inventario') => {
+  const obtener = async (
+    id: number,
+    rol: Rol = 'inventario_productos_terminados',
+  ) => {
     const res = await http().get(`${URL}/${id}`).set(auth(rol)).expect(200);
     return res.body as SolicitudHttp;
   };
@@ -276,7 +279,11 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       await http().get(ruta).set(auth(rol)).expect(403);
     });
 
-    it.each(['admin', 'inventario', 'produccion'] as const)(
+    it.each([
+      'admin',
+      'inventario_productos_terminados',
+      'produccion',
+    ] as const)(
       '%s puede consultar indicadores sin caer en la ruta /:id',
       async (rol) => {
         const res = await http().get(ruta).set(auth(rol)).expect(200);
@@ -356,7 +363,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       },
     );
 
-    it.each(['admin', 'inventario'] as const)(
+    it.each(['admin', 'inventario_productos_terminados'] as const)(
       '%s cambia y persiste la fecha límite de una solicitud pendiente',
       async (rol) => {
         const solicitud = await crear();
@@ -391,7 +398,10 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
       'devuelve 409 y conserva la fecha y el detalle en estado %s',
       async (estado) => {
         const solicitud = await fijarEstado(estado);
-        for (const rol of ['admin', 'inventario'] as const) {
+        for (const rol of [
+          'admin',
+          'inventario_productos_terminados',
+        ] as const) {
           await http()
             .patch(`${URL}/${solicitud.id}`)
             .set(auth(rol))
@@ -496,7 +506,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     expect((await obtener(solicitud.id)).detalle).toEqual([detalle]);
   });
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'inventario_productos_terminados'] as const)(
     '%s crea cabecera y detalle con su identidad, fecha y catálogo embebido',
     async (rol) => {
       const codigoCliente = codigo();
@@ -711,7 +721,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     await http().delete(`${URL}/detalle/${id}`).set(auth()).expect(400);
   });
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'inventario_productos_terminados'] as const)(
     '%s agrega, actualiza y elimina mientras queda una línea',
     async (rol) => {
       const solicitud = await crear(rol);
@@ -821,7 +831,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     },
   );
 
-  it.each(['inventario'] as const)(
+  it.each(['inventario_productos_terminados'] as const)(
     '%s solo puede rechazar desde pendiente y no avanzar ni entregar',
     async (rol) => {
       const solicitud = await crear();
@@ -894,7 +904,7 @@ describe('Solicitudes de producción OFT0-261 (e2e)', () => {
     'bloquea agregar, actualizar y eliminar en estado %s',
     async (estado) => {
       const solicitud = await fijarEstado(estado);
-      for (const rol of ['admin', 'inventario'] as const) {
+      for (const rol of ['admin', 'inventario_productos_terminados'] as const) {
         await http()
           .post(`${URL}/${solicitud.id}/detalle`)
           .set(auth(rol))
