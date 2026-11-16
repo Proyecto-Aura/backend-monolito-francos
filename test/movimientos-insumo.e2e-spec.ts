@@ -44,12 +44,12 @@ interface MovimientoHttp {
 }
 
 const TEST_USERS = {
-  inventario: {
-    identificador: 'e2e-inventario-oft256',
-    password: 'InventarioE2e123',
-    email: 'e2e-inventario-oft256@francos.test',
+  insumos: {
+    identificador: 'e2e-insumos-oft256',
+    password: 'InsumosE2e123',
+    email: 'e2e-insumos-oft256@francos.test',
     documento: '99999980',
-    rol: 'inventario',
+    rol: 'insumos',
   },
   ventas: {
     identificador: 'e2e-ventas-oft256',
@@ -64,7 +64,7 @@ describe('Movimientos de insumo (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
-  let inventarioToken: string;
+  let insumosToken: string;
   let ventasToken: string;
   let insumoId: number;
   let loteCercanoId: number;
@@ -171,9 +171,9 @@ describe('Movimientos de insumo (e2e)', () => {
     }
 
     adminToken = await login('admin', 'admin123');
-    inventarioToken = await login(
-      TEST_USERS.inventario.identificador,
-      TEST_USERS.inventario.password,
+    insumosToken = await login(
+      TEST_USERS.insumos.identificador,
+      TEST_USERS.insumos.password,
     );
     ventasToken = await login(
       TEST_USERS.ventas.identificador,
@@ -240,7 +240,7 @@ describe('Movimientos de insumo (e2e)', () => {
       .expect(403);
   });
 
-  it('POST entrada con rol ventas devuelve 403 y suma al lote existente (201) con rol inventario', async () => {
+  it('POST entrada con rol ventas devuelve 403 y suma al lote existente (201) con rol insumos', async () => {
     await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/entrada`)
       .set(auth(ventasToken))
@@ -253,7 +253,7 @@ describe('Movimientos de insumo (e2e)', () => {
 
     const res = await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/entrada`)
-      .set(auth(inventarioToken))
+      .set(auth(insumosToken))
       .send({
         lote_insumo_id: loteCercanoId,
         cantidad: 15,
@@ -290,7 +290,7 @@ describe('Movimientos de insumo (e2e)', () => {
       };
       const res = await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/salida`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send(array ? [fila] : fila)
         .expect(400);
       expect((res.body as { message: string[] }).message).toContain(
@@ -306,7 +306,7 @@ describe('Movimientos de insumo (e2e)', () => {
   it('salida reparte FEFO entre lotes (el que vence antes se agota primero) y marca el lote en 0 como agotado', async () => {
     const res = await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/salida`)
-      .set(auth(inventarioToken))
+      .set(auth(insumosToken))
       .send({
         insumo_id: insumoId,
         cantidad: 90,
@@ -387,7 +387,7 @@ describe('Movimientos de insumo (e2e)', () => {
     // salida toma del válido, no del vencido.
     const res = await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/salida`)
-      .set(auth(inventarioToken))
+      .set(auth(insumosToken))
       .send({
         insumo_id: insumoFefoVencido.id,
         cantidad: 20,
@@ -404,7 +404,7 @@ describe('Movimientos de insumo (e2e)', () => {
     // como disponible.
     await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/salida`)
-      .set(auth(inventarioToken))
+      .set(auth(insumosToken))
       .send({
         insumo_id: insumoFefoVencido.id,
         cantidad: 15,
@@ -453,7 +453,7 @@ describe('Movimientos de insumo (e2e)', () => {
   it('ajuste con cantidad negativa corrige el lote hacia abajo', async () => {
     const res = await request(app.getHttpServer())
       .post(`${MOVIMIENTOS_URL}/ajuste`)
-      .set(auth(inventarioToken))
+      .set(auth(insumosToken))
       .send({
         lote_insumo_id: loteLejanoId,
         cantidad: -5,
@@ -577,7 +577,7 @@ describe('Movimientos de insumo (e2e)', () => {
     it('entrada con array crea una fila por lote en una sola transacción', async () => {
       const res = await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/entrada`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send([
           {
             lote_insumo_id: loteBatchAId,
@@ -603,7 +603,7 @@ describe('Movimientos de insumo (e2e)', () => {
     it('entrada con array no crea nada si una fila es inválida (todo o nada)', async () => {
       await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/entrada`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send([
           {
             lote_insumo_id: loteBatchAId,
@@ -632,7 +632,7 @@ describe('Movimientos de insumo (e2e)', () => {
     it('array vacío devuelve 400', async () => {
       await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/entrada`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send([])
         .expect(400);
     });
@@ -640,7 +640,7 @@ describe('Movimientos de insumo (e2e)', () => {
     it('ajuste con array aplica varias filas sobre lotes distintos', async () => {
       const res = await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/ajuste`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send([
           {
             lote_insumo_id: loteBatchAId,
@@ -666,7 +666,7 @@ describe('Movimientos de insumo (e2e)', () => {
       // primero loteBatchA (vence antes).
       const res = await request(app.getHttpServer())
         .post(`${MOVIMIENTOS_URL}/salida`)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send([
           { insumo_id: insumoBatchId, cantidad: 30, razon: `${MARCA}: fila 1` },
           { insumo_id: insumoBatchId, cantidad: 20, razon: `${MARCA}: fila 2` },

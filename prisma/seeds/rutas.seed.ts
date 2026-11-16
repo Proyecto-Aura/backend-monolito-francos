@@ -10,6 +10,8 @@ interface RutaSeed {
 
 const RUTAS_BASE: RutaSeed[] = [
   // --- Inventario ---
+  // Solo productos terminados: las pantallas cuelgan directo del módulo (ya
+  // no hay nodo intermedio "productos-terminados").
   {
     nombre: 'inventario',
     etiqueta: 'Inventario',
@@ -17,10 +19,32 @@ const RUTAS_BASE: RutaSeed[] = [
     descripcion: 'Control de stock y productos',
   },
   {
+    nombre: 'stock-productos',
+    etiqueta: 'Stock de productos',
+    icono: 'boxes',
+    parent: 'inventario',
+  },
+  {
+    nombre: 'pedidos-por-preparar',
+    etiqueta: 'Pedidos por preparar',
+    icono: 'shopping-cart',
+    parent: 'inventario',
+  },
+  {
+    nombre: 'solicitudes-produccion',
+    etiqueta: 'Solicitudes a producción',
+    icono: 'clipboard-list',
+    parent: 'inventario',
+  },
+
+  // --- Insumos ---
+  // Módulo propio del rol "insumos", no una subopción de Inventario: mismo
+  // nivel que Inventario o Despachos.
+  {
     nombre: 'insumos',
     etiqueta: 'Insumos',
     icono: 'box',
-    parent: 'inventario',
+    descripcion: 'Gestión de insumos y su stock',
   },
   {
     nombre: 'stock-insumos',
@@ -33,30 +57,6 @@ const RUTAS_BASE: RutaSeed[] = [
     etiqueta: 'Solicitudes de insumos',
     icono: 'clipboard-list',
     parent: 'insumos',
-  },
-  {
-    nombre: 'productos-terminados',
-    etiqueta: 'Productos terminados',
-    icono: 'recycle',
-    parent: 'inventario',
-  },
-  {
-    nombre: 'stock-productos',
-    etiqueta: 'Stock de productos',
-    icono: 'boxes',
-    parent: 'productos-terminados',
-  },
-  {
-    nombre: 'pedidos-por-preparar',
-    etiqueta: 'Pedidos por preparar',
-    icono: 'shopping-cart',
-    parent: 'productos-terminados',
-  },
-  {
-    nombre: 'solicitudes-produccion',
-    etiqueta: 'Solicitudes a producción',
-    icono: 'clipboard-list',
-    parent: 'productos-terminados',
   },
 
   // --- Ventas ---
@@ -215,8 +215,7 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'truck',
     descripcion: 'Seguimiento y entrega de pedidos',
   },
-  // Hijo único, mismo criterio que productos-terminados/pedidos-por-preparar:
-  // un nivel intermedio (aunque hoy solo tenga una pantalla real) para que el
+  // Hijo único: una pantalla hija (aunque hoy sea la única real) para que el
   // sidebar del módulo no quede vacío.
   {
     nombre: 'gestion-despachos',
@@ -227,8 +226,8 @@ const RUTAS_BASE: RutaSeed[] = [
 
   // --- Producción ---
   // Menú dedicado al rol "produccion": duplica (con nombre propio, misma
-  // etiqueta) las rutas de solicitudes que ya existen bajo Inventario, para
-  // no mover ni afectar el acceso del rol "inventario" a las suyas.
+  // etiqueta) las rutas de solicitudes que ya existen bajo Inventario e
+  // Insumos, para no mover ni afectar el acceso de esos roles a las suyas.
   {
     nombre: 'produccion',
     etiqueta: 'Producción',
