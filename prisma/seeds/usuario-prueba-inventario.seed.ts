@@ -66,7 +66,9 @@ export async function seedUsuarioPruebaInventario(prisma: PrismaClient) {
   });
 
   for (const nombreRuta of RUTAS_PERMITIDAS) {
-    const ruta = await prisma.ruta.findUnique({ where: { nombre: nombreRuta } });
+    const ruta = await prisma.ruta.findUnique({
+      where: { nombre: nombreRuta },
+    });
 
     if (!ruta) {
       console.log(`Ruta "${nombreRuta}" no existe todavia, se omite`);
