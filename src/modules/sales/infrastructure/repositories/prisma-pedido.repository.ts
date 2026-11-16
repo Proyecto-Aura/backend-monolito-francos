@@ -4,6 +4,7 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import {
   calcularDisponibilidad,
   formatCodigoPedido,
+  umbralMayoristaEfectivo,
 } from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
 import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
@@ -129,6 +130,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
   async findPresentacionesParaPedido(
     ids: number[],
   ): Promise<PresentacionParaPedido[]> {
+    // HU-A-045: el umbral que rige (propio o global) se resuelve aquí, para que
+    // el cálculo de RN17 (`precioAplicado`) siga igual para todos los flujos.
+    const parametros = await this.prisma.parametroVenta.findUnique({
+      where: { id: 1 },
+    });
     const presentaciones = await this.prisma.productoPresentacion.findMany({
       where: { id: { in: ids } },
       select: {
@@ -148,7 +154,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
       producto_estado: presentacion.producto.estado,
       precio_unitario: presentacion.precio_unitario.toNumber(),
       precio_mayorista: presentacion.precio_mayorista?.toNumber() ?? null,
-      umbral_mayorista: presentacion.umbral_mayorista,
+      umbral_mayorista: umbralMayoristaEfectivo(
+        presentacion.precio_mayorista?.toNumber() ?? null,
+        presentacion.umbral_mayorista,
+        parametros,
+      ),
       visible_portal_b: presentacion.visible_portal_b,
     }));
   }

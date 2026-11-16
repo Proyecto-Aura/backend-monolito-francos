@@ -33,6 +33,8 @@ import { GetPedidoPortalUseCase } from '../../application/use-cases/pedido/get-p
 import { ResumirPedidoPortalUseCase } from '../../application/use-cases/pedido/resumir-pedido-portal.use-case';
 import { ListPedidosPortalUseCase } from '../../application/use-cases/pedido/list-pedidos-portal.use-case';
 import { PedidoPresenter } from '../presenters/pedido.presenter';
+import { ParametroVentaPresenter } from '../presenters/parametro-venta.presenter';
+import { GetParametroVentaUseCase } from '../../application/use-cases/parametro-venta/get-parametro-venta.use-case';
 import { ResumenPedidoPortalPresenter } from '../presenters/resumen-pedido-portal.presenter';
 
 @ApiTags('Portal - Pedidos')
@@ -45,8 +47,23 @@ export class PortalPedidosController {
     private readonly crearPedidoPortal: CrearPedidoPortalUseCase,
     private readonly listPedidosPortal: ListPedidosPortalUseCase,
     private readonly getPedidoPortal: GetPedidoPortalUseCase,
+    private readonly getParametroVenta: GetParametroVentaUseCase,
     private readonly cancelarPedidoPortal: CancelarPedidoPortalUseCase,
   ) {}
+
+  // Antes de `:id` para que "metodos-pago" no se interprete como un id.
+  @Get('metodos-pago')
+  @ApiOperation({
+    summary: 'Métodos de pago disponibles en el portal (RF-A195)',
+    description:
+      'Los que el administrador dejó activos en Parámetros de ventas.',
+  })
+  @ApiOkResponse({ description: 'Disponibilidad de Culqi y efectivo' })
+  async findMetodosPago() {
+    return ParametroVentaPresenter.metodosPagoToHttp(
+      await this.getParametroVenta.execute(),
+    );
+  }
 
   @Get()
   @ApiOperation({

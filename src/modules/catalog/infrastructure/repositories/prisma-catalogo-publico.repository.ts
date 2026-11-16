@@ -50,8 +50,14 @@ export class PrismaCatalogoPublicoRepository implements CatalogoPublicoRepositor
       this.prisma.productoPresentacion.count({ where }),
     ]);
 
+    // HU-A-045 (RF-A194): con las promociones apagadas el cliente no las ve.
+    const promocionesActivas = await this.promocionesActivas();
+
     return {
-      data: filas.map((fila) => CatalogoPublicoMapper.toItem(fila)),
+      data: filas.map((fila) => {
+        const item = CatalogoPublicoMapper.toItem(fila);
+        return promocionesActivas ? item : { ...item, promocion_vigente: null };
+      }),
       total,
       page: params.page,
       limit: params.limit,
@@ -72,7 +78,29 @@ export class PrismaCatalogoPublicoRepository implements CatalogoPublicoRepositor
       return null;
     }
 
-    return CatalogoPublicoMapper.toProducto(producto);
+    const catalogoProducto = CatalogoPublicoMapper.toProducto(producto);
+
+    if (await this.promocionesActivas()) {
+      return catalogoProducto;
+    }
+
+    return {
+      ...catalogoProducto,
+      presentaciones: catalogoProducto.presentaciones.map((presentacion) => ({
+        ...presentacion,
+        promocion_vigente: null,
+      })),
+    };
+  }
+
+  // Sin parámetros guardados las promociones siguen activas (comportamiento
+  // anterior a la HU-A-045).
+  private async promocionesActivas(): Promise<boolean> {
+    const parametros = await this.prisma.parametroVenta.findUnique({
+      where: { id: 1 },
+      select: { promociones_activas: true },
+    });
+    return parametros?.promociones_activas ?? true;
   }
 
   // El id desempata para que la paginación sea estable.

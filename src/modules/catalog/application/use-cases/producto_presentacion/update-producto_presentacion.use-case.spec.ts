@@ -103,10 +103,19 @@ describe('UpdateProductoPresentacionUseCase', () => {
       useCase.execute(7, dto({ precio_mayorista: null })),
     ).rejects.toThrow(
       new ResourceConflictError(
-        'El precio mayorista y el umbral mayorista deben enviarse juntos',
+        'El umbral mayorista requiere un precio mayorista',
       ),
     );
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it('permite un precio mayorista sin umbral propio: rige el global (HU-A-045)', async () => {
+    await useCase.execute(7, dto({ umbral_mayorista: null }));
+
+    expect(update).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ umbral_mayorista: null }),
+    );
   });
 
   it('permite agregar mayorista a una presentación que no lo tenía', async () => {

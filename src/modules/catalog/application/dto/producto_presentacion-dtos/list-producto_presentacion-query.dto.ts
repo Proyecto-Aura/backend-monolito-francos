@@ -64,6 +64,16 @@ export class ListProductoPresentacionQueryDto extends PaginationQueryDto {
   con_stock?: boolean;
 
   @ApiPropertyOptional({
+    example: true,
+    description:
+      'true: solo las que tienen precio mayorista (HU-A-045). false: solo las que no',
+  })
+  @IsOptional()
+  @Transform(aBoolean)
+  @IsBoolean()
+  con_mayorista?: boolean;
+
+  @ApiPropertyOptional({
     enum: NivelStockProductoTerminado,
     example: 'bajo',
     description: 'Mismo criterio que /productos-terminados/indicadores',
