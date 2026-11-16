@@ -5,7 +5,11 @@ const ROLES_BASE = [
   { nombre: 'admin', descripcion: 'Acceso total al sistema' },
   { nombre: 'ventas', descripcion: 'Gestión de ventas, clientes y catálogo' },
   { nombre: 'cliente', descripcion: 'Cuenta del portal del cliente' },
-  { nombre: 'inventario', descripcion: 'Control de stock e insumos' },
+  {
+    nombre: 'inventario',
+    descripcion: 'Control de stock de productos terminados',
+  },
+  { nombre: 'insumos', descripcion: 'Gestión de insumos y su stock' },
   { nombre: 'produccion', descripcion: 'Órdenes y solicitudes de producción' },
   {
     nombre: 'estrategico',
