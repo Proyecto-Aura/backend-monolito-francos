@@ -76,15 +76,17 @@ export class CreateIniciativaUseCase {
       );
     }
 
-    const tipoModulo = await this.tipoModuloRepository.findByCodigo('NEG');
+    const tipoModulo = await this.tipoModuloRepository.findById(
+      objetivo.tipo_modulo_id,
+    );
 
     if (!tipoModulo || !tipoModulo.estado) {
-      throw new ResourceNotFoundError('Tipo de módulo NEG no encontrado');
+      throw new ResourceNotFoundError('Tipo de módulo no encontrado');
     }
 
     const totalIniciativas = await this.iniciativaRepository.countByPlanYTipo(
       plan.id,
-      tipoModulo.id,
+      objetivo.tipo_modulo_id,
     );
     const correlativo = String(totalIniciativas + 1).padStart(3, '0');
 
@@ -100,6 +102,7 @@ export class CreateIniciativaUseCase {
       },
       plan.codigo,
       correlativo,
+      tipoModulo.codigo === 'NEG' ? 'N' : 'TI',
     );
   }
 }

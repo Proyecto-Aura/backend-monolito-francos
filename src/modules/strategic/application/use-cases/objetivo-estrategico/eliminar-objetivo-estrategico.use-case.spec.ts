@@ -49,6 +49,7 @@ describe('EliminarObjetivoEstrategicoUseCase', () => {
     perspectiva_bsc_id: 1,
     tipo_modulo_id: tipoModulo.id,
     oe_negocio_id: null,
+    oe_negocio: null,
     estado_objetivo_id: 1,
     responsable: 'Ana Torres',
     nombre: 'Incrementar la rentabilidad',

@@ -2,10 +2,12 @@ import { InvalidRequestError } from '../../domain/errors/sales-domain.errors';
 import { PresentacionParaPedido } from '../../domain/repositories/types/pedido-repository.types';
 import {
   calcularLinea,
+  calcularDisponibilidad,
   calcularTotal,
   formatCodigoPedido,
   precioAplicado,
   rangoFechasLima,
+  umbralMayoristaEfectivo,
 } from './pedido.utils';
 
 const presentacion = (
@@ -17,10 +19,73 @@ const presentacion = (
   precio_unitario: 5.5,
   precio_mayorista: 4.2,
   umbral_mayorista: 24,
+  visible_portal_b: true,
   ...overrides,
 });
 
 describe('pedido.utils', () => {
+  describe('calcularDisponibilidad', () => {
+    it.each([
+      {
+        caso: 'todos alcanzan, incluyendo igualdad',
+        items: [
+          { stock_disponible: 3, cantidad: 3 },
+          { stock_disponible: 6, cantidad: 5 },
+        ],
+        esperado: 'completo',
+      },
+      {
+        caso: 'solo el primero alcanza',
+        items: [
+          { stock_disponible: 3, cantidad: 3 },
+          { stock_disponible: 0, cantidad: 5 },
+        ],
+        esperado: 'parcial',
+      },
+      {
+        caso: 'solo el segundo alcanza',
+        items: [
+          { stock_disponible: 2, cantidad: 3 },
+          { stock_disponible: 5, cantidad: 5 },
+        ],
+        esperado: 'parcial',
+      },
+      {
+        caso: 'ninguno alcanza aunque ambos tienen stock positivo',
+        items: [
+          { stock_disponible: 2, cantidad: 3 },
+          { stock_disponible: 4, cantidad: 5 },
+        ],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'ambos tienen stock cero',
+        items: [
+          { stock_disponible: 0, cantidad: 3 },
+          { stock_disponible: 0, cantidad: 5 },
+        ],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'un solo item suficiente',
+        items: [{ stock_disponible: 3, cantidad: 3 }],
+        esperado: 'completo',
+      },
+      {
+        caso: 'un solo item insuficiente',
+        items: [{ stock_disponible: 2, cantidad: 3 }],
+        esperado: 'sin_stock',
+      },
+      {
+        caso: 'stock decimal exactamente suficiente',
+        items: [{ stock_disponible: 1.25, cantidad: 1.25 }],
+        esperado: 'completo',
+      },
+    ])('$caso', ({ items, esperado }) => {
+      expect(calcularDisponibilidad(items)).toBe(esperado);
+    });
+  });
+
   describe('formatCodigoPedido (RF-A034)', () => {
     it('rellena con ceros hasta 6 dígitos', () => {
       expect(formatCodigoPedido(1)).toBe('PED-000001');
@@ -51,6 +116,34 @@ describe('pedido.utils', () => {
       expect(
         precioAplicado(presentacion({ umbral_mayorista: null }), 500),
       ).toBe(5.5);
+    });
+  });
+
+  describe('umbralMayoristaEfectivo (RF-A193)', () => {
+    const global = (umbral_por_producto: boolean) => ({
+      umbral_mayorista_global: 24,
+      umbral_por_producto,
+    });
+
+    it('no hay umbral si la presentación no tiene precio mayorista', () => {
+      expect(umbralMayoristaEfectivo(null, 12, global(true))).toBeNull();
+    });
+
+    it('sin parámetros guardados respeta solo el umbral propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, null)).toBe(12);
+      expect(umbralMayoristaEfectivo(4.2, null, null)).toBeNull();
+    });
+
+    it('con umbral por producto activo manda el propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, global(true))).toBe(12);
+    });
+
+    it('con umbral por producto activo y sin propio rige el global', () => {
+      expect(umbralMayoristaEfectivo(4.2, null, global(true))).toBe(24);
+    });
+
+    it('con umbral por producto apagado rige el global aunque haya propio', () => {
+      expect(umbralMayoristaEfectivo(4.2, 12, global(false))).toBe(24);
     });
   });
 

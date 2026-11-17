@@ -13,6 +13,7 @@ export interface CreateObjetivoEstrategicoParams {
   nombre: string;
   descripcion: string | null;
   relaciones_destino_ids: number[];
+  oe_negocio_id?: number;
 }
 
 export interface UpdateObjetivoEstrategicoParams {
@@ -21,10 +22,12 @@ export interface UpdateObjetivoEstrategicoParams {
   nombre?: string;
   descripcion?: string | null;
   relaciones_destino_ids?: number[];
+  oe_negocio_id?: number;
 }
 
 export interface ListObjetivosEstrategicosParams extends PaginationParams {
   plan_estrategico_id: number;
+  tipo_modulo_id: number;
   perspectiva_bsc_id?: number;
   search?: string;
 }
@@ -33,4 +36,5 @@ export interface ObjetivoEstrategicoEntityEnriquecido extends ObjetivoEstrategic
   perspectiva_bsc: PerspectivaBscEntity;
   estado_objetivo: EstadoObjetivoEntity;
   relaciones_como_origen: RelacionOeEntity[];
+  oe_negocio: { id: number; codigo: string; nombre: string } | null;
 }

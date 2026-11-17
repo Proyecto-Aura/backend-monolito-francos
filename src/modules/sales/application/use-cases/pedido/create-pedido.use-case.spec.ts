@@ -1,4 +1,9 @@
-import { MetodoPago, OrigenPedido, TipoEntrega } from '../../../domain/enums';
+import {
+  MetodoPago,
+  OrigenPedido,
+  TipoComprobante,
+  TipoEntrega,
+} from '../../../domain/enums';
 import {
   PagoRechazadoError,
   ResourceConflictError,
@@ -12,6 +17,7 @@ import {
 } from '../../../domain/repositories/types/pedido-repository.types';
 import { PasarelaPagoService } from '../../../domain/services/pasarela-pago.service';
 import { CreatePedidoDto } from '../../dto/pedido-dtos/create-pedido.dto';
+import { GenerarComprobanteUseCase } from '../comprobante/generar-comprobante.use-case';
 import { CreatePedidoUseCase } from './create-pedido.use-case';
 
 describe('CreatePedidoUseCase', () => {
@@ -19,6 +25,7 @@ describe('CreatePedidoUseCase', () => {
   const findPresentacionesParaPedido = jest.fn();
   const create = jest.fn();
   const cobrar = jest.fn();
+  const generarComprobanteExecute = jest.fn();
 
   const pedidoRepository = {
     findClienteParaPedido,
@@ -28,8 +35,15 @@ describe('CreatePedidoUseCase', () => {
   const pasarelaPago = {
     cobrar,
   } as unknown as jest.Mocked<PasarelaPagoService>;
+  const generarComprobante = {
+    execute: generarComprobanteExecute,
+  } as unknown as jest.Mocked<GenerarComprobanteUseCase>;
 
-  const useCase = new CreatePedidoUseCase(pedidoRepository, pasarelaPago);
+  const useCase = new CreatePedidoUseCase(
+    pedidoRepository,
+    pasarelaPago,
+    generarComprobante,
+  );
 
   const USER_ID = 'b6a1f1d2-1111-4c1a-9a0e-3b5b2f6f0001';
   const CLIENTE_ID = 'c7b2e2e3-2222-4d2b-8b1f-4c6c3a7a0002';
@@ -52,6 +66,7 @@ describe('CreatePedidoUseCase', () => {
     precio_unitario: 5.5,
     precio_mayorista: 4.2,
     umbral_mayorista: 24,
+    visible_portal_b: true,
     ...overrides,
   });
 
@@ -70,6 +85,19 @@ describe('CreatePedidoUseCase', () => {
   const createParams = (): CreatePedidoParams =>
     (create.mock.calls as CreatePedidoParams[][])[0][0];
 
+  const COMPROBANTE_EMITIDO = {
+    id: 1,
+    pago_id: 1,
+    tipo: TipoComprobante.BOLETA,
+    serie: 'B001',
+    numero: 1,
+    ruc: null,
+    razon_social: null,
+    subtotal: 165.6,
+    total: 165.6,
+    created_at: new Date('2026-11-10T00:00:00.000Z'),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     findClienteParaPedido.mockResolvedValue(cliente());
@@ -83,8 +111,14 @@ describe('CreatePedidoUseCase', () => {
       }),
     ]);
     create.mockImplementation((params: CreatePedidoParams) =>
-      Promise.resolve(params),
+      Promise.resolve({
+        pedido: { id: 1, codigo: 'PED-000001', ...params },
+        cliente_nombre: 'Cliente Test',
+        detalles: [],
+        pago: null,
+      }),
     );
+    generarComprobanteExecute.mockResolvedValue(COMPROBANTE_EMITIDO);
   });
 
   it('registra un pedido manual en efectivo con precios, total y pago calculados', async () => {
@@ -249,5 +283,70 @@ describe('CreatePedidoUseCase', () => {
       ),
     ).rejects.toThrow(ResourceNotFoundError);
     expect(cobrar).not.toHaveBeenCalled();
+  });
+
+  // HU-B-010 también aplica al registro manual (RF-A032).
+  describe('emite el comprobante del pedido', () => {
+    it('con el pago confirmado emite una boleta por defecto y la devuelve con el pedido', async () => {
+      const resultado = await useCase.execute(dto(), USER_ID);
+
+      expect(generarComprobanteExecute).toHaveBeenCalledWith({
+        pedido: expect.objectContaining({
+          pedido: expect.objectContaining({ codigo: 'PED-000001' }) as object,
+        }) as object,
+        datos: {
+          tipo_comprobante: TipoComprobante.BOLETA,
+          ruc: null,
+          razon_social: null,
+        },
+        subtotal: 165.6,
+        email: 'cliente@francos.test',
+      });
+      expect(resultado).toMatchObject({ comprobante: COMPROBANTE_EMITIDO });
+    });
+
+    it('con factura, pasa el RUC y la razón social elegidos', async () => {
+      await useCase.execute(
+        dto({
+          comprobante: {
+            tipo_comprobante: TipoComprobante.FACTURA,
+            ruc: '20601234565',
+            razon_social: 'Distribuidora Andina S.A.C.',
+          },
+        }),
+        USER_ID,
+      );
+
+      expect(generarComprobanteExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datos: {
+            tipo_comprobante: TipoComprobante.FACTURA,
+            ruc: '20601234565',
+            razon_social: 'Distribuidora Andina S.A.C.',
+          },
+        }),
+      );
+    });
+
+    it('en efectivo con un cliente sin correo, igual intenta emitirlo (sin enviarlo por correo)', async () => {
+      findClienteParaPedido.mockResolvedValue(cliente({ email: null }));
+
+      await useCase.execute(dto(), USER_ID);
+
+      expect(generarComprobanteExecute).toHaveBeenCalledWith(
+        expect.objectContaining({ email: null }),
+      );
+    });
+
+    it('si falla la emisión del comprobante, el pedido igual queda registrado', async () => {
+      generarComprobanteExecute.mockRejectedValue(
+        new Error('Sin empresa emisora configurada'),
+      );
+
+      const resultado = await useCase.execute(dto(), USER_ID);
+
+      expect(resultado).not.toHaveProperty('comprobante');
+      expect(create).toHaveBeenCalledTimes(1);
+    });
   });
 });

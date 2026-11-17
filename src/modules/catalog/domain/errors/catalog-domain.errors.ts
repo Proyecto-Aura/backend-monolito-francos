@@ -7,6 +7,10 @@ export abstract class CatalogDomainError extends Error {
   }
 }
 
+export class InvalidRequestError extends CatalogDomainError {
+  readonly statusCode = 400;
+}
+
 export class ResourceNotFoundError extends CatalogDomainError {
   readonly statusCode = 404;
 }

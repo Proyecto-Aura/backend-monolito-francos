@@ -155,11 +155,21 @@ describe('Password recovery (e2e)', () => {
         password: RECOVERY_USER.contrasena_anterior,
       })
       .expect(201);
-    const cookies = loginResponse.headers['set-cookie'];
+    const cookies: unknown = loginResponse.headers['set-cookie'];
     expect(cookies).toBeDefined();
-    refreshTokenCookie = (cookies as string[]).find((cookie) =>
+    const cookieHeaders =
+      typeof cookies === 'string'
+        ? [cookies]
+        : Array.isArray(cookies)
+          ? cookies.filter(
+              (cookie: unknown): cookie is string => typeof cookie === 'string',
+            )
+          : [];
+    const refreshCookie = cookieHeaders.find((cookie) =>
       cookie.startsWith('refresh_token='),
-    ) as string;
+    );
+    if (!refreshCookie) throw new Error('Falta la cookie refresh_token');
+    refreshTokenCookie = refreshCookie;
 
     await request(app.getHttpServer())
       .post('/api/v1/auth/reset-password')

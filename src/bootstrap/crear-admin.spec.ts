@@ -160,7 +160,7 @@ describe('crearAdmin', () => {
     let log: jest.SpiedFunction<typeof console.log>;
     let error: jest.SpiedFunction<typeof console.error>;
     let envAnterior: NodeJS.ProcessEnv;
-    let salidaAnterior: string | number | undefined;
+    let salidaAnterior: typeof process.exitCode;
 
     beforeEach(() => {
       envAnterior = process.env;

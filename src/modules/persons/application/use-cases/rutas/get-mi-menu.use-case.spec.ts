@@ -41,15 +41,17 @@ describe('GetMiMenuUseCase', () => {
   it('deja solo las ramas permitidas, incluyendo ancestros aunque no tengan acceso explicito', async () => {
     const arbolCompleto: RutaTreeNode[] = [
       nodo(1, 'inventario', [
-        nodo(2, 'insumos', [
-          nodo(3, 'stock-insumos'),
-          nodo(4, 'solicitudes-insumos'),
-        ]),
-        nodo(5, 'productos-terminados', [nodo(6, 'stock-productos')]),
+        nodo(2, 'stock-productos'),
+        nodo(3, 'pedidos-por-preparar'),
+        nodo(4, 'solicitudes-produccion'),
+      ]),
+      nodo(5, 'insumos', [
+        nodo(6, 'stock-insumos'),
+        nodo(7, 'solicitudes-insumos'),
       ]),
     ];
     execute.mockResolvedValue(arbolCompleto);
-    findActiveRutaIdsByRoleNames.mockResolvedValue([2, 3, 4]);
+    findActiveRutaIdsByRoleNames.mockResolvedValue([2]);
 
     const menu = await useCase.execute(['inventario']);
 
@@ -61,12 +63,37 @@ describe('GetMiMenuUseCase', () => {
         children: [
           expect.objectContaining({
             id: 2,
-            nombre: 'insumos',
-            children: [
-              expect.objectContaining({ id: 3, children: [] }),
-              expect.objectContaining({ id: 4, children: [] }),
-            ],
+            nombre: 'stock-productos',
+            children: [],
           }),
+        ],
+      }),
+    ]);
+  });
+
+  it('un rol con acceso a dos modulos de primer nivel los ve a ambos como raices', async () => {
+    const arbolCompleto: RutaTreeNode[] = [
+      nodo(1, 'inventario', [nodo(2, 'stock-productos')]),
+      nodo(5, 'insumos', [
+        nodo(6, 'stock-insumos'),
+        nodo(7, 'solicitudes-insumos'),
+      ]),
+    ];
+    execute.mockResolvedValue(arbolCompleto);
+    findActiveRutaIdsByRoleNames.mockResolvedValue([2, 6, 7]);
+
+    const menu = await useCase.execute(['inventario', 'insumos']);
+
+    expect(menu).toEqual([
+      expect.objectContaining({
+        id: 1,
+        children: [expect.objectContaining({ id: 2 })],
+      }),
+      expect.objectContaining({
+        id: 5,
+        children: [
+          expect.objectContaining({ id: 6, children: [] }),
+          expect.objectContaining({ id: 7, children: [] }),
         ],
       }),
     ]);
@@ -74,25 +101,25 @@ describe('GetMiMenuUseCase', () => {
 
   it('un acceso directo a un nodo intermedio lo muestra aunque ninguno de sus hijos tenga acceso', async () => {
     const arbolCompleto: RutaTreeNode[] = [
-      nodo(1, 'inventario', [
-        nodo(5, 'productos-terminados', [nodo(6, 'stock-productos')]),
+      nodo(1, 'estrategico', [
+        nodo(2, 'gestion-estrategica-negocio', [nodo(3, 'mapa-estrategico')]),
       ]),
     ];
     execute.mockResolvedValue(arbolCompleto);
-    findActiveRutaIdsByRoleNames.mockResolvedValue([5]);
+    findActiveRutaIdsByRoleNames.mockResolvedValue([2]);
 
-    const menu = await useCase.execute(['inventario']);
+    const menu = await useCase.execute(['estrategico']);
 
     expect(menu).toEqual([
       expect.objectContaining({
         id: 1,
-        children: [expect.objectContaining({ id: 5, children: [] })],
+        children: [expect.objectContaining({ id: 2, children: [] })],
       }),
     ]);
   });
 
   it('devuelve un arbol vacio cuando el rol no tiene ningun acceso', async () => {
-    execute.mockResolvedValue([nodo(1, 'inventario', [nodo(2, 'insumos')])]);
+    execute.mockResolvedValue([nodo(1, 'insumos', [nodo(2, 'stock-insumos')])]);
     findActiveRutaIdsByRoleNames.mockResolvedValue([]);
 
     await expect(useCase.execute(['cliente'])).resolves.toEqual([]);

@@ -10,6 +10,7 @@ export interface CreatePersonaParams {
   telefono: string | null;
   fecha_nacimiento: Date | null;
   direccion: string | null;
+  distrito_id?: string | null;
   estado: boolean;
 }
 
@@ -22,6 +23,7 @@ export interface UpdatePersonaParams {
   telefono?: string;
   fecha_nacimiento?: Date;
   direccion?: string;
+  distrito_id?: string;
 }
 
 export interface ListPersonasParams extends PaginationParams {

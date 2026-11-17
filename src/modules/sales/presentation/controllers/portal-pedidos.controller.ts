@@ -1,0 +1,193 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CurrentUser } from '../../../auth/presentation/decorators/current-user.decorator';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
+import type { AuthenticatedUser } from '../../../auth/presentation/strategies/jwt.strategy';
+import { CrearPedidoPortalDto } from '../../application/dto/pedido-dtos/crear-pedido-portal.dto';
+import { ResumenPedidoPortalDto } from '../../application/dto/pedido-dtos/resumen-pedido-portal.dto';
+import { ListPedidosPortalQueryDto } from '../../application/dto/pedido-dtos/list-pedidos-portal-query.dto';
+import { CancelarPedidoPortalUseCase } from '../../application/use-cases/pedido/cancelar-pedido-portal.use-case';
+import { CrearPedidoPortalUseCase } from '../../application/use-cases/pedido/crear-pedido-portal.use-case';
+import { GetPedidoPortalUseCase } from '../../application/use-cases/pedido/get-pedido-portal.use-case';
+import { ResumirPedidoPortalUseCase } from '../../application/use-cases/pedido/resumir-pedido-portal.use-case';
+import { ListPedidosPortalUseCase } from '../../application/use-cases/pedido/list-pedidos-portal.use-case';
+import { PedidoPresenter } from '../presenters/pedido.presenter';
+import { ParametroVentaPresenter } from '../presenters/parametro-venta.presenter';
+import { GetParametroVentaUseCase } from '../../application/use-cases/parametro-venta/get-parametro-venta.use-case';
+import { ResumenPedidoPortalPresenter } from '../presenters/resumen-pedido-portal.presenter';
+
+@ApiTags('Portal - Pedidos')
+@ApiBearerAuth()
+@Roles('cliente')
+@Controller('portal/pedidos')
+export class PortalPedidosController {
+  constructor(
+    private readonly resumirPedidoPortal: ResumirPedidoPortalUseCase,
+    private readonly crearPedidoPortal: CrearPedidoPortalUseCase,
+    private readonly listPedidosPortal: ListPedidosPortalUseCase,
+    private readonly getPedidoPortal: GetPedidoPortalUseCase,
+    private readonly getParametroVenta: GetParametroVentaUseCase,
+    private readonly cancelarPedidoPortal: CancelarPedidoPortalUseCase,
+  ) {}
+
+  // Antes de `:id` para que "metodos-pago" no se interprete como un id.
+  @Get('metodos-pago')
+  @ApiOperation({
+    summary: 'Métodos de pago disponibles en el portal (RF-A195)',
+    description:
+      'Los que el administrador dejó activos en Parámetros de ventas.',
+  })
+  @ApiOkResponse({ description: 'Disponibilidad de Culqi y efectivo' })
+  async findMetodosPago() {
+    return ParametroVentaPresenter.metodosPagoToHttp(
+      await this.getParametroVenta.execute(),
+    );
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Listar mis pedidos',
+    description:
+      'Los más recientes primero. Incluye el pago y, si ya existe, la solicitud de reembolso del pedido (para habilitar el botón correspondiente).',
+  })
+  @ApiOkResponse({ description: 'Lista paginada de mis pedidos' })
+  @ApiBadRequestResponse({ description: 'Filtro inválido' })
+  @ApiNotFoundResponse({ description: 'El usuario no tiene un cliente' })
+  async findAll(
+    @Query() query: ListPedidosPortalQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.paginatedPortalToHttp(
+      await this.listPedidosPortal.execute(query, user.userId),
+    );
+  }
+
+  @Post('resumen')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Confirmar el carrito y calcular el resumen del pedido',
+    description:
+      'Recalcula en el servidor el subtotal por línea y el total con el precio mayorista cuando la cantidad supera el umbral (RN17). Devuelve la dirección del perfil y la de entrega, y el tipo de comprobante elegido (boleta por defecto; factura con RUC y razón social). Si el perfil tiene RUC, propone sus datos en comprobante_sugerido. No registra el pedido ni cobra.',
+  })
+  @ApiOkResponse({ description: 'Resumen del pedido con sus montos' })
+  @ApiBadRequestResponse({
+    description:
+      'Datos inválidos: sin productos, presentación repetida, cantidad menor a 1, delivery sin dirección, tipo de comprobante desconocido, o factura sin RUC válido o sin razón social',
+  })
+  @ApiNotFoundResponse({
+    description: 'El usuario no tiene un cliente o una presentación no existe',
+  })
+  @ApiConflictResponse({
+    description:
+      'El cliente está inactivo, o una presentación está desactivada o no se muestra en el portal',
+  })
+  async resumen(
+    @Body() dto: ResumenPedidoPortalDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return ResumenPedidoPortalPresenter.toHttp(
+      await this.resumirPedidoPortal.execute(dto, user.userId),
+    );
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Pagar el carrito y crear el pedido',
+    description:
+      'Recalcula el total en el servidor (igual que el resumen) y cobra con el token del checkout de Culqi (tarjeta, Yape o Plin). Solo si el pago se confirma se guarda el pedido ya pagado (RN5) y se avisa al cliente. Con el pago confirmado se emite la boleta o factura elegida y se envía al correo del cliente (HU-B-010); si no se puede emitir (sin serie activa o sin empresa emisora), el pedido queda pagado y `pago.comprobante` va en null. Si el pago se rechaza responde 402, no se guarda nada y el cliente puede reintentar con otro token sin duplicar el pedido.',
+  })
+  @ApiCreatedResponse({ description: 'Pedido creado y pago confirmado' })
+  @ApiBadRequestResponse({
+    description:
+      'Datos inválidos: sin productos, presentación repetida, delivery sin dirección o falta el token de pago',
+  })
+  @ApiNotFoundResponse({
+    description: 'El usuario no tiene un cliente o una presentación no existe',
+  })
+  @ApiConflictResponse({
+    description:
+      'El cliente está inactivo o sin correo, o una presentación no está disponible',
+  })
+  @ApiResponse({
+    status: 402,
+    description:
+      'La pasarela rechazó el pago; el pedido no se registra y se puede reintentar',
+  })
+  @ApiServiceUnavailableResponse({
+    description:
+      'La pasarela no está configurada o no respondió; el pedido no se registra',
+  })
+  async crear(
+    @Body() dto: CrearPedidoPortalDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.crearPedidoPortal.execute(dto, user.userId),
+    );
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Consultar un pedido propio y su estado',
+    description:
+      'Devuelve el detalle del pedido del cliente, con su estado ("confirmado" una vez que el pago se completa) y su pago (HU-B-013). Solo se ven los pedidos propios: el de otro cliente responde 404.',
+  })
+  @ApiOkResponse({ description: 'Pedido con su estado, líneas y pago' })
+  @ApiBadRequestResponse({ description: 'El id del pedido no es un número' })
+  @ApiNotFoundResponse({
+    description:
+      'El usuario no tiene un cliente, o el pedido no existe o es de otro cliente',
+  })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.getPedidoPortal.execute(id, user.userId),
+    );
+  }
+
+  @Patch(':id/cancelar')
+  @ApiOperation({
+    summary: 'Cancelar mi pedido',
+    description:
+      'Solo mientras siga "confirmado", antes de que empiece a prepararse. No afecta el pago; si ya se cobró, el reembolso se gestiona aparte.',
+  })
+  @ApiBadRequestResponse({ description: 'El id del pedido no es un número' })
+  @ApiNotFoundResponse({
+    description:
+      'El usuario no tiene un cliente, o el pedido no existe o es de otro cliente',
+  })
+  @ApiConflictResponse({
+    description: 'El pedido ya no está "confirmado" y no se puede cancelar',
+  })
+  async cancelar(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return PedidoPresenter.detalleToHttp(
+      await this.cancelarPedidoPortal.execute(id, user.userId),
+    );
+  }
+}

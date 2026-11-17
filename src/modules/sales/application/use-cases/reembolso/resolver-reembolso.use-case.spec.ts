@@ -177,7 +177,10 @@ describe('Resolver solicitudes de reembolso', () => {
       expect(cambiarEstado).toHaveBeenCalledWith(
         3,
         EstadoReembolso.APROBADO,
-        { estado: EstadoReembolso.REEMBOLSADO },
+        {
+          estado: EstadoReembolso.REEMBOLSADO,
+          fecha_reembolso: expect.any(Date) as Date,
+        },
         expect.objectContaining({ tipo: TipoNotificacionReembolso.PROCESADO }),
       );
     });

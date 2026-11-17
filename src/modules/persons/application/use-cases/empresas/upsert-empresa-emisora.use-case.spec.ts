@@ -38,7 +38,6 @@ describe('UpsertEmpresaEmisoraUseCase', () => {
     ruc: '20123456789',
     direccion: 'Av. Siempre Viva 123',
     email: 'contacto@franco.pe',
-    logo_url: 'https://cdn.franco.pe/logo.png',
   };
 
   beforeEach(() => {
@@ -60,14 +59,14 @@ describe('UpsertEmpresaEmisoraUseCase', () => {
       direccion: dto.direccion,
       telefono: null,
       email: dto.email,
-      logo_url: dto.logo_url,
+      logo_url: null,
       estado: true,
       es_emisora: true,
     });
     expect(update).not.toHaveBeenCalled();
   });
 
-  it('actualiza la emisora existente y deja en null los opcionales omitidos', async () => {
+  it('actualiza la emisora existente y deja en null los opcionales omitidos pero conserva el logo', async () => {
     findEmisora.mockResolvedValue(emisora);
     update.mockResolvedValue(emisora);
 
@@ -83,7 +82,6 @@ describe('UpsertEmpresaEmisoraUseCase', () => {
       direccion: 'Jr. Nuevo 456',
       telefono: null,
       email: null,
-      logo_url: null,
     });
     expect(create).not.toHaveBeenCalled();
   });

@@ -9,5 +9,6 @@ export interface CreateDocumentoEstrategicoParams {
 
 export interface ListDocumentosEstrategicosParams extends PaginationParams {
   plan_estrategico_id: number;
+  tipo_modulo_id: number;
   search?: string;
 }

@@ -50,6 +50,7 @@ describe('ProductoPresentacionPresenter (catálogo)', () => {
           descripcion: null,
         },
         producto_terminado: {
+          id: 100,
           stock_actual: 0,
           stock_minimo: 1,
           stock_maximo: null,
@@ -100,6 +101,7 @@ describe('ProductoPresentacionPresenter (catálogo)', () => {
         descripcion: null,
       },
       producto_terminado: {
+        id: 100,
         stock_actual: 0,
         stock_minimo: 1,
         stock_maximo: null,

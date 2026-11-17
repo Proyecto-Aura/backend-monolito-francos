@@ -1,20 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TipoDocumento } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import { formatCodigoPedido } from '../../application/utils/pedido.utils';
+import {
+  calcularDisponibilidad,
+  formatCodigoPedido,
+  umbralMayoristaEfectivo,
+} from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
-import { EstadoPedido, MetodoPago } from '../../domain/enums';
+import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
 import { ResourceConflictError } from '../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../domain/repositories/pedido.repository';
 import { PaginatedResult } from '../../domain/repositories/types/pagination.types';
 import {
   ClienteParaPedido,
+  ClienteParaResumen,
   CreatePedidoParams,
+  IndicadoresPedidosDespacho,
+  IndicadoresPedidosInventario,
   ListPedidosParams,
+  ListPedidosDeClienteParams,
+  NotificacionPedidoParams,
   PedidoDetalle,
   PedidoResumen,
+  PedidoResumenPortal,
   PresentacionParaPedido,
 } from '../../domain/repositories/types/pedido-repository.types';
+import {
+  ESTADOS_DE_DESPACHO,
+  ESTADOS_DE_INVENTARIO,
+} from '../../domain/rules/transiciones-pedido';
+import {
+  ComprobanteMapper,
+  comprobanteConSerie,
+} from '../mappers/comprobante.mapper';
 import { PedidoMapper } from '../mappers/pedido.mapper';
 
 const clienteConPersona = {
@@ -33,14 +51,16 @@ const pedidoDetalleInclude = {
       producto_presentacion: {
         select: {
           sku: true,
+          imagen_key: true,
           producto: { select: { nombre: true } },
           presentacion: { select: { cantidad: true, unidad_medida: true } },
+          producto_terminado: { select: { id: true, stock_actual: true } },
         },
       },
     },
     orderBy: { id: 'asc' },
   },
-  pago: true,
+  pago: { include: { comprobante: { include: comprobanteConSerie } } },
 } satisfies Prisma.PedidoInclude;
 
 type PedidoConDetalle = Prisma.PedidoGetPayload<{
@@ -72,9 +92,49 @@ export class PrismaPedidoRepository implements PedidoRepository {
       : null;
   }
 
+  async findClienteParaResumenPorUser(
+    userId: string,
+  ): Promise<ClienteParaResumen | null> {
+    const cliente = await this.prisma.cliente.findFirst({
+      where: { persona: { user: { id: userId } } },
+      select: {
+        id: true,
+        estado: true,
+        razon_social: true,
+        persona: {
+          select: {
+            direccion: true,
+            tipo_documento: true,
+            numero_documento: true,
+            user: { select: { email: true } },
+          },
+        },
+      },
+    });
+
+    return cliente
+      ? {
+          id: cliente.id,
+          estado: cliente.estado,
+          email: cliente.persona.user?.email ?? null,
+          direccion: cliente.persona.direccion,
+          ruc:
+            cliente.persona.tipo_documento === TipoDocumento.ruc
+              ? cliente.persona.numero_documento
+              : null,
+          razon_social: cliente.razon_social,
+        }
+      : null;
+  }
+
   async findPresentacionesParaPedido(
     ids: number[],
   ): Promise<PresentacionParaPedido[]> {
+    // HU-A-045: el umbral que rige (propio o global) se resuelve aquí, para que
+    // el cálculo de RN17 (`precioAplicado`) siga igual para todos los flujos.
+    const parametros = await this.prisma.parametroVenta.findUnique({
+      where: { id: 1 },
+    });
     const presentaciones = await this.prisma.productoPresentacion.findMany({
       where: { id: { in: ids } },
       select: {
@@ -83,6 +143,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
         precio_unitario: true,
         precio_mayorista: true,
         umbral_mayorista: true,
+        visible_portal_b: true,
         producto: { select: { estado: true } },
       },
     });
@@ -93,7 +154,12 @@ export class PrismaPedidoRepository implements PedidoRepository {
       producto_estado: presentacion.producto.estado,
       precio_unitario: presentacion.precio_unitario.toNumber(),
       precio_mayorista: presentacion.precio_mayorista?.toNumber() ?? null,
-      umbral_mayorista: presentacion.umbral_mayorista,
+      umbral_mayorista: umbralMayoristaEfectivo(
+        presentacion.precio_mayorista?.toNumber() ?? null,
+        presentacion.umbral_mayorista,
+        parametros,
+      ),
+      visible_portal_b: presentacion.visible_portal_b,
     }));
   }
 
@@ -121,7 +187,34 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: pedidoDetalleInclude,
       });
 
+      if (params.notificacion && params.user_id) {
+        await tx.notificacion.create({
+          data: {
+            tipo: 'pago_confirmado',
+            titulo: params.notificacion.titulo,
+            mensaje: params.notificacion.mensaje,
+            referencia_tipo: 'pedido',
+            referencia_id: String(id),
+            notificacion_users: { create: { user_id: params.user_id } },
+          },
+        });
+      }
+
       return this.toPedidoDetalle(pedido);
+    });
+  }
+
+  async notificarPagoRechazado(
+    userId: string,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<void> {
+    await this.prisma.notificacion.create({
+      data: {
+        tipo: 'pago_rechazado',
+        titulo: notificacion.titulo,
+        mensaje: notificacion.mensaje,
+        notificacion_users: { create: { user_id: userId } },
+      },
     });
   }
 
@@ -129,8 +222,54 @@ export class PrismaPedidoRepository implements PedidoRepository {
     params: ListPedidosParams,
   ): Promise<PaginatedResult<PedidoResumen>> {
     const where: Prisma.PedidoWhereInput = {
+      ...(params.estados
+        ? { AND: [{ estado: { in: [...params.estados] } }] }
+        : {}),
       ...(params.estado ? { estado: params.estado } : {}),
       ...(params.origen ? { origen: params.origen } : {}),
+      ...(params.cliente_id ? { cliente_id: params.cliente_id } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              { codigo: { contains: params.search, mode: 'insensitive' } },
+              {
+                cliente: {
+                  razon_social: {
+                    contains: params.search,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    nombres: { contains: params.search, mode: 'insensitive' },
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    apellido_paterno: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                cliente: {
+                  persona: {
+                    apellido_materno: {
+                      contains: params.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
       ...(params.desde || params.hasta
         ? {
             created_at: {
@@ -147,11 +286,29 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: {
           cliente: clienteConPersona,
           pago: { select: { metodo_pago: true } },
+          detalles: {
+            select: {
+              cantidad: true,
+              // Solo se usa cuando conDisponibilidad=true (vista de
+              // inventario), pero el join es barato (FK indexada) así que se
+              // pide siempre para no complicar el tipo del select con un
+              // condicional en tiempo de ejecución.
+              producto_presentacion: {
+                select: {
+                  producto_terminado: { select: { stock_actual: true } },
+                },
+              },
+            },
+          },
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        // Orden de llegada (RF-A030).
-        orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+        // Primero por estado (RF-A030): Postgres ordena un enum por el orden
+        // en que se declaró el tipo, así que `estado: 'asc'` ya deja
+        // confirmado, en_espera_inventario, en_preparacion, pendiente_entrega,
+        // en_camino, entregado y cancelado al final (ver EstadoPedido en
+        // schema.prisma) -- y dentro de cada estado, por orden de llegada.
+        orderBy: [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       }),
       this.prisma.pedido.count({ where }),
     ]);
@@ -162,6 +319,23 @@ export class PrismaPedidoRepository implements PedidoRepository {
         cliente_nombre: PedidoMapper.nombreCliente(pedido.cliente),
         metodo_pago:
           (pedido.pago?.metodo_pago as MetodoPago | undefined) ?? null,
+        cantidad_productos: pedido.detalles.length,
+        cantidad_unidades: pedido.detalles.reduce(
+          (suma, detalle) => suma + detalle.cantidad,
+          0,
+        ),
+        ...(params.conDisponibilidad
+          ? {
+              disponibilidad: calcularDisponibilidad(
+                pedido.detalles.map((detalle) => ({
+                  cantidad: detalle.cantidad,
+                  stock_disponible:
+                    detalle.producto_presentacion.producto_terminado?.stock_actual.toNumber() ??
+                    0,
+                })),
+              ),
+            }
+          : {}),
       })),
       total,
       page: params.page,
@@ -173,6 +347,49 @@ export class PrismaPedidoRepository implements PedidoRepository {
     const pedido = await this.prisma.pedido.findUnique({ where: { id } });
 
     return pedido ? PedidoMapper.toDomain(pedido) : null;
+  }
+
+  async findManyDeCliente(
+    clienteId: string,
+    params: ListPedidosDeClienteParams,
+  ): Promise<PaginatedResult<PedidoResumenPortal>> {
+    const where: Prisma.PedidoWhereInput = {
+      cliente_id: clienteId,
+      ...(params.estado ? { estado: params.estado } : {}),
+    };
+    const [pedidos, total] = await this.prisma.$transaction([
+      this.prisma.pedido.findMany({
+        where,
+        include: {
+          pago: {
+            select: {
+              metodo_pago: true,
+              reembolso: { select: { id: true, estado: true } },
+            },
+          },
+        },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      }),
+      this.prisma.pedido.count({ where }),
+    ]);
+
+    return {
+      data: pedidos.map((pedido) => ({
+        pedido: PedidoMapper.toDomain(pedido),
+        metodo_pago: (pedido.pago?.metodo_pago as MetodoPago) ?? null,
+        reembolso: pedido.pago?.reembolso
+          ? {
+              id: pedido.pago.reembolso.id,
+              estado: pedido.pago.reembolso.estado as EstadoReembolso,
+            }
+          : null,
+      })),
+      total,
+      page: params.page,
+      limit: params.limit,
+    };
   }
 
   async findDetalleById(id: number): Promise<PedidoDetalle | null> {
@@ -198,45 +415,119 @@ export class PrismaPedidoRepository implements PedidoRepository {
     return count === 1;
   }
 
-  async marcarEntregado(id: number): Promise<PedidoEntity> {
+  async marcarEnCamino(
+    id: number,
+    notificacion: NotificacionPedidoParams,
+  ): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
-      // El cambio de estado va primero y con condición: si dos peticiones llegan
-      // a la vez, solo una descuenta el stock.
+      // Misma condición que cambiarEstado: no pisa un cambio simultáneo.
       const { count } = await tx.pedido.updateMany({
-        where: { id, estado: EstadoPedido.EN_CAMINO },
-        data: { estado: EstadoPedido.ENTREGADO },
+        where: { id, estado: EstadoPedido.PENDIENTE_ENTREGA },
+        data: { estado: EstadoPedido.EN_CAMINO },
       });
 
       if (count === 0) {
-        throw new ResourceConflictError(
-          'Solo se puede completar un pedido que está en camino',
-        );
+        return false;
       }
 
-      const detalles = await tx.detallePedido.findMany({
-        where: { pedido_id: id },
-        select: { producto_presentacion_id: true, cantidad: true },
-      });
-
-      for (const detalle of detalles) {
-        const descontado = await tx.productoTerminado.updateMany({
-          where: {
-            producto_presentacion_id: detalle.producto_presentacion_id,
-            stock_actual: { gte: detalle.cantidad },
+      const { cliente } = await tx.pedido.findUniqueOrThrow({
+        where: { id },
+        select: {
+          cliente: {
+            select: {
+              persona: {
+                select: {
+                  user: {
+                    select: { id: true, notificar_pedido_en_camino: true },
+                  },
+                },
+              },
+            },
           },
-          data: { stock_actual: { decrement: detalle.cantidad } },
-        });
+        },
+      });
+      const user = cliente.persona.user;
 
-        if (descontado.count === 0) {
-          throw new ResourceConflictError(
-            `No hay stock suficiente de la presentación ${detalle.producto_presentacion_id} para completar el pedido`,
-          );
-        }
+      // Pedidos manuales: el cliente puede no tener cuenta en el portal.
+      // HU-B-019: el cliente puede haber desactivado este aviso.
+      if (user?.notificar_pedido_en_camino) {
+        await tx.notificacion.create({
+          data: {
+            tipo: 'pedido_en_camino',
+            titulo: notificacion.titulo,
+            mensaje: notificacion.mensaje,
+            referencia_tipo: 'pedido',
+            referencia_id: String(id),
+            notificacion_users: { create: { user_id: user.id } },
+          },
+        });
       }
 
-      const pedido = await tx.pedido.findUniqueOrThrow({ where: { id } });
-      return PedidoMapper.toDomain(pedido);
+      return true;
     });
+  }
+
+  // El stock ya se descontó al dejar el pedido "pendiente_entrega" (salida
+  // FEFO real por lote, vía RegistrarSalidaProductoTerminadoUseCase) -- acá
+  // solo se registra la entrega, sin tocar stock de nuevo.
+  async marcarEntregado(id: number): Promise<PedidoEntity> {
+    // Condición en el UPDATE: si dos peticiones llegan a la vez, solo una
+    // completa el pedido.
+    const { count } = await this.prisma.pedido.updateMany({
+      where: { id, estado: EstadoPedido.EN_CAMINO },
+      data: { estado: EstadoPedido.ENTREGADO, fecha_entrega: new Date() },
+    });
+
+    if (count === 0) {
+      throw new ResourceConflictError(
+        'Solo se puede completar un pedido que está en camino',
+      );
+    }
+
+    const pedido = await this.prisma.pedido.findUniqueOrThrow({
+      where: { id },
+    });
+    return PedidoMapper.toDomain(pedido);
+  }
+
+  async getIndicadoresInventario(): Promise<IndicadoresPedidosInventario> {
+    const conteos = await this.prisma.pedido.groupBy({
+      by: ['estado'],
+      where: { estado: { in: [...ESTADOS_DE_INVENTARIO] } },
+      _count: { _all: true },
+    });
+
+    const indicadores: IndicadoresPedidosInventario = {
+      en_espera_inventario: 0,
+      en_preparacion: 0,
+      pendiente_entrega: 0,
+    };
+
+    for (const { estado, _count } of conteos) {
+      indicadores[estado as keyof IndicadoresPedidosInventario] = _count._all;
+    }
+
+    return indicadores;
+  }
+
+  async getIndicadoresDespacho(): Promise<IndicadoresPedidosDespacho> {
+    const conteos = await this.prisma.pedido.groupBy({
+      by: ['estado'],
+      where: { estado: { in: [...ESTADOS_DE_DESPACHO] } },
+      _count: { _all: true },
+    });
+
+    const indicadores: IndicadoresPedidosDespacho = {
+      pendiente_entrega: 0,
+      en_camino: 0,
+      entregado: 0,
+    };
+
+    for (const { estado, _count } of conteos) {
+      indicadores[estado as keyof IndicadoresPedidosDespacho] = _count._all;
+    }
+
+    return indicadores;
   }
 
   private toPedidoDetalle(pedido: PedidoConDetalle): PedidoDetalle {
@@ -246,10 +537,19 @@ export class PrismaPedidoRepository implements PedidoRepository {
       detalles: pedido.detalles.map((detalle) => ({
         detalle: PedidoMapper.detalleToDomain(detalle),
         sku: detalle.producto_presentacion.sku,
+        imagen_key: detalle.producto_presentacion.imagen_key,
         producto_nombre: detalle.producto_presentacion.producto.nombre,
         presentacion: `${detalle.producto_presentacion.presentacion.cantidad} ${detalle.producto_presentacion.presentacion.unidad_medida}`,
+        stock_disponible:
+          detalle.producto_presentacion.producto_terminado?.stock_actual.toNumber() ??
+          0,
+        producto_terminado_id:
+          detalle.producto_presentacion.producto_terminado?.id ?? null,
       })),
       pago: pedido.pago ? PedidoMapper.pagoToDomain(pedido.pago) : null,
+      comprobante: pedido.pago?.comprobante
+        ? ComprobanteMapper.toDomain(pedido.pago.comprobante)
+        : null,
     };
   }
 }

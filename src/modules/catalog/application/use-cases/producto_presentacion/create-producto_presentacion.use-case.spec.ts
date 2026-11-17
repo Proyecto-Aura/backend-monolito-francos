@@ -91,8 +91,17 @@ describe('CreateProductoPresentacionUseCase', () => {
         presentacion_id: 2,
         imagen_key: null,
         slug: 'chifles-clasicos-200-gr-p2',
-        estado: true,
+        // Nace desactivada: se activa a mano y recién ahí se ve en el Portal B.
+        estado: false,
       });
+    });
+
+    it('respeta el estado si el cliente lo envía explícitamente', async () => {
+      await useCase.execute({ ...dto(), estado: true });
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ estado: true }),
+      );
     });
 
     it('lanza 404 si el producto no existe', async () => {

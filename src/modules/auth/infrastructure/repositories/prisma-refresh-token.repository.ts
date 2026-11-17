@@ -21,6 +21,12 @@ export class PrismaRefreshTokenRepository implements RefreshTokenRepository {
     });
     return refresh_token ? RefreshTokenMapper.toDomain(refresh_token) : null;
   }
+  async findById(id: string): Promise<RefreshTokenEntity | null> {
+    const refresh_token = await this.prisma.refreshToken.findUnique({
+      where: { id },
+    });
+    return refresh_token ? RefreshTokenMapper.toDomain(refresh_token) : null;
+  }
   async revoke(id: string): Promise<RefreshTokenEntity> {
     const refresh_token = await this.prisma.refreshToken.update({
       data: { revoked_at: new Date() },

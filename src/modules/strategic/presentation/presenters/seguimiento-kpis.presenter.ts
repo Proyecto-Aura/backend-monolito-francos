@@ -1,5 +1,5 @@
 import { SeguimientoKpisResultado } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
-import { PeriodoEntity } from '../../domain/entities';
+import { PeriodoEntity, PerspectivaBscEntity } from '../../domain/entities';
 import { KpiSeguimientoEntidad } from '../../domain/repositories/types/kpi-repository.types';
 import { KpiValorEntityEnriquecido } from '../../domain/repositories/types/kpi-valor-repository.types';
 import { PlanEstrategicoEntityConEstado } from '../../domain/repositories/types/plan-estrategico-repository.types';
@@ -14,6 +14,8 @@ interface ObjetivoSeguimiento {
   codigo: string;
   nombre: string;
   responsable: string;
+  oe_negocio_id: number | null;
+  oe_negocio: { id: number; codigo: string; nombre: string } | null;
   kpis: KpiSeguimientoEntidad[];
 }
 
@@ -37,6 +39,39 @@ export class SeguimientoKpisPresenter {
     kpis,
     periodosPorFrecuencia,
   }: SeguimientoKpisResultado) {
+    return this.construir(
+      plan,
+      perspectivas,
+      kpis,
+      periodosPorFrecuencia,
+      (objetivo) => this.objetivoToHttp(objetivo),
+    );
+  }
+
+  static toHttpTi({
+    plan,
+    perspectivas,
+    kpis,
+    periodosPorFrecuencia,
+  }: SeguimientoKpisResultado) {
+    return this.construir(
+      plan,
+      perspectivas,
+      kpis,
+      periodosPorFrecuencia,
+      (objetivo) => this.objetivoToHttpTi(objetivo),
+    );
+  }
+
+  private static construir(
+    plan: PlanEstrategicoEntityConEstado,
+    perspectivas: PerspectivaBscEntity[],
+    kpis: KpiSeguimientoEntidad[],
+    periodosPorFrecuencia: Map<number, PeriodoEntity[]>,
+    presentarObjetivo: (
+      objetivo: ObjetivoSeguimiento,
+    ) => ReturnType<typeof SeguimientoKpisPresenter.objetivoToHttp>,
+  ) {
     return {
       plan: { id: plan.id, codigo: plan.codigo, nombre: plan.nombre },
       cumplimiento_general: this.calcularCumplimiento(kpis),
@@ -56,9 +91,27 @@ export class SeguimientoKpisPresenter {
               kpisDeLaPerspectiva,
               plan,
               periodosPorFrecuencia,
+              presentarObjetivo,
             ),
           };
         }),
+    };
+  }
+
+  private static objetivoToHttp(objetivo: ObjetivoSeguimiento) {
+    return {
+      id: objetivo.id,
+      codigo: objetivo.codigo,
+      nombre: objetivo.nombre,
+      responsable: objetivo.responsable,
+    };
+  }
+
+  private static objetivoToHttpTi(objetivo: ObjetivoSeguimiento) {
+    return {
+      ...this.objetivoToHttp(objetivo),
+      oe_negocio_id: objetivo.oe_negocio_id,
+      oe_negocio: objetivo.oe_negocio,
     };
   }
 
@@ -66,6 +119,9 @@ export class SeguimientoKpisPresenter {
     kpisDeLaPerspectiva: KpiSeguimientoEntidad[],
     plan: PlanEstrategicoEntityConEstado,
     periodosPorFrecuencia: Map<number, PeriodoEntity[]>,
+    presentarObjetivo: (
+      objetivo: ObjetivoSeguimiento,
+    ) => ReturnType<typeof SeguimientoKpisPresenter.objetivoToHttp>,
   ) {
     const objetivos = new Map<number, ObjetivoSeguimiento>();
 
@@ -78,6 +134,8 @@ export class SeguimientoKpisPresenter {
           codigo: objetivo.codigo,
           nombre: objetivo.nombre,
           responsable: objetivo.responsable,
+          oe_negocio_id: objetivo.oe_negocio_id,
+          oe_negocio: objetivo.oe_negocio,
           kpis: [],
         });
       }
@@ -88,10 +146,7 @@ export class SeguimientoKpisPresenter {
     return [...objetivos.values()]
       .sort((a, b) => a.codigo.localeCompare(b.codigo))
       .map((objetivo) => ({
-        id: objetivo.id,
-        codigo: objetivo.codigo,
-        nombre: objetivo.nombre,
-        responsable: objetivo.responsable,
+        ...presentarObjetivo(objetivo),
         kpis: objetivo.kpis.map((kpi) =>
           this.kpiToHttp(kpi, plan, periodosPorFrecuencia),
         ),

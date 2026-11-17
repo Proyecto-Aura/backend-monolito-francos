@@ -10,5 +10,7 @@ export class ClienteEntity {
     public estado: boolean,
     public readonly created_at: Date,
     public updated_at: Date,
+    // Número correlativo de cara al usuario (CLI-000001); lo asigna la base de datos.
+    public readonly codigo: number,
   ) {}
 }

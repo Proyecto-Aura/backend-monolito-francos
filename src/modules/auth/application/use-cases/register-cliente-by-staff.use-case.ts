@@ -2,14 +2,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
 import { RolRepository } from '../../../persons/domain/repositories/rol.repository';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
+import { UbigeoRepository } from '../../../persons/domain/repositories/ubigeo.repository';
 import { RegistroRepository } from '../../domain/repositories/registro.repository';
 import { EmailService } from '../../domain/services/email.service';
 import {
+  InvalidRequestError,
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../domain/errors/auth-domain.errors';
 import { RegisterClienteByStaffDto } from '../dto/register-cliente-by-staff.dto';
-import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
+import {
+  CategoriaCliente,
+  TipoCliente,
+} from '../../../../modules/persons/domain/enums/persons.enums';
 import { buildDefaultCredentials } from '../utils/default-credentials.util';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
 
@@ -25,10 +30,17 @@ export class RegisterClienteByStaffUseCase {
     private readonly rolRepository: RolRepository,
     private readonly registroRepository: RegistroRepository,
     private readonly emailService: EmailService,
+    private readonly ubigeoRepository: UbigeoRepository,
   ) {}
   async execute(
     dto: RegisterClienteByStaffDto,
   ): Promise<RegistroClienteResult> {
+    if (
+      dto.distrito_id !== undefined &&
+      !(await this.ubigeoRepository.existsDistrito(dto.distrito_id))
+    ) {
+      throw new InvalidRequestError('El distrito indicado no existe');
+    }
     // validaciones para duplicados
     if (await this.personaRepository.existsByDocument(dto.numero_documento)) {
       throw new ResourceConflictError(
@@ -72,11 +84,12 @@ export class RegisterClienteByStaffUseCase {
           ? new Date(dto.fecha_nacimiento)
           : null,
         direccion: dto.direccion ?? null,
+        distrito_id: dto.distrito_id ?? null,
       },
       cliente: {
         tipo_cliente: dto.tipo_cliente,
         razon_social: dto.razon_social ?? null,
-        categoria_cliente: dto.categoria_cliente,
+        categoria_cliente: dto.categoria_cliente ?? CategoriaCliente.MINORISTA,
       },
       user: {
         email: dto.email,
@@ -84,7 +97,8 @@ export class RegisterClienteByStaffUseCase {
         contrasena_hash: default_credentials.contrasenaHash,
         email_verificado: default_credentials.emailVerificado,
         debe_cambiar_contrasena: default_credentials.debeCambiarContrasena,
-        token_verificacion_email: default_credentials.tokenVerificacionEmail,
+        token_verificacion_email:
+          default_credentials.tokenVerificacionEmailHash,
         token_verificacion_email_expiracion:
           default_credentials.tokenVerificacionEmailExpiracion,
       },
@@ -92,21 +106,16 @@ export class RegisterClienteByStaffUseCase {
     });
 
     try {
-      await this.emailService.sendDefaultCredentialsEmail({
+      await this.emailService.sendClienteBienvenidaEmail({
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
         username: default_credentials.username,
         contrasenaDefault: default_credentials.contrasenaPlana,
-      });
-      await this.emailService.sendVerificationEmail({
-        to: resultado.user.email,
-        nombre: resultado.persona.nombres,
-        verificationToken: default_credentials.tokenVerificacionEmail,
-        frontend: 'tienda',
+        verificationToken: default_credentials.tokenVerificacionEmailPlano,
       });
     } catch (error) {
       this.logger.warn(
-        `No se pudo enviar el correo de verificación a ${resultado.user.email}`,
+        'No se pudo enviar el correo de verificación',
         error instanceof Error ? error.stack : undefined,
       );
     }

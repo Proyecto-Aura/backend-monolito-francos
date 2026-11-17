@@ -89,6 +89,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
     perspectiva_bsc_id: perspectiva.id,
     tipo_modulo_id: tipoModulo.id,
     oe_negocio_id: null,
+    oe_negocio: null,
     estado_objetivo_id: 1,
     responsable: 'Ana Torres',
     nombre: 'Incrementar la rentabilidad',
@@ -254,6 +255,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
         relaciones_destino_ids: [20, 30],
       },
       tipoModulo.id,
+      'N',
     );
   });
 
@@ -278,6 +280,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ descripcion: null }),
       tipoModulo.id,
+      'N',
     );
   });
 
@@ -313,6 +316,7 @@ describe('CreateObjetivoEstrategicoUseCase', () => {
         relaciones_destino_ids: [],
       },
       tipoModulo.id,
+      'N',
     );
   });
 });

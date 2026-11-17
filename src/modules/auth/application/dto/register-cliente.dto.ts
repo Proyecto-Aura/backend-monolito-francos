@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -79,6 +80,14 @@ export class RegisterClienteDto {
   @IsOptional()
   @IsString({ message: 'La dirección debe ser texto' })
   direccion?: string;
+
+  @ApiPropertyOptional({
+    example: '150131',
+    description: 'Código del distrito (ubigeo INEI, 6 dígitos)',
+  })
+  @IsOptional()
+  @Matches(/^\d{6}$/, { message: 'El distrito no es válido' })
+  distrito_id?: string;
 
   // --- datos de Cliente ---
   @ApiProperty({ enum: TipoCliente, example: TipoCliente.PERSONA_NATURAL })

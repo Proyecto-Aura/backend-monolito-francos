@@ -21,7 +21,9 @@ import { CreatePlanEstrategicoDto } from '../../application/dto/plan-estrategico
 import { ListPlanEstrategicoQueryDto } from '../../application/dto/plan-estrategico-dtos/list-plan-estrategico-query.dto';
 import { UpdatePlanEstrategicoDto } from '../../application/dto/plan-estrategico-dtos/update-plan-estrategico.dto';
 import { ObtenerKpisPorPlanUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan.use-case';
+import { ObtenerKpisPorPlanTiUseCase } from '../../application/use-cases/kpi/obtener-kpis-por-plan-ti.use-case';
 import { ObtenerIniciativasPorPlanUseCase } from '../../application/use-cases/iniciativa/obtener-iniciativas-por-plan.use-case';
+import { ObtenerIniciativasPorPlanTiUseCase } from '../../application/use-cases/iniciativa/obtener-iniciativas-por-plan-ti.use-case';
 import { ActivarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/activar-plan-estrategico.use-case';
 import { CerrarPlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/cerrar-plan-estrategico.use-case';
 import { CreatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/create-plan-estrategico.use-case';
@@ -31,8 +33,11 @@ import { ListPlanesEstrategicosUseCase } from '../../application/use-cases/plan-
 import { ListTodosPlanesEstrategicosUseCase } from '../../application/use-cases/plan-estrategico/list-todos-planes-estrategicos.use-case';
 import { UpdatePlanEstrategicoUseCase } from '../../application/use-cases/plan-estrategico/update-plan-estrategico.use-case';
 import { ObtenerObjetivosPorPlanUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan.use-case';
+import { ObtenerObjetivosPorPlanTiUseCase } from '../../application/use-cases/objetivo-estrategico/obtener-objetivos-por-plan-ti.use-case';
 import { ObtenerTableroControlUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control.use-case';
+import { ObtenerTableroControlTiUseCase } from '../../application/use-cases/tablero-control/obtener-tablero-control-ti.use-case';
 import { ObtenerSeguimientoKpisUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis.use-case';
+import { ObtenerSeguimientoKpisTiUseCase } from '../../application/use-cases/seguimiento-kpis/obtener-seguimiento-kpis-ti.use-case';
 import { KpiPresenter } from '../presenters/kpi.presenter';
 import { IniciativaPresenter } from '../presenters/iniciativa.presenter';
 import { ObjetivoEstrategicoPresenter } from '../presenters/objetivo-estrategico.presenter';
@@ -56,10 +61,15 @@ export class PlanesEstrategicosController {
     private readonly activarPlanEstrategico: ActivarPlanEstrategicoUseCase,
     private readonly cerrarPlanEstrategico: CerrarPlanEstrategicoUseCase,
     private readonly obtenerObjetivosPorPlan: ObtenerObjetivosPorPlanUseCase,
+    private readonly obtenerObjetivosPorPlanTi: ObtenerObjetivosPorPlanTiUseCase,
     private readonly obtenerKpisPorPlan: ObtenerKpisPorPlanUseCase,
+    private readonly obtenerKpisPorPlanTi: ObtenerKpisPorPlanTiUseCase,
     private readonly obtenerIniciativasPorPlan: ObtenerIniciativasPorPlanUseCase,
+    private readonly obtenerIniciativasPorPlanTi: ObtenerIniciativasPorPlanTiUseCase,
     private readonly obtenerTableroControl: ObtenerTableroControlUseCase,
+    private readonly obtenerTableroControlTi: ObtenerTableroControlTiUseCase,
     private readonly obtenerSeguimientoKpis: ObtenerSeguimientoKpisUseCase,
+    private readonly obtenerSeguimientoKpisTi: ObtenerSeguimientoKpisTiUseCase,
   ) {}
 
   @Post()
@@ -118,6 +128,43 @@ export class PlanesEstrategicosController {
     return ObjetivoEstrategicoPresenter.resumenPorPlanToHttp(plan, objetivos);
   }
 
+  @Get(':id/objetivos-estrategicos-ti')
+  @ApiOperation({
+    summary:
+      'Resumen del plan con sus objetivos estratégicos de TI agrupados por perspectiva',
+  })
+  @ApiOkResponse({ description: 'Plan y sus objetivos estratégicos (TI)' })
+  @ApiParam({ name: 'id', type: Number })
+  async objetivosTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    const { plan, objetivos } =
+      await this.obtenerObjetivosPorPlanTi.execute(id);
+    return ObjetivoEstrategicoPresenter.resumenPorPlanToHttpTi(plan, objetivos);
+  }
+
+  @Get(':id/kpis-ti')
+  @ApiOperation({
+    summary: 'Resumen de KPIs de TI del plan con su último valor registrado',
+  })
+  @ApiOkResponse({
+    description: 'Lista de KPIs del plan (TI) con último valor',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async kpisTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return KpiPresenter.resumenPorPlanToHttp(
+      await this.obtenerKpisPorPlanTi.execute(id),
+    );
+  }
+
+  @Get(':id/iniciativas-ti')
+  @ApiOperation({ summary: 'Resumen de iniciativas de TI del plan' })
+  @ApiOkResponse({ description: 'Lista de iniciativas del plan (TI)' })
+  @ApiParam({ name: 'id', type: Number })
+  async iniciativasTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return IniciativaPresenter.resumenPorPlanToHttp(
+      await this.obtenerIniciativasPorPlanTi.execute(id),
+    );
+  }
+
   @Get(':id/kpis')
   @ApiOperation({
     summary: 'Resumen de KPIs del plan con su último valor registrado',
@@ -154,6 +201,18 @@ export class PlanesEstrategicosController {
     );
   }
 
+  @Get(':id/tablero-control-ti')
+  @ApiOperation({ summary: 'Tablero de control (BSC) de TI del plan' })
+  @ApiOkResponse({
+    description: 'Tablero de control de TI agrupado por perspectiva',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async tableroControlTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return TableroControlPresenter.toHttpTi(
+      await this.obtenerTableroControlTi.execute(id),
+    );
+  }
+
   @Get(':id/seguimiento-kpis')
   @ApiOperation({
     summary:
@@ -167,6 +226,22 @@ export class PlanesEstrategicosController {
   async seguimientoKpisDelPlan(@Param('id', ParseIntPipe) id: number) {
     return SeguimientoKpisPresenter.toHttp(
       await this.obtenerSeguimientoKpis.execute(id),
+    );
+  }
+
+  @Get(':id/seguimiento-kpis-ti')
+  @ApiOperation({
+    summary:
+      'Seguimiento de KPIs de TI del plan (tendencia y cumplimiento para gráficos)',
+  })
+  @ApiOkResponse({
+    description:
+      'KPIs de TI agrupados por perspectiva/objetivo con su serie histórica completa, cumplimiento agregado y el objetivo de Negocio vinculado',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  async seguimientoKpisTiDelPlan(@Param('id', ParseIntPipe) id: number) {
+    return SeguimientoKpisPresenter.toHttpTi(
+      await this.obtenerSeguimientoKpisTi.execute(id),
     );
   }
 

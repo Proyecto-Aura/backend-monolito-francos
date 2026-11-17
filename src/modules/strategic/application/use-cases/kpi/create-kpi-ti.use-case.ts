@@ -1,0 +1,139 @@
+import { Injectable } from '@nestjs/common';
+import { CreateKpiDto } from '../../dto/kpi-dtos/create-kpi.dto';
+import {
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from '../../../domain/errors/strategic-domain.errors';
+import { FrecuenciaMedicionRepository } from '../../../domain/repositories/frecuencia-medicion.repository';
+import { KpiRepository } from '../../../domain/repositories/kpi.repository';
+import { ObjetivoEstrategicoRepository } from '../../../domain/repositories/objetivo-estrategico.repository';
+import { PlanEstrategicoRepository } from '../../../domain/repositories/plan-estrategico.repository';
+import { TipoModuloRepository } from '../../../domain/repositories/tipo-modulo.repository';
+import { KpiEntityEnriquecido } from '../../../domain/repositories/types/kpi-repository.types';
+import { UnidadMedidaKpiRepository } from '../../../domain/repositories/unidad-medida-kpi.repository';
+import { esConfiguracionSemaforoCoherente } from './kpi-semaforo.utils';
+
+@Injectable()
+export class CreateKpiTiUseCase {
+  constructor(
+    private readonly kpiRepository: KpiRepository,
+    private readonly objetivoEstrategicoRepository: ObjetivoEstrategicoRepository,
+    private readonly planEstrategicoRepository: PlanEstrategicoRepository,
+    private readonly frecuenciaMedicionRepository: FrecuenciaMedicionRepository,
+    private readonly unidadMedidaKpiRepository: UnidadMedidaKpiRepository,
+    private readonly tipoModuloRepository: TipoModuloRepository,
+  ) {}
+
+  async execute(dto: CreateKpiDto): Promise<KpiEntityEnriquecido> {
+    const objetivo = await this.objetivoEstrategicoRepository.findActivoById(
+      dto.objetivo_estrategico_id,
+    );
+
+    const tipoModulo = await this.tipoModuloRepository.findByCodigo('TI');
+
+    if (!tipoModulo || !tipoModulo.estado) {
+      throw new ResourceNotFoundError('Tipo de módulo TI no encontrado');
+    }
+
+    if (!objetivo || objetivo.tipo_modulo_id !== tipoModulo.id) {
+      throw new ResourceNotFoundError('Objetivo estratégico no encontrado');
+    }
+
+    const plan = await this.planEstrategicoRepository.findActivoById(
+      objetivo.plan_estrategico_id,
+    );
+
+    if (!plan) {
+      throw new ResourceNotFoundError('Plan estratégico no encontrado');
+    }
+
+    if (plan.estado_plan.codigo !== 'BORRADOR') {
+      throw new ResourceConflictError(
+        'Solo se pueden registrar KPIs cuando el plan está en Borrador',
+      );
+    }
+
+    const frecuencia = await this.frecuenciaMedicionRepository.findById(
+      dto.frecuencia_id,
+    );
+
+    if (!frecuencia || !frecuencia.estado) {
+      throw new ResourceNotFoundError('Frecuencia de medición no encontrada');
+    }
+
+    const unidadMedida = await this.unidadMedidaKpiRepository.findById(
+      dto.unidad_medida_id,
+    );
+
+    if (!unidadMedida || !unidadMedida.estado) {
+      throw new ResourceNotFoundError('Unidad de medida no encontrada');
+    }
+
+    const nombre = dto.nombre.trim().replace(/\s+/g, ' ');
+    const kpiExiste = await this.kpiRepository.existsByNombre(
+      objetivo.id,
+      nombre,
+    );
+
+    if (kpiExiste) {
+      throw new ResourceConflictError(
+        'Ya existe un KPI registrado con ese nombre para el objetivo estratégico',
+      );
+    }
+
+    const aniosPlan = Array.from(
+      { length: plan.anio_fin - plan.anio_inicio + 1 },
+      (_, indice) => plan.anio_inicio + indice,
+    );
+    const aniosRecibidos = new Set(dto.metas_por_anio.map((fila) => fila.anio));
+    const cubreTodosLosAnios =
+      dto.metas_por_anio.length === aniosPlan.length &&
+      aniosRecibidos.size === aniosPlan.length &&
+      aniosPlan.every((anio) => aniosRecibidos.has(anio));
+
+    if (!cubreTodosLosAnios) {
+      throw new ResourceConflictError(
+        `Debes registrar la meta de todos los años del plan (${plan.anio_inicio}-${plan.anio_fin})`,
+      );
+    }
+
+    const operadorVerde = dto.metas_por_anio[0].operador_verde;
+    const operadoresVerdesIguales = dto.metas_por_anio.every(
+      (fila) => fila.operador_verde === operadorVerde,
+    );
+
+    if (!operadoresVerdesIguales) {
+      throw new ResourceConflictError(
+        'El operador del semáforo Verde debe ser el mismo en todos los años del KPI',
+      );
+    }
+
+    for (const fila of dto.metas_por_anio) {
+      if (!esConfiguracionSemaforoCoherente(fila)) {
+        throw new ResourceConflictError(
+          `El Amarillo no puede ser más exigente que el Verde en el año ${fila.anio}`,
+        );
+      }
+    }
+
+    const totalKpis = await this.kpiRepository.countByPlanYTipo(
+      plan.id,
+      objetivo.tipo_modulo_id,
+    );
+    const correlativo = String(totalKpis + 1).padStart(3, '0');
+
+    return this.kpiRepository.create(
+      {
+        objetivo_estrategico_id: objetivo.id,
+        frecuencia_id: frecuencia.id,
+        unidad_medida_id: unidadMedida.id,
+        nombre,
+        formula: dto.formula,
+        metas_por_anio: dto.metas_por_anio,
+      },
+      plan.codigo,
+      correlativo,
+      'TI',
+    );
+  }
+}

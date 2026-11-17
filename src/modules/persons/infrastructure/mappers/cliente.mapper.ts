@@ -16,6 +16,7 @@ export class ClienteMapper {
       cliente.estado,
       cliente.created_at,
       cliente.updated_at,
+      cliente.codigo,
     );
   }
 }

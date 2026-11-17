@@ -13,5 +13,7 @@ export class PedidoEntity {
     public total: number,
     public readonly created_at: Date,
     public updated_at: Date,
+    // Se llena al marcarlo como entregado (RF-A098).
+    public fecha_entrega: Date | null = null,
   ) {}
 }

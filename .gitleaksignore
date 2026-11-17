@@ -34,3 +34,75 @@ a61a11e930ae21cbcf8669d4cb4eca6ac5c403b4:test/objetivo-estrategico.e2e-spec.ts:g
 # propio test crea y borra; no es un secreto real. Mismo caso que el de
 # iniciativa de arriba.
 fec8ee926329c518da65e95f7645fb9662035fa0:test/seguimiento-kpis.e2e-spec.ts:generic-api-key:17
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba "ventas" en el
+# e2e de seguimiento de KPIs de TI (HU-A-031 / OFT0-469). Usuario desechable
+# que el propio test crea y borra; no es un secreto real. Mismo caso que el
+# de seguimiento de KPIs de Negocio de arriba.
+d969bb66c99dd72a5b58d5d976852160702085cf:test/seguimiento-kpis-ti.e2e-spec.ts:generic-api-key:17
+
+# Falso positivo: contraseñas hardcodeadas de los usuarios de prueba "ventas"
+# y "estrategico" en el e2e de objetivo estratégico de TI (HU-A-033 /
+# OFT0-449). Usuarios desechables que el propio test crea y borra; no son
+# secretos reales. Mismo caso que el de objetivo_estrategico de arriba.
+999775cdf4e9b6752222601cd9878b139158a614:test/objetivo-estrategico-ti.e2e-spec.ts:generic-api-key:17
+999775cdf4e9b6752222601cd9878b139158a614:test/objetivo-estrategico-ti.e2e-spec.ts:generic-api-key:21
+
+# Falso positivo: contraseñas hardcodeadas de los usuarios de prueba
+# "inventario" y "produccion" en el e2e de insumos y lotes de insumo
+# (OFT0-255). Usuarios desechables que el propio test crea y borra; no son
+# secretos reales. Mismo caso que el de objetivo_estrategico de arriba.
+780d8bde508ba9c70c0820106b4e7153d0bcb01a:test/insumos-lotes-insumo.e2e-spec.ts:generic-api-key:41
+780d8bde508ba9c70c0820106b4e7153d0bcb01a:test/insumos-lotes-insumo.e2e-spec.ts:generic-api-key:48
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba "inventario" en
+# el e2e de movimientos de insumo / kardex (OFT-256). Usuario desechable que
+# el propio test crea y borra; no es un secreto real. Mismo caso que el de
+# objetivo_estrategico de arriba.
+01109c5cd2b71cbe510e8b2f316f5ece0f9fdbea:test/movimientos-insumo.e2e-spec.ts:generic-api-key:41
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba
+# "estrategico" en el e2e de KPI de TI (HU-A-035 / OFT0-457). Usuario
+# desechable que el propio test crea y borra; no es un secreto real.
+# Mismo caso que el de objetivo_estrategico de arriba.
+5b8db0173e46551e4bc43ae9bee4510f23b61123:test/kpi-ti.e2e-spec.ts:generic-api-key:21
+
+# Falso positivo: contraseñas hardcodeadas de los usuarios de prueba
+# "ventas" y "estrategico" en el e2e de iniciativas de TI (HU-A-036 /
+# OFT0-461). Usuarios desechables que el propio test crea y borra; no
+# son secretos reales. Mismo caso que el de objetivo_estrategico de
+# arriba.
+c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-api-key:17
+c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-api-key:21
+
+# Falso positivo: contraseña hardcodeada del usuario de prueba "inventario"
+# en el e2e de productos terminados / stock (OFT0-258). Usuario desechable
+# que el propio test crea y borra; no es un secreto real. Mismo caso que el
+# de objetivo_estrategico de arriba.
+139263abd49d28d6f25134fbd5d827ea2d8af29f:test/productos-terminados.e2e-spec.ts:generic-api-key:45
+
+# Falso positivo: contraseñas hardcodeadas de los usuarios de prueba
+# "inventario" y "ventas"/"produccion" en los e2e de lotes y movimientos de
+# producto terminado (OFT0-259). Usuarios desechables que el propio test
+# crea y borra; no son secretos reales. Mismo caso que el de
+# objetivo_estrategico de arriba.
+23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:44
+23170a5d65adc7efb419eded7a4742ced5abe813:test/lotes-producto-terminado.e2e-spec.ts:generic-api-key:51
+23170a5d65adc7efb419eded7a4742ced5abe813:test/movimientos-producto-terminado.e2e-spec.ts:generic-api-key:50
+
+# Falso positivo: contrasena ficticia de los usuarios desechables del e2e de
+# solicitudes de produccion (OFT0-261). El test crea y elimina esos usuarios;
+# no es una credencial real. Se excluye solo esta huella del historial.
+7cad8631a728378de0de58acb7cea8c4da736d4c:test/solicitudes-produccion.e2e-spec.ts:generic-api-key:145
+
+# Falso positivo: contrasena ficticia del usuario de prueba inventario en
+# despacho-pedidos. El e2e crea y elimina este usuario; no es un secreto real.
+# Se excluye solo la huella reportada en el historial, no el archivo completo.
+1426d5f6e60dab9e68cf161e2ce85fa5a7254171:test/despacho-pedidos.e2e-spec.ts:generic-api-key:30
+
+# Falso positivo: contrasena hardcodeada del usuario de prueba "inventario"
+# en el e2e de insumos y lotes de insumo, actualizado al separar el rol
+# insumos de inventario (fix/separar-rol-inventario-insumos). Usuario
+# desechable que el propio test crea y borra; no es un secreto real. Mismo
+# caso que el de objetivo_estrategico de arriba.
+c70691437d44f6a6a9a94beec494386e1159d4ed:test/insumos-lotes-insumo.e2e-spec.ts:generic-api-key:64

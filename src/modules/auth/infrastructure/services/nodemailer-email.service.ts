@@ -6,7 +6,9 @@ import {
   SendVerificationEmailParams,
   SendDefaultCredentialsEmailParams,
   SendPasswordResetEmailParams,
+  SendEmailChangeVerificationEmailParams,
   FrontendDestino,
+  SendClienteBienvenidaEmailParams,
 } from '../../domain/services/types/email-service.types';
 
 @Injectable()
@@ -49,6 +51,21 @@ export class NodemailerEmailService implements EmailService {
     });
   }
 
+  async sendClienteBienvenidaEmail(
+    params: SendClienteBienvenidaEmailParams,
+  ): Promise<void> {
+    const nombre = this.escapeHtml(params.nombre);
+    const username = this.escapeHtml(params.username);
+    const contrasena = this.escapeHtml(params.contrasenaDefault);
+    const url = `${this.getFrontendUrl('tienda')}/verify-email?token=${params.verificationToken}`;
+    await this.transporter.sendMail({
+      from: envs.smtpFrom,
+      to: params.to,
+      subject: "Bienvenido a Franco's — verifica tu correo",
+      html: `<p>Hola ${nombre}, tu usuario es <b>${username}</b> y tu contraseña temporal es <b>${contrasena}</b>. Deberás cambiarla al iniciar sesión.</p><p>Verifica tu correo aquí: <a href="${url}">${url}</a></p><p>El enlace vence en 24 horas.</p><p>Si no solicitaste esta cuenta, puedes ignorar este correo.</p>`,
+    });
+  }
+
   async sendPasswordResetEmail(
     params: SendPasswordResetEmailParams,
   ): Promise<void> {
@@ -60,6 +77,21 @@ export class NodemailerEmailService implements EmailService {
       to: params.to,
       subject: "Restablece tu contraseña — Franco's",
       html: `<p>Hola ${nombre}, recibimos una solicitud para restablecer tu contraseña.</p><p>Usa este enlace: <a href="${url}">${url}</a></p><p>El enlace vence en 1 hora.</p><p>Si no solicitaste este cambio, puedes ignorar este correo.</p>`,
+    });
+  }
+
+  // HU-B-016: confirma la dirección nueva antes de cambiarla en la cuenta.
+  async sendEmailChangeVerificationEmail(
+    params: SendEmailChangeVerificationEmailParams,
+  ): Promise<void> {
+    const url = `${this.getFrontendUrl(params.frontend)}/verificar-cambio-email?token=${params.token}`;
+    const nombre = this.escapeHtml(params.nombre);
+
+    await this.transporter.sendMail({
+      from: envs.smtpFrom,
+      to: params.to,
+      subject: "Confirma tu nuevo correo — Franco's",
+      html: `<p>Hola ${nombre}, recibimos una solicitud para cambiar el correo de tu cuenta.</p><p>Confírmalo con este enlace: <a href="${url}">${url}</a></p><p>El enlace vence en 1 hora.</p><p>Si no fuiste tú, ignora este correo.</p>`,
     });
   }
 

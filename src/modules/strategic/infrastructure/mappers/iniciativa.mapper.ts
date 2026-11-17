@@ -12,6 +12,9 @@ type PrismaIniciativaEnriquecida = Prisma.IniciativaGetPayload<{
         codigo: true;
         nombre: true;
         responsable: true;
+        tipo_modulo_id: true;
+        oe_negocio_id: true;
+        oe_negocio: { select: { id: true; codigo: true; nombre: true } };
         perspectiva_bsc: { select: { id: true; nombre: true } };
       };
     };
@@ -48,6 +51,9 @@ export class IniciativaMapper {
           codigo: iniciativa.objetivo_estrategico.codigo,
           nombre: iniciativa.objetivo_estrategico.nombre,
           responsable: iniciativa.objetivo_estrategico.responsable,
+          tipo_modulo_id: iniciativa.objetivo_estrategico.tipo_modulo_id,
+          oe_negocio_id: iniciativa.objetivo_estrategico.oe_negocio_id,
+          oe_negocio: iniciativa.objetivo_estrategico.oe_negocio,
           perspectiva_bsc: {
             id: iniciativa.objetivo_estrategico.perspectiva_bsc.id,
             nombre: iniciativa.objetivo_estrategico.perspectiva_bsc.nombre,

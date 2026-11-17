@@ -22,6 +22,8 @@ export class ListProductoPresentacionesUseCase {
       categoria_id: dto.categoria_id,
       presentacion_id: dto.presentacion_id,
       con_stock: dto.con_stock,
+      con_mayorista: dto.con_mayorista,
+      nivel: dto.nivel,
       // "Hoy" para las promociones es el día de Lima, no el de UTC.
       fecha_referencia: parseFechaDia(fechaHoy()),
     });

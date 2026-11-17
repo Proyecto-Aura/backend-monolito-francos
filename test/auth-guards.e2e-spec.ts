@@ -275,6 +275,8 @@ describe('Auth guards (e2e)', () => {
       'logout',
       'forgot-password',
       'reset-password',
+      'verify-email',
+      'resend-verification',
     ]) {
       expect(
         document.paths[`/api/v1/auth/${path}`]?.post?.security,

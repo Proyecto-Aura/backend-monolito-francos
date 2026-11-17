@@ -1,3 +1,4 @@
+import { NivelStockProductoTerminado } from '../../../domain/enums';
 import { ProductoPresentacionRepository } from '../../../domain/repositories/producto_presentacion.repository';
 import { ListProductoPresentacionesUseCase } from './list-producto_presentacion.use-case';
 
@@ -31,6 +32,8 @@ describe('ListProductoPresentacionesUseCase', () => {
       categoria_id: 1,
       presentacion_id: 3,
       con_stock: false,
+      con_mayorista: true,
+      nivel: NivelStockProductoTerminado.BAJO,
     });
 
     expect(findMany).toHaveBeenCalledWith({
@@ -41,6 +44,8 @@ describe('ListProductoPresentacionesUseCase', () => {
       categoria_id: 1,
       presentacion_id: 3,
       con_stock: false,
+      con_mayorista: true,
+      nivel: NivelStockProductoTerminado.BAJO,
       fecha_referencia: new Date('2026-10-08T00:00:00.000Z'),
     });
   });

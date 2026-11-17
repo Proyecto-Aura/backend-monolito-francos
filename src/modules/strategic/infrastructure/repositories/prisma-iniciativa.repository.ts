@@ -19,6 +19,9 @@ const INICIATIVA_INCLUDE_ENRIQUECIDA = {
       codigo: true,
       nombre: true,
       responsable: true,
+      tipo_modulo_id: true,
+      oe_negocio_id: true,
+      oe_negocio: { select: { id: true, codigo: true, nombre: true } },
       perspectiva_bsc: { select: { id: true, nombre: true } },
     },
   },
@@ -41,9 +44,10 @@ export class PrismaIniciativaRepository implements IniciativaRepository {
     params: CreateIniciativaParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<IniciativaEntityEnriquecido> {
     return this.prisma.$transaction(async (tx) => {
-      const codigo = `${codigoPlan}-INI-N-${correlativo}`;
+      const codigo = `${codigoPlan}-INI-${codigoInfijo}-${correlativo}`;
       const iniciativa = await tx.iniciativa.create({
         data: {
           ...params,
@@ -121,6 +125,22 @@ export class PrismaIniciativaRepository implements IniciativaRepository {
     });
 
     return IniciativaMapper.toDomain(iniciativa);
+  }
+
+  async cancelarActivasPorObjetivo(
+    objetivoEstrategicoId: number,
+    estadoCanceladaId: number,
+  ): Promise<void> {
+    await this.prisma.iniciativa.updateMany({
+      where: {
+        objetivo_estrategico_id: objetivoEstrategicoId,
+        estado: true,
+        estado_iniciativa: {
+          codigo: { in: ['PENDIENTE', 'EN_PROCESO'] },
+        },
+      },
+      data: { estado_iniciativa_id: estadoCanceladaId },
+    });
   }
 
   async countByPlanYTipo(

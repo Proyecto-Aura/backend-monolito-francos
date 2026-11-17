@@ -82,6 +82,7 @@ export class CreateObjetivoEstrategicoUseCase {
         relaciones_destino_ids: dto.relaciones_destino_ids ?? [],
       },
       tipoModulo.id,
+      'N',
     );
   }
 }

@@ -18,6 +18,7 @@ export class ListPedidosUseCase {
       limit: dto.limit,
       estado: dto.estado,
       origen: dto.origen,
+      cliente_id: dto.cliente_id,
       desde,
       hasta,
     });

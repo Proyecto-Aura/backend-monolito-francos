@@ -69,6 +69,31 @@ describe('NodemailerEmailService', () => {
     expect(message.html).not.toContain('https://portal.test');
   });
 
+  it('envía el enlace de cambio de correo a la dirección nueva y escapa el nombre', async () => {
+    const service = new NodemailerEmailService();
+
+    await service.sendEmailChangeVerificationEmail({
+      to: 'nuevo@francos.test',
+      nombre: '<b>Rosa</b>',
+      token: 'token-cambio',
+      frontend: 'tienda',
+    });
+
+    const [message] = mockSendMail.mock.calls[0] as [
+      { to: string; subject: string; html: string },
+    ];
+    expect(message.to).toBe('nuevo@francos.test');
+    expect(message.subject).toBe("Confirma tu nuevo correo — Franco's");
+    expect(message.html).toContain(
+      'https://tienda.test/verificar-cambio-email?token=token-cambio',
+    );
+    expect(message.html).not.toContain('https://portal.test');
+    expect(message.html).toContain('El enlace vence en 1 hora');
+    expect(message.html).toContain('Si no fuiste tú, ignora este correo');
+    expect(message.html).toContain('&lt;b&gt;Rosa&lt;/b&gt;');
+    expect(message.html).not.toContain('<b>Rosa</b>');
+  });
+
   it('envía la verificación a la tienda', async () => {
     const service = new NodemailerEmailService();
 
@@ -101,5 +126,26 @@ describe('NodemailerEmailService', () => {
       'https://portal.test/verify-email?token=token-portal',
     );
     expect(message.html).not.toContain('https://tienda.test');
+  });
+
+  it('envía una sola bienvenida de cliente con credenciales y enlace escapados', async () => {
+    const service = new NodemailerEmailService();
+    await service.sendClienteBienvenidaEmail({
+      to: 'cliente@francos.test',
+      nombre: '<script>alert(1)</script>',
+      username: '<cliente>',
+      contrasenaDefault: '<temporal>',
+      verificationToken: 'token-bienvenida',
+    });
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const [message] = mockSendMail.mock.calls[0] as [{ html: string }];
+    expect(message.html).toContain(
+      'https://tienda.test/verify-email?token=token-bienvenida',
+    );
+    expect(message.html).toContain('El enlace vence en 24 horas');
+    expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(message.html).toContain('&lt;cliente&gt;');
+    expect(message.html).toContain('&lt;temporal&gt;');
+    expect(message.html).not.toContain('<script>');
   });
 });

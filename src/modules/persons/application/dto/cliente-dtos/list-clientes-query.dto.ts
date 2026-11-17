@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
 import { PaginationQueryDto } from '../common/pagination-query.dto';
@@ -19,4 +20,13 @@ export class ListClientesQueryDto extends PaginationQueryDto {
   estado?: boolean;
   @IsOptional() @IsEnum(TipoCliente) tipo_cliente?: TipoCliente;
   @IsOptional() @IsEnum(CategoriaCliente) categoria_cliente?: CategoriaCliente;
+  @IsOptional()
+  @Matches(/^\d{2}$/, { message: 'departamento_id debe tener 2 dígitos' })
+  departamento_id?: string;
+  @IsOptional()
+  @Matches(/^\d{4}$/, { message: 'provincia_id debe tener 4 dígitos' })
+  provincia_id?: string;
+  @IsOptional()
+  @Matches(/^\d{6}$/, { message: 'distrito_id debe tener 6 dígitos' })
+  distrito_id?: string;
 }

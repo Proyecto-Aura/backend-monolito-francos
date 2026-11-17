@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { envs } from '../src/config/envs';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 import { fechaHoy } from '../src/modules/catalog/application/utils/promocion.utils';
@@ -86,6 +87,7 @@ interface PedidoDetalleBody extends Omit<PedidoResumenBody, 'metodo_pago'> {
   items: {
     producto_presentacion_id: number;
     sku: string;
+    imagen_url: string | null;
     producto: string;
     presentacion: string;
     cantidad: number;
@@ -331,6 +333,7 @@ describe('Pedidos (e2e)', () => {
         precio_mayorista?: number;
         umbral_mayorista?: number;
         estado?: boolean;
+        imagen_key?: string;
       },
     ) =>
       prisma.productoPresentacion.create({
@@ -347,6 +350,7 @@ describe('Pedidos (e2e)', () => {
         precio_unitario: 5.5,
         precio_mayorista: 4.2,
         umbral_mayorista: 24,
+        imagen_key: 'productos/e2e-pedidos-oft0-251.webp',
       })
     ).id;
     presentacionSimpleId = (
@@ -462,6 +466,7 @@ describe('Pedidos (e2e)', () => {
           precio_unitario: 5.5,
           precio_aplicado: 4.2,
           subtotal: 126,
+          imagen_url: `${envs.mediaBaseUrl}/productos/e2e-pedidos-oft0-251.webp`,
         }),
         expect.objectContaining({
           producto_presentacion_id: presentacionSimpleId,
@@ -469,6 +474,7 @@ describe('Pedidos (e2e)', () => {
           precio_unitario: 9.9,
           precio_aplicado: 9.9,
           subtotal: 39.6,
+          imagen_url: null,
         }),
       ]);
       expect(body.pago).toMatchObject({
@@ -615,6 +621,33 @@ describe('Pedidos (e2e)', () => {
 
       expect(body.data.every((p) => p.origen === 'portal')).toBe(true);
       expect(body.data.map((p) => p.id)).not.toContain(pedidoEfectivoId);
+    });
+
+    it('filtra por cliente y no mezcla pedidos de otros clientes', async () => {
+      const response = await listar({
+        cliente_id: clienteId,
+        limit: 100,
+      }).expect(200);
+      const body = response.body as unknown as ListadoBody;
+
+      expect(body.data.every((p) => p.cliente.id === clienteId)).toBe(true);
+      expect(body.data.map((p) => p.id)).toEqual(
+        expect.arrayContaining([pedidoEfectivoId, pedidoCulqiId]),
+      );
+    });
+
+    it('con un cliente sin pedidos devuelve una lista vacía', async () => {
+      const response = await listar({
+        cliente_id: 'a1b2c3d4-0000-4000-8000-000000000001',
+      }).expect(200);
+      const body = response.body as unknown as ListadoBody;
+
+      expect(body.data).toEqual([]);
+      expect(body.meta.total).toBe(0);
+    });
+
+    it('con un cliente_id mal formado devuelve 400', async () => {
+      await listar({ cliente_id: 'no-es-un-uuid' }).expect(400);
     });
 
     it('excluye los pedidos fuera del rango de fechas', async () => {

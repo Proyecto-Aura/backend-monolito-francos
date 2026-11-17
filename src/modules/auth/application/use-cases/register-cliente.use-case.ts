@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PersonaRepository } from '../../../../modules/persons/domain/repositories/persona.repository';
 import { UserRepository } from '../../../../modules/persons/domain/repositories/user.repository';
 import { RolRepository } from '../../../../modules/persons/domain/repositories/rol.repository';
+import { UbigeoRepository } from '../../../persons/domain/repositories/ubigeo.repository';
 import { RegistroRepository } from '../../domain/repositories/registro.repository';
 import { EmailService } from '../../domain/services/email.service';
 import { RegisterClienteDto } from '../dto/register-cliente.dto';
@@ -15,13 +16,12 @@ import {
   esFechaFutura,
   tipoClienteSegunDocumento,
 } from '../utils/registro-cliente.util';
-import { generateRandomToken } from '../utils/token.util';
+import { buildEmailVerificationToken } from '../utils/email-verification.util';
 import { TipoCliente } from '../../../../modules/persons/domain/enums/persons.enums';
 import { RegistroClienteResult } from '../../domain/repositories/types/registro-repository.types';
 
 // por el momento
 const ROL_CLIENTE = 'cliente';
-const HORAS_EXPIRACION_TOKEN_EMAIL = 24;
 
 @Injectable()
 export class RegisterClienteUseCase {
@@ -32,6 +32,7 @@ export class RegisterClienteUseCase {
     private readonly rolRepository: RolRepository,
     private readonly registroRepository: RegistroRepository,
     private readonly emailService: EmailService,
+    private readonly ubigeoRepository: UbigeoRepository,
   ) {}
 
   async execute(dto: RegisterClienteDto): Promise<RegistroClienteResult> {
@@ -63,6 +64,13 @@ export class RegisterClienteUseCase {
       );
     }
 
+    if (
+      dto.distrito_id !== undefined &&
+      !(await this.ubigeoRepository.existsDistrito(dto.distrito_id))
+    ) {
+      throw new InvalidRequestError('El distrito indicado no existe');
+    }
+
     // validaciones para duplicados
     if (await this.personaRepository.existsByDocument(dto.numero_documento)) {
       throw new ResourceConflictError(
@@ -86,10 +94,7 @@ export class RegisterClienteUseCase {
 
     // Preparar credenciales
     const contrasenaHash = await hashPassword(dto.password);
-    const tokenVerificacion = generateRandomToken();
-    const expiracionToken = new Date(
-      Date.now() + HORAS_EXPIRACION_TOKEN_EMAIL * 60 * 60 * 1000,
-    );
+    const verification = buildEmailVerificationToken();
 
     //transaccion atomica
     const resultado = await this.registroRepository.registerCliente({
@@ -104,6 +109,7 @@ export class RegisterClienteUseCase {
           ? new Date(dto.fecha_nacimiento)
           : null,
         direccion: dto.direccion ?? null,
+        distrito_id: dto.distrito_id ?? null,
       },
       cliente: {
         tipo_cliente: dto.tipo_cliente,
@@ -116,8 +122,8 @@ export class RegisterClienteUseCase {
         contrasena_hash: contrasenaHash,
         email_verificado: false,
         debe_cambiar_contrasena: false,
-        token_verificacion_email: tokenVerificacion,
-        token_verificacion_email_expiracion: expiracionToken,
+        token_verificacion_email: verification.tokenHash,
+        token_verificacion_email_expiracion: verification.expiresAt,
       },
       rol_id: rolCliente.id,
     });
@@ -127,12 +133,12 @@ export class RegisterClienteUseCase {
       await this.emailService.sendVerificationEmail({
         to: resultado.user.email,
         nombre: resultado.persona.nombres,
-        verificationToken: tokenVerificacion,
+        verificationToken: verification.token,
         frontend: 'tienda',
       });
     } catch (error) {
       this.logger.warn(
-        `No se pudo enviar el correo de verificación a ${resultado.user.email}`,
+        'No se pudo enviar el correo de verificación',
         error instanceof Error ? error.stack : undefined,
       );
     }

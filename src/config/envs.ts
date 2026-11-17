@@ -7,6 +7,7 @@ interface EnvVars {
   JWT_SECRET: string;
   JWT_ACCESS_EXPIRES_IN: string;
   REFRESH_TOKEN_EXPIRES_IN_DAYS: number;
+  REQUIRE_VERIFIED_EMAIL: boolean;
   FRONTEND_STORE_URL: string;
   FRONTEND_PORTAL_URL: string;
   SMTP_HOST: string;
@@ -27,6 +28,7 @@ interface EnvVars {
   CATALOGO_PUBLICO_RATE_TTL_MS: number;
   CULQI_SECRET_KEY?: string;
   CULQI_API_URL: string;
+  CULQI_SIMULADO: boolean;
 }
 
 const envSchema = joi
@@ -36,6 +38,7 @@ const envSchema = joi
     JWT_SECRET: joi.string().required(),
     JWT_ACCESS_EXPIRES_IN: joi.string().default('40m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: joi.number().default(7),
+    REQUIRE_VERIFIED_EMAIL: joi.boolean().default(true),
     FRONTEND_STORE_URL: joi.string().required(),
     FRONTEND_PORTAL_URL: joi.string().required(),
     SMTP_HOST: joi.string().required(),
@@ -75,6 +78,9 @@ const envSchema = joi
           'CULQI_SECRET_KEY debe ser una llave de pruebas de Culqi (sk_test_...)',
       }),
     CULQI_API_URL: joi.string().uri().default('https://api.culqi.com/v2'),
+    // Solo desarrollo: cobra con una pasarela simulada, sin llamar a Culqi. El
+    // backend no arranca con esto activo en producción.
+    CULQI_SIMULADO: joi.boolean().default(false),
   })
   .and('S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY')
   .unknown(true);
@@ -87,12 +93,19 @@ if (validationResult.error) {
 
 const envVars = validationResult.value;
 
+if (envVars.CULQI_SIMULADO && process.env.NODE_ENV === 'production') {
+  throw new Error(
+    'Config validation error: CULQI_SIMULADO no puede estar activo en producción',
+  );
+}
+
 export const envs = {
   port: envVars.PORT,
   databaseUrl: envVars.DATABASE_URL,
   jwtSecret: envVars.JWT_SECRET,
   jwtAccessExpiresIn: envVars.JWT_ACCESS_EXPIRES_IN,
   refreshTokenExpiresInDays: envVars.REFRESH_TOKEN_EXPIRES_IN_DAYS,
+  requireVerifiedEmail: envVars.REQUIRE_VERIFIED_EMAIL,
   frontendStoreUrl: envVars.FRONTEND_STORE_URL,
   frontendPortalUrl: envVars.FRONTEND_PORTAL_URL,
   smtpHost: envVars.SMTP_HOST,
@@ -113,4 +126,5 @@ export const envs = {
   catalogoPublicoRateTtlMs: envVars.CATALOGO_PUBLICO_RATE_TTL_MS,
   culqiSecretKey: envVars.CULQI_SECRET_KEY || undefined,
   culqiApiUrl: envVars.CULQI_API_URL,
+  culqiSimulado: envVars.CULQI_SIMULADO,
 };

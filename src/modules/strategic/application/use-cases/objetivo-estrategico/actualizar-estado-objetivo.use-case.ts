@@ -4,7 +4,9 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/strategic-domain.errors';
+import { EstadoIniciativaRepository } from '../../../domain/repositories/estado-iniciativa.repository';
 import { EstadoObjetivoRepository } from '../../../domain/repositories/estado-objetivo.repository';
+import { IniciativaRepository } from '../../../domain/repositories/iniciativa.repository';
 import { ObjetivoEstrategicoRepository } from '../../../domain/repositories/objetivo-estrategico.repository';
 import { PlanEstrategicoRepository } from '../../../domain/repositories/plan-estrategico.repository';
 import { TipoModuloRepository } from '../../../domain/repositories/tipo-modulo.repository';
@@ -24,6 +26,8 @@ export class ActualizarEstadoObjetivoUseCase {
     private readonly planEstrategicoRepository: PlanEstrategicoRepository,
     private readonly tipoModuloRepository: TipoModuloRepository,
     private readonly estadoObjetivoRepository: EstadoObjetivoRepository,
+    private readonly estadoIniciativaRepository: EstadoIniciativaRepository,
+    private readonly iniciativaRepository: IniciativaRepository,
   ) {}
 
   async execute(
@@ -67,9 +71,24 @@ export class ActualizarEstadoObjetivoUseCase {
       throw new ResourceNotFoundError('Estado de objetivo no encontrado');
     }
 
-    return this.objetivoEstrategicoRepository.updateEstadoObjetivo(
-      id,
-      nuevoEstado.id,
-    );
+    const actualizado =
+      await this.objetivoEstrategicoRepository.updateEstadoObjetivo(
+        id,
+        nuevoEstado.id,
+      );
+
+    if (dto.estado_codigo === 'CANCELADO') {
+      const estadoCancelada =
+        await this.estadoIniciativaRepository.findByCodigo('CANCELADA');
+
+      if (estadoCancelada) {
+        await this.iniciativaRepository.cancelarActivasPorObjetivo(
+          id,
+          estadoCancelada.id,
+        );
+      }
+    }
+
+    return actualizado;
   }
 }

@@ -29,9 +29,9 @@ describe('GetRutasTreeUseCase', () => {
 
   it('arma el arbol anidado y conserva etiqueta e icono en cada nodo', async () => {
     findAllByStatus.mockResolvedValue([
-      rutaEntity(1, 'inventario', null),
-      rutaEntity(2, 'insumos', 1),
-      rutaEntity(3, 'stock-insumos', 2),
+      rutaEntity(1, 'estrategico', null),
+      rutaEntity(2, 'gestion-estrategica-negocio', 1),
+      rutaEntity(3, 'mapa-estrategico', 2),
     ]);
 
     const tree = await useCase.execute();
@@ -40,29 +40,33 @@ describe('GetRutasTreeUseCase', () => {
     expect(tree).toHaveLength(1);
     expect(tree[0]).toMatchObject({
       id: 1,
-      nombre: 'inventario',
-      etiqueta: 'inventario',
+      nombre: 'estrategico',
+      etiqueta: 'estrategico',
       icono: 'icono',
     });
     expect(tree[0].children).toHaveLength(1);
     expect(tree[0].children[0].children).toEqual([
-      expect.objectContaining({ id: 3, nombre: 'stock-insumos', children: [] }),
+      expect.objectContaining({
+        id: 3,
+        nombre: 'mapa-estrategico',
+        children: [],
+      }),
     ]);
   });
 
   it('devuelve varias raices cuando no comparten padre', async () => {
     findAllByStatus.mockResolvedValue([
       rutaEntity(1, 'inventario', null),
-      rutaEntity(2, 'ventas', null),
+      rutaEntity(2, 'insumos', null),
     ]);
 
     const tree = await useCase.execute();
 
-    expect(tree.map((nodo) => nodo.nombre)).toEqual(['inventario', 'ventas']);
+    expect(tree.map((nodo) => nodo.nombre)).toEqual(['inventario', 'insumos']);
   });
 
   it('ignora un nodo cuyo padre no esta en el listado activo', async () => {
-    findAllByStatus.mockResolvedValue([rutaEntity(2, 'insumos', 1)]);
+    findAllByStatus.mockResolvedValue([rutaEntity(3, 'stock-insumos', 2)]);
 
     const tree = await useCase.execute();
 

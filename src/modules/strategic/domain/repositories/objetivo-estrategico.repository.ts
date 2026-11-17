@@ -11,6 +11,7 @@ export abstract class ObjetivoEstrategicoRepository {
   abstract create(
     params: CreateObjetivoEstrategicoParams,
     tipoModuloId: number,
+    codigoInfijo: string,
   ): Promise<ObjetivoEstrategicoEntityEnriquecido>;
   abstract findById(
     id: number,

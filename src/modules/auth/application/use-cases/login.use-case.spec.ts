@@ -1,14 +1,22 @@
 // En CI los tests unitarios corren sin .env: envs se reemplaza por lo que usa el login.
 const DIAS_POR_DEFECTO = 7;
 jest.mock('../../../../config/envs', () => ({
-  envs: { jwtAccessExpiresIn: '40m', refreshTokenExpiresInDays: 7 },
+  envs: {
+    jwtAccessExpiresIn: '40m',
+    refreshTokenExpiresInDays: 7,
+    requireVerifiedEmail: true,
+  },
 }));
 
 import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from '../../../persons/domain/entities/user.entity';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
-import { InvalidCredentialsError } from '../../domain/errors/auth-domain.errors';
+import {
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+} from '../../domain/errors/auth-domain.errors';
+import { envs } from '../../../../config/envs';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
 import { hashPassword } from '../utils/password.util';
 import { DIAS_SESION_RECORDADA, LoginUseCase } from './login.use-case';
@@ -33,7 +41,7 @@ describe('LoginUseCase', () => {
 
   let hash: string;
   const fecha = new Date('2026-01-01T00:00:00.000Z');
-  const makeUser = (estado = true) =>
+  const makeUser = (estado = true, emailVerificado = true) =>
     new UserEntity(
       'user-1',
       'persona-1',
@@ -41,7 +49,7 @@ describe('LoginUseCase', () => {
       'rosaquispe',
       hash,
       estado,
-      true,
+      emailVerificado,
       false,
       null,
       null,
@@ -70,7 +78,11 @@ describe('LoginUseCase', () => {
     jest.clearAllMocks();
     findByEmailOrUsername.mockResolvedValue(makeUser());
     findRolesByUserId.mockResolvedValue([{ nombre: 'cliente' }]);
+    createRefreshToken.mockResolvedValue({ id: 'sesion-1' });
     signAsync.mockResolvedValue('jwt');
+  });
+  afterEach(() => {
+    envs.requireVerifiedEmail = true;
   });
 
   it('inicia sesión con email o username y devuelve el token con los roles', async () => {
@@ -82,6 +94,15 @@ describe('LoginUseCase', () => {
     expect(findByEmailOrUsername).toHaveBeenCalledWith('rosaquispe');
     expect(resultado).toMatchObject({ accessToken: 'jwt', roles: ['cliente'] });
     expect(resultado.refreshTokenPlano).toEqual(expect.any(String));
+  });
+
+  it('el token lleva el id de la sesión para poder invalidarlo (HU-B-004)', async () => {
+    await useCase.execute({ identificador: 'rosaquispe', password: PASSWORD });
+
+    expect(signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'user-1', sid: 'sesion-1' }),
+      expect.anything(),
+    );
   });
 
   it('sin "recordar" el refresh token dura los días por defecto', async () => {
@@ -118,4 +139,45 @@ describe('LoginUseCase', () => {
       expect(createRefreshToken).not.toHaveBeenCalled();
     },
   );
+
+  it('bloquea solo al cliente sin verificar después de validar contraseña', async () => {
+    findByEmailOrUsername.mockResolvedValue(makeUser(true, false));
+    await expect(
+      useCase.execute({ identificador: 'rosaquispe', password: PASSWORD }),
+    ).rejects.toBeInstanceOf(EmailNotVerifiedError);
+    expect(createRefreshToken).not.toHaveBeenCalled();
+    expect(signAsync).not.toHaveBeenCalled();
+  });
+  it('no revela la falta de verificación con contraseña incorrecta', async () => {
+    findByEmailOrUsername.mockResolvedValue(makeUser(true, false));
+    await expect(
+      useCase.execute({
+        identificador: 'rosaquispe',
+        password: 'x'.repeat(12),
+      }),
+    ).rejects.toBeInstanceOf(InvalidCredentialsError);
+  });
+  it.each([
+    { roles: ['ventas'] },
+    { roles: ['cliente', 'ventas'] },
+    { roles: [] },
+  ])(
+    'permite usuario sin verificar que no es solo cliente',
+    async ({ roles }) => {
+      findByEmailOrUsername.mockResolvedValue(makeUser(true, false));
+      findRolesByUserId.mockResolvedValue(
+        roles.map((nombre: string) => ({ nombre })),
+      );
+      await expect(
+        useCase.execute({ identificador: 'rosaquispe', password: PASSWORD }),
+      ).resolves.toBeDefined();
+    },
+  );
+  it('permite cliente sin verificar si la política está desactivada', async () => {
+    envs.requireVerifiedEmail = false;
+    findByEmailOrUsername.mockResolvedValue(makeUser(true, false));
+    await expect(
+      useCase.execute({ identificador: 'rosaquispe', password: PASSWORD }),
+    ).resolves.toBeDefined();
+  });
 });

@@ -1,7 +1,5 @@
 import { hashPassword } from './password.util';
-import { generateRandomToken } from './token.util';
-
-const HORAS_EXPIRACION_TOKEN_EMAIL = 24;
+import { buildEmailVerificationToken } from './email-verification.util';
 
 export interface DefaultCredentialsResult {
   username: string;
@@ -9,7 +7,8 @@ export interface DefaultCredentialsResult {
   contrasenaPlana: string; // solo para el correo, nunca se persiste en claro
   debeCambiarContrasena: true;
   emailVerificado: false;
-  tokenVerificacionEmail: string;
+  tokenVerificacionEmailHash: string;
+  tokenVerificacionEmailPlano: string;
   tokenVerificacionEmailExpiracion: Date;
 }
 
@@ -18,10 +17,7 @@ export async function buildDefaultCredentials(
 ): Promise<DefaultCredentialsResult> {
   const contrasenaPlana = numeroDocumento;
   const contrasenaHash = await hashPassword(contrasenaPlana);
-  const tokenVerificacionEmail = generateRandomToken();
-  const tokenVerificacionEmailExpiracion = new Date(
-    Date.now() + HORAS_EXPIRACION_TOKEN_EMAIL * 60 * 60 * 1000,
-  );
+  const verification = buildEmailVerificationToken();
 
   return {
     username: numeroDocumento,
@@ -29,7 +25,8 @@ export async function buildDefaultCredentials(
     contrasenaPlana,
     debeCambiarContrasena: true,
     emailVerificado: false,
-    tokenVerificacionEmail,
-    tokenVerificacionEmailExpiracion,
+    tokenVerificacionEmailHash: verification.tokenHash,
+    tokenVerificacionEmailPlano: verification.token,
+    tokenVerificacionEmailExpiracion: verification.expiresAt,
   };
 }

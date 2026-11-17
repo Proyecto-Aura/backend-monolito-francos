@@ -10,6 +10,8 @@ interface RutaSeed {
 
 const RUTAS_BASE: RutaSeed[] = [
   // --- Inventario ---
+  // Solo productos terminados: las pantallas cuelgan directo del módulo (ya
+  // no hay nodo intermedio "productos-terminados").
   {
     nombre: 'inventario',
     etiqueta: 'Inventario',
@@ -17,10 +19,32 @@ const RUTAS_BASE: RutaSeed[] = [
     descripcion: 'Control de stock y productos',
   },
   {
+    nombre: 'stock-productos',
+    etiqueta: 'Stock de productos',
+    icono: 'boxes',
+    parent: 'inventario',
+  },
+  {
+    nombre: 'pedidos-por-preparar',
+    etiqueta: 'Pedidos por preparar',
+    icono: 'shopping-cart',
+    parent: 'inventario',
+  },
+  {
+    nombre: 'solicitudes-produccion',
+    etiqueta: 'Solicitudes a producción',
+    icono: 'clipboard-list',
+    parent: 'inventario',
+  },
+
+  // --- Insumos ---
+  // Módulo propio del rol "insumos", no una subopción de Inventario: mismo
+  // nivel que Inventario o Despachos.
+  {
     nombre: 'insumos',
     etiqueta: 'Insumos',
     icono: 'box',
-    parent: 'inventario',
+    descripcion: 'Gestión de insumos y su stock',
   },
   {
     nombre: 'stock-insumos',
@@ -33,30 +57,6 @@ const RUTAS_BASE: RutaSeed[] = [
     etiqueta: 'Solicitudes de insumos',
     icono: 'clipboard-list',
     parent: 'insumos',
-  },
-  {
-    nombre: 'productos-terminados',
-    etiqueta: 'Productos terminados',
-    icono: 'recycle',
-    parent: 'inventario',
-  },
-  {
-    nombre: 'stock-productos',
-    etiqueta: 'Stock de productos',
-    icono: 'boxes',
-    parent: 'productos-terminados',
-  },
-  {
-    nombre: 'pedidos-por-preparar',
-    etiqueta: 'Pedidos por preparar',
-    icono: 'shopping-cart',
-    parent: 'productos-terminados',
-  },
-  {
-    nombre: 'solicitudes-produccion',
-    etiqueta: 'Solicitudes a producción',
-    icono: 'clipboard-list',
-    parent: 'productos-terminados',
   },
 
   // --- Ventas ---
@@ -169,6 +169,114 @@ const RUTAS_BASE: RutaSeed[] = [
     etiqueta: 'Gestión estratégica de TI',
     icono: 'monitor',
     parent: 'estrategico',
+  },
+  {
+    nombre: 'objetivos-estrategicos-ti',
+    etiqueta: 'Gestión de objetivos estratégicos de TI',
+    icono: 'flag',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'mapa-estrategico-ti',
+    etiqueta: 'Mapa estratégico de TI',
+    icono: 'map',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'gestionar-kpis-ti',
+    etiqueta: 'Gestionar KPIs de TI',
+    icono: 'bar-chart-3',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'gestionar-iniciativas-ti',
+    etiqueta: 'Gestionar iniciativas de TI',
+    icono: 'rocket',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'tablero-control-ti',
+    etiqueta: 'Tablero de control de TI',
+    icono: 'layout-dashboard',
+    parent: 'gestion-estrategica-ti',
+  },
+  {
+    nombre: 'analisis-estrategico-ti',
+    etiqueta: 'Análisis estratégico de TI',
+    icono: 'folder-open',
+    parent: 'gestion-estrategica-ti',
+  },
+  // --- Despachos (HU-A-023) ---
+  // Módulo propio del rol "despacho" (RN6: ventas no despacha), no una
+  // subopción de Inventario: mismo nivel que Inventario o Producción.
+  {
+    nombre: 'despacho-pedidos',
+    etiqueta: 'Despachos',
+    icono: 'truck',
+    descripcion: 'Seguimiento y entrega de pedidos',
+  },
+  // Hijo único: una pantalla hija (aunque hoy sea la única real) para que el
+  // sidebar del módulo no quede vacío.
+  {
+    nombre: 'gestion-despachos',
+    etiqueta: 'Gestión de despachos',
+    icono: 'clipboard-list',
+    parent: 'despacho-pedidos',
+  },
+
+  // --- Producción ---
+  // Menú dedicado al rol "produccion": duplica (con nombre propio, misma
+  // etiqueta) las rutas de solicitudes que ya existen bajo Inventario e
+  // Insumos, para no mover ni afectar el acceso de esos roles a las suyas.
+  {
+    nombre: 'produccion',
+    etiqueta: 'Producción',
+    icono: 'handshake',
+    descripcion: 'Control de producción',
+  },
+  {
+    nombre: 'produccion-solicitudes',
+    etiqueta: 'Solicitudes de producción',
+    icono: 'clipboard-list',
+    parent: 'produccion',
+  },
+  {
+    nombre: 'produccion-solicitudes-insumos',
+    etiqueta: 'Solicitudes de insumos',
+    icono: 'clipboard-list',
+    parent: 'produccion',
+  },
+
+  // --- Configuración ---
+  {
+    nombre: 'configuracion',
+    etiqueta: 'Configuración',
+    icono: 'settings',
+    descripcion: 'Datos de la empresa, usuarios y permisos',
+  },
+  {
+    nombre: 'empresa',
+    etiqueta: 'Datos de la empresa',
+    icono: 'building-2',
+    parent: 'configuracion',
+  },
+  {
+    nombre: 'usuarios',
+    etiqueta: 'Usuarios internos',
+    icono: 'users',
+    parent: 'configuracion',
+  },
+  {
+    nombre: 'comprobantes',
+    etiqueta: 'Series de comprobantes',
+    icono: 'receipt',
+    parent: 'configuracion',
+  },
+  {
+    nombre: 'parametros-ventas',
+    etiqueta: 'Parámetros de ventas',
+    icono: 'sliders-horizontal',
+    parent: 'configuracion',
   },
 ];
 

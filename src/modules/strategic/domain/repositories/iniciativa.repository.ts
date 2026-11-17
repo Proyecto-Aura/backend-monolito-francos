@@ -12,6 +12,7 @@ export abstract class IniciativaRepository {
     params: CreateIniciativaParams,
     codigoPlan: string,
     correlativo: string,
+    codigoInfijo: string,
   ): Promise<IniciativaEntityEnriquecido>;
   abstract existsByNombre(
     objetivoEstrategicoId: number,
@@ -31,6 +32,10 @@ export abstract class IniciativaRepository {
     estadoIniciativaId: number,
     motivoCancelacion?: string,
   ): Promise<IniciativaEntityEnriquecido>;
+  abstract cancelarActivasPorObjetivo(
+    objetivoEstrategicoId: number,
+    estadoCanceladaId: number,
+  ): Promise<void>;
   abstract countByPlanYTipo(
     planId: number,
     tipoModuloId: number,

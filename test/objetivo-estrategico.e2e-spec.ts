@@ -35,6 +35,11 @@ interface ObjetivoHttp {
   relaciones_destino_ids: number[];
 }
 
+interface IniciativaHttp {
+  id: number;
+  estado_iniciativa: { codigo: string };
+}
+
 interface ResumenPlanHttp {
   plan: { estado_plan: { codigo: string } };
   total_objetivos: number;
@@ -57,6 +62,12 @@ describe('Objetivo estratégico (e2e)', () => {
   let objetivoBId: number;
   let objetivoCId: number;
   let objetivoDId: number;
+  let objetivoEId: number;
+  let objetivoFId: number;
+  let iniciativaPendienteId: number;
+  let iniciativaEnProcesoId: number;
+  let iniciativaCompletadaId: number;
+  let iniciativaOtroObjetivoId: number;
 
   const login = async (credentials: typeof ADMIN_CREDENTIALS) => {
     const response = await request(app.getHttpServer())
@@ -139,6 +150,11 @@ describe('Objetivo estratégico (e2e)', () => {
     }
 
     await prisma.$transaction([
+      prisma.iniciativa.deleteMany({
+        where: {
+          objetivo_estrategico: { plan_estrategico_id: { in: planIds } },
+        },
+      }),
       prisma.relacionOe.deleteMany({
         where: {
           OR: [
@@ -162,6 +178,67 @@ describe('Objetivo estratégico (e2e)', () => {
       .expect(201);
 
     return (response.body as { id: number }).id;
+  };
+
+  const createObjetivo = async (
+    planId: number,
+    perspectivaId: number,
+    nombre: string,
+  ) => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/objetivos-estrategicos')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        plan_estrategico_id: planId,
+        perspectiva_bsc_id: perspectivaId,
+        responsable: 'Responsable E2E',
+        nombre,
+      })
+      .expect(201);
+
+    const objetivo = response.body as ObjetivoHttp;
+    expect(objetivo.estado_objetivo.codigo).toBe('PENDIENTE');
+    return objetivo.id;
+  };
+
+  const createIniciativa = async (objetivoId: number, nombre: string) => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/iniciativas')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        objetivo_estrategico_id: objetivoId,
+        nombre,
+        descripcion: 'Iniciativa para cascada de cancelación',
+        responsable: 'Responsable Iniciativa E2E',
+        fecha_inicio: '2035-02-01',
+        fecha_fin: '2037-11-30',
+      })
+      .expect(201);
+
+    return (response.body as IniciativaHttp).id;
+  };
+
+  const cambiarEstadoIniciativa = async (id: number, estado: string) => {
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/iniciativas/${id}/estado`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ estado_codigo: estado })
+      .expect(200);
+
+    expect((response.body as IniciativaHttp).estado_iniciativa.codigo).toBe(
+      estado,
+    );
+  };
+
+  const getEstadoIniciativa = async (objetivoId: number, id: number) => {
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/iniciativas?objetivo_estrategico_id=${objetivoId}&limit=20`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const iniciativas = (response.body as { data: IniciativaHttp[] }).data;
+    return iniciativas.find((iniciativa) => iniciativa.id === id)
+      ?.estado_iniciativa.codigo;
   };
 
   beforeAll(async () => {
@@ -260,7 +337,7 @@ describe('Objetivo estratégico (e2e)', () => {
       },
     });
 
-    const [planes, objetivos, relaciones, usuarios, personas] =
+    const [planes, objetivos, iniciativas, relaciones, usuarios, personas] =
       await Promise.all([
         prisma.planEstrategico.count({
           where: { nombre: { startsWith: PLAN_PREFIX } },
@@ -268,6 +345,13 @@ describe('Objetivo estratégico (e2e)', () => {
         prisma.objetivoEstrategico.count({
           where: {
             plan_estrategico: { nombre: { startsWith: PLAN_PREFIX } },
+          },
+        }),
+        prisma.iniciativa.count({
+          where: {
+            objetivo_estrategico: {
+              plan_estrategico: { nombre: { startsWith: PLAN_PREFIX } },
+            },
           },
         }),
         prisma.relacionOe.count({
@@ -305,9 +389,17 @@ describe('Objetivo estratégico (e2e)', () => {
         }),
       ]);
 
-    expect({ planes, objetivos, relaciones, usuarios, personas }).toEqual({
+    expect({
+      planes,
+      objetivos,
+      iniciativas,
+      relaciones,
+      usuarios,
+      personas,
+    }).toEqual({
       planes: 0,
       objetivos: 0,
+      iniciativas: 0,
       relaciones: 0,
       usuarios: 0,
       personas: 0,
@@ -539,6 +631,50 @@ describe('Objetivo estratégico (e2e)', () => {
     objetivoDId = objetivoCreado.id;
   });
 
+  it('crea los objetivos E y F en el Plan B', async () => {
+    objetivoEId = await createObjetivo(
+      planBId,
+      perspectivaFinancieraId,
+      `${PLAN_PREFIX} Objetivo E`,
+    );
+    objetivoFId = await createObjetivo(
+      planBId,
+      perspectivaClienteId,
+      `${PLAN_PREFIX} Objetivo F`,
+    );
+  });
+
+  it('crea tres iniciativas en el objetivo E y una en el objetivo F', async () => {
+    iniciativaPendienteId = await createIniciativa(
+      objetivoEId,
+      `${PLAN_PREFIX} Iniciativa Pendiente`,
+    );
+    iniciativaEnProcesoId = await createIniciativa(
+      objetivoEId,
+      `${PLAN_PREFIX} Iniciativa En Proceso`,
+    );
+    iniciativaCompletadaId = await createIniciativa(
+      objetivoEId,
+      `${PLAN_PREFIX} Iniciativa Completada`,
+    );
+    iniciativaOtroObjetivoId = await createIniciativa(
+      objetivoFId,
+      `${PLAN_PREFIX} Iniciativa Otro Objetivo`,
+    );
+
+    expect([
+      iniciativaPendienteId,
+      iniciativaEnProcesoId,
+      iniciativaCompletadaId,
+      iniciativaOtroObjetivoId,
+    ]).toEqual([
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+    ]);
+  });
+
   it('activa el Plan B', async () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/planes-estrategicos/${planBId}/activar`)
@@ -601,6 +737,71 @@ describe('Objetivo estratégico (e2e)', () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/objetivos-estrategicos/${objetivoDId}`)
       .set('Authorization', `Bearer ${adminToken}`)
+      .expect(409);
+  });
+
+  it('prepara los estados de las iniciativas del objetivo E', async () => {
+    await cambiarEstadoIniciativa(iniciativaEnProcesoId, 'EN_PROCESO');
+    await cambiarEstadoIniciativa(iniciativaCompletadaId, 'EN_PROCESO');
+    await cambiarEstadoIniciativa(iniciativaCompletadaId, 'COMPLETADA');
+  });
+
+  it('confirma los estados antes de cancelar el objetivo E', async () => {
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaPendienteId),
+    ).resolves.toBe('PENDIENTE');
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaEnProcesoId),
+    ).resolves.toBe('EN_PROCESO');
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaCompletadaId),
+    ).resolves.toBe('COMPLETADA');
+    await expect(
+      getEstadoIniciativa(objetivoFId, iniciativaOtroObjetivoId),
+    ).resolves.toBe('PENDIENTE');
+  });
+
+  it('cancela el objetivo E directamente desde PENDIENTE', async () => {
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/objetivos-estrategicos/${objetivoEId}/estado`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ estado_codigo: 'CANCELADO' })
+      .expect(200);
+
+    expect((response.body as ObjetivoHttp).estado_objetivo.codigo).toBe(
+      'CANCELADO',
+    );
+  });
+
+  it('cancela en cascada la iniciativa PENDIENTE', async () => {
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaPendienteId),
+    ).resolves.toBe('CANCELADA');
+  });
+
+  it('cancela en cascada la iniciativa EN_PROCESO', async () => {
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaEnProcesoId),
+    ).resolves.toBe('CANCELADA');
+  });
+
+  it('conserva COMPLETADA la iniciativa ya terminada', async () => {
+    await expect(
+      getEstadoIniciativa(objetivoEId, iniciativaCompletadaId),
+    ).resolves.toBe('COMPLETADA');
+  });
+
+  it('no afecta a las iniciativas de otro objetivo del mismo plan', async () => {
+    await expect(
+      getEstadoIniciativa(objetivoFId, iniciativaOtroObjetivoId),
+    ).resolves.toBe('PENDIENTE');
+  });
+
+  it('rechaza cambiar el estado de una iniciativa del objetivo cancelado a EN_PROCESO', async () => {
+    await request(app.getHttpServer())
+      .patch(`/api/v1/iniciativas/${iniciativaPendienteId}/estado`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ estado_codigo: 'EN_PROCESO' })
       .expect(409);
   });
 
