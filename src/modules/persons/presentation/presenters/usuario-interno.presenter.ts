@@ -12,6 +12,7 @@ export class UsuarioInternoPresenter {
       apellido_materno: persona.apellido_materno,
       tipo_documento: persona.tipo_documento,
       numero_documento: persona.numero_documento,
+      foto_url: persona.foto_url,
       email: user.email,
       username: user.username,
       estado: user.estado,

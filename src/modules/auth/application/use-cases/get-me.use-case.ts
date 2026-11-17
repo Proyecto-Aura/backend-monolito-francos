@@ -10,6 +10,7 @@ export interface MeResult {
   email: string;
   username: string;
   roles: string[];
+  foto_url: string | null;
 }
 
 @Injectable()
@@ -39,6 +40,7 @@ export class GetMeUseCase {
       email: user.email,
       username: user.username,
       roles,
+      foto_url: persona.foto_url,
     };
   }
 }

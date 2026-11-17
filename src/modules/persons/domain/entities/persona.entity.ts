@@ -14,5 +14,6 @@ export class PersonaEntity {
     public estado: boolean,
     public readonly created_at: Date,
     public updated_at: Date,
+    public foto_url: string | null = null,
   ) {}
 }

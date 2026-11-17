@@ -64,6 +64,7 @@ describe('GetMeUseCase', () => {
       email: 'admin@francos.test',
       username: 'admin',
       roles: ['admin'],
+      foto_url: null,
     });
 
     expect(findUserById).toHaveBeenCalledWith('user-1');

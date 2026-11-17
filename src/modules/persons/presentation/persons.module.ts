@@ -90,6 +90,8 @@ import { GetUsuarioInternoByIdUseCase } from '../application/use-cases/usuarios-
 import { UpdateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/update-usuario-interno.use-case';
 import { ChangeUsuarioInternoStatusUseCase } from '../application/use-cases/usuarios-internos/change-usuario-interno-status.use-case';
 import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios-internos/set-usuario-interno-roles.use-case';
+import { SubirFotoUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/subir-foto-usuario-interno.use-case';
+import { QuitarFotoUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/quitar-foto-usuario-interno.use-case';
 import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
 import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
 import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
@@ -199,6 +201,8 @@ import { PrismaNotificacionRepository } from '../infrastructure/repositories/pri
     UpdateUsuarioInternoUseCase,
     ChangeUsuarioInternoStatusUseCase,
     SetUsuarioInternoRolesUseCase,
+    SubirFotoUsuarioInternoUseCase,
+    QuitarFotoUsuarioInternoUseCase,
     ListNotificacionesUseCase,
     MarcarNotificacionLeidaUseCase,
     ObtenerPreferenciasNotificacionUseCase,

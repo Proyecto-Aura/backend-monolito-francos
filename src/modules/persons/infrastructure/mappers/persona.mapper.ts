@@ -17,6 +17,7 @@ export class PersonaMapper {
       persona.estado,
       persona.created_at,
       persona.updated_at,
+      persona.foto_url,
     );
   }
 }
