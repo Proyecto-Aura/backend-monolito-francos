@@ -26,6 +26,7 @@ export class AuthPresenter {
   static meToHttp(result: MeResult) {
     return {
       nombre_completo: `${result.nombres} ${result.apellido_paterno} ${result.apellido_materno}`,
+      foto_url: result.foto_url,
       nombres: result.nombres,
       apellido_paterno: result.apellido_paterno,
       apellido_materno: result.apellido_materno,

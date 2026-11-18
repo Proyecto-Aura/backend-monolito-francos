@@ -52,6 +52,7 @@ describe('UsuarioInternoPresenter', () => {
       apellido_materno: 'Huaman',
       tipo_documento: 'dni',
       numero_documento: '45678912',
+      foto_url: null,
       email: 'lucia@francos.test',
       username: 'lquispe',
       estado: true,
