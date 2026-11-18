@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { AuthModule } from './modules/auth/presentation/auth.module';
 import { PersonsModule } from './modules/persons/presentation/persons.module';
 import { SalesModule } from './modules/sales/presentation/sales.module';
@@ -22,6 +24,12 @@ import { StorageModule } from './infrastructure/storage/storage.module';
     InventoryModule,
     ProductionModule,
     StrategicModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: PrismaExceptionFilter,
+    },
   ],
 })
 export class AppModule {}

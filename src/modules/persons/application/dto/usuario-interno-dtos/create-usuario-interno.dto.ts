@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -70,4 +71,27 @@ export class CreateUsuarioInternoDto extends SetRolesUsuarioInternoDto {
   @IsOptional()
   @IsBoolean()
   estado?: boolean;
+
+  // Todo usuario interno es también un empleado (ver registro de empleado).
+  @ApiProperty({ example: 'Vendedor', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  cargo!: string;
+
+  // Texto libre: no necesariamente corresponde a un rol predefinido
+  // (ej. "gerencia" para la cuenta de un gerente).
+  @ApiPropertyOptional({ example: 'ventas', maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  area?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-08-19',
+    description: 'Si no se envía, se usa la fecha actual',
+  })
+  @IsOptional()
+  @IsDateString()
+  fecha_ingreso?: string;
 }

@@ -30,6 +30,9 @@ export class PrismaUsuarioInternoRepository implements UsuarioInternoRepository 
   create(params: CreateUsuarioInternoParams): Promise<UsuarioInterno> {
     return this.prisma.$transaction(async (tx) => {
       const persona = await tx.persona.create({ data: params.persona });
+      await tx.empleado.create({
+        data: { persona_id: persona.id, ...params.empleado },
+      });
       const { contrasena_hash, ...userData } = params.user;
       const user = await tx.user.create({
         data: {

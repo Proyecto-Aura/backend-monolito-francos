@@ -3,7 +3,7 @@ import { UsuarioInterno } from '../../domain/repositories/types/usuario-interno-
 
 // Lista explícita de campos: nunca se exponen contraseña, hash ni tokens.
 export class UsuarioInternoPresenter {
-  static toHttp({ user, persona, roles }: UsuarioInterno) {
+  static toHttp({ user, persona, empleado, roles }: UsuarioInterno) {
     return {
       id: user.id,
       persona_id: persona.id,
@@ -13,6 +13,9 @@ export class UsuarioInternoPresenter {
       tipo_documento: persona.tipo_documento,
       numero_documento: persona.numero_documento,
       foto_url: persona.foto_url,
+      cargo: empleado?.cargo ?? null,
+      area: empleado?.area ?? null,
+      fecha_ingreso: empleado?.fecha_ingreso ?? null,
       email: user.email,
       username: user.username,
       estado: user.estado,
