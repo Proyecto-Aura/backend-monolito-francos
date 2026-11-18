@@ -278,6 +278,12 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'sliders-horizontal',
     parent: 'configuracion',
   },
+  {
+    nombre: 'parametros-inventario',
+    etiqueta: 'Parámetros de inventario',
+    icono: 'boxes',
+    parent: 'configuracion',
+  },
 ];
 
 export async function seedRutas(prisma: PrismaClient) {

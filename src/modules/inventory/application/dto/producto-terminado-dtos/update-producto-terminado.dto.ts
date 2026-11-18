@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 
 // Solo stock_minimo/stock_maximo: el resto de la ficha (nombre, categoría,
 // presentación, precio) se edita en /producto-presentaciones, no acá.
@@ -12,10 +12,11 @@ export class UpdateProductoTerminadoDto {
   @Min(0)
   stock_minimo?: number;
 
-  @ApiPropertyOptional({ example: 500, minimum: 0 })
+  // Mayor a 0: los niveles "alto"/"normal" dividen entre el máximo.
+  @ApiPropertyOptional({ example: 500, exclusiveMinimum: true, minimum: 0 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @IsPositive()
   stock_maximo?: number;
 }

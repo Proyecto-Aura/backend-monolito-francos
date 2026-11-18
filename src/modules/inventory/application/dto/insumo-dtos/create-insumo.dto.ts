@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   Min,
   MaxLength,
@@ -39,11 +40,12 @@ export class CreateInsumoDto {
   @Min(0)
   stock_minimo!: number;
 
-  @ApiProperty({ example: 500, minimum: 0 })
+  // Mayor a 0: los niveles "alto"/"normal" dividen entre el máximo.
+  @ApiProperty({ example: 500, exclusiveMinimum: true, minimum: 0 })
   @IsNotEmpty()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @IsPositive()
   stock_maximo!: number;
 
   @ApiProperty({ enum: TipoInsumo, example: 'materia_prima' })
