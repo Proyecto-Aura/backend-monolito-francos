@@ -45,7 +45,7 @@ export class CreateUsuarioInternoUseCase {
       },
       empleado: {
         cargo: dto.cargo,
-        area: dto.area,
+        area: dto.area ?? null,
         fecha_ingreso: dto.fecha_ingreso ? new Date(dto.fecha_ingreso) : new Date(),
       },
       user: {

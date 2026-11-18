@@ -1,9 +1,6 @@
 import { comparePassword } from '../../../../auth/application/utils/password.util';
 import { RolEntity } from '../../../domain/entities/rol.entity';
-import {
-  AreaEmpleado,
-  TipoDocumento,
-} from '../../../domain/enums/persons.enums';
+import { TipoDocumento } from '../../../domain/enums/persons.enums';
 import {
   ResourceConflictError,
   ResourceNotFoundError,
@@ -55,7 +52,7 @@ describe('CreateUsuarioInternoUseCase', () => {
       contrasena: 'ClaveSegura123',
       rol_ids: [2],
       cargo: 'Vendedora',
-      area: AreaEmpleado.VENTAS,
+      area: 'ventas',
       ...overrides,
     });
 
@@ -98,7 +95,7 @@ describe('CreateUsuarioInternoUseCase', () => {
     expect(params.rol_ids).toEqual([1, 2]);
     expect(params.empleado).toEqual({
       cargo: 'Vendedora',
-      area: AreaEmpleado.VENTAS,
+      area: 'ventas',
       fecha_ingreso: new Date('2026-11-01T00:00:00.000Z'),
     });
   });
@@ -115,31 +112,43 @@ describe('CreateUsuarioInternoUseCase', () => {
     ];
     expect(params.empleado).toEqual({
       cargo: 'Vendedora',
-      area: AreaEmpleado.VENTAS,
+      area: 'ventas',
       fecha_ingreso: ahora,
     });
   });
 
-  it.each(Object.values(AreaEmpleado))(
-    'propaga el area %s y el cargo al repositorio',
-    async (area) => {
-      await useCase.execute(
-        dto({
-          area,
-          cargo: 'Responsable de turno',
-          fecha_ingreso: '2026-10-15',
-        }),
-      );
-      const [params] = usuarioInternoRepository.create.mock.calls[0] as [
-        CreateUsuarioInternoParams,
-      ];
-      expect(params.empleado).toEqual({
-        cargo: 'Responsable de turno',
+  it.each([
+    'ventas',
+    'almacen',
+    'produccion',
+    'administracion',
+    'gerencia',
+    'Investigación y desarrollo',
+  ])('propaga el area %s y el cargo al repositorio', async (area) => {
+    await useCase.execute(
+      dto({
         area,
-        fecha_ingreso: new Date('2026-10-15'),
-      });
-    },
-  );
+        cargo: 'Responsable de turno',
+        fecha_ingreso: '2026-10-15',
+      }),
+    );
+    const [params] = usuarioInternoRepository.create.mock.calls[0] as [
+      CreateUsuarioInternoParams,
+    ];
+    expect(params.empleado).toEqual({
+      cargo: 'Responsable de turno',
+      area,
+      fecha_ingreso: new Date('2026-10-15'),
+    });
+  });
+
+  it('guarda area=null cuando no se envia el campo opcional', async () => {
+    await useCase.execute(dto({ area: undefined }));
+    const [params] = usuarioInternoRepository.create.mock.calls[0] as [
+      CreateUsuarioInternoParams,
+    ];
+    expect(params.empleado).toMatchObject({ cargo: 'Vendedora', area: null });
+  });
 
   it('respeta estado=false', async () => {
     await useCase.execute(dto({ estado: false }));

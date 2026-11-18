@@ -11,7 +11,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { AreaEmpleado, TipoDocumento } from '../../../domain/enums/persons.enums';
+import { TipoDocumento } from '../../../domain/enums/persons.enums';
 import { IsNumeroDocumentoValido } from '../../../../../common/validators/numero-documento.validator';
 import { SetRolesUsuarioInternoDto } from './set-roles-usuario-interno.dto';
 
@@ -79,9 +79,13 @@ export class CreateUsuarioInternoDto extends SetRolesUsuarioInternoDto {
   @MaxLength(100)
   cargo!: string;
 
-  @ApiProperty({ enum: AreaEmpleado, example: AreaEmpleado.VENTAS })
-  @IsEnum(AreaEmpleado)
-  area!: AreaEmpleado;
+  // Texto libre: no necesariamente corresponde a un rol predefinido
+  // (ej. "gerencia" para la cuenta de un gerente).
+  @ApiPropertyOptional({ example: 'ventas', maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  area?: string;
 
   @ApiPropertyOptional({
     example: '2026-08-19',

@@ -235,7 +235,7 @@ describe('Usuarios internos (e2e)', () => {
     const response = await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
-      .send(nuevoUsuario({ fecha_ingreso: '2026-11-01' }))
+      .send(nuevoUsuario({ fecha_ingreso: '2026-11-01', area: 'gerencia' }))
       .expect(201);
 
     const body = response.body as UsuarioHttp;
@@ -248,7 +248,7 @@ describe('Usuarios internos (e2e)', () => {
       debe_cambiar_contrasena: true,
       roles: [{ id: rolIds.ventas, nombre: 'ventas' }],
       cargo: 'Vendedora',
-      area: 'ventas',
+      area: 'gerencia',
       fecha_ingreso: '2026-11-01T00:00:00.000Z',
     });
     expect(body).not.toHaveProperty('contrasena');
@@ -270,7 +270,7 @@ describe('Usuarios internos (e2e)', () => {
     expect(persona.empleado).toMatchObject({
       persona_id: persona.id,
       cargo: 'Vendedora',
-      area: 'ventas',
+      area: 'gerencia',
       fecha_ingreso: new Date('2026-11-01'),
     });
     expect(
@@ -349,10 +349,10 @@ describe('Usuarios internos (e2e)', () => {
     ['DNI mal formado', { numero_documento: '123' }],
     ['campo no permitido', { persona_id: 'x' }],
     ['sin cargo', { cargo: undefined }],
-    ['sin area', { area: undefined }],
     ['cargo vacio', { cargo: '' }],
     ['cargo demasiado largo', { cargo: 'x'.repeat(101) }],
-    ['area invalida', { area: 'despacho' }],
+    ['area numerica', { area: 123 }],
+    ['area demasiado larga', { area: 'x'.repeat(101) }],
     ['fecha de ingreso invalida', { fecha_ingreso: 'ayer' }],
   ])('POST con %s devuelve 400', async (_caso, overrides) => {
     await http()
@@ -378,18 +378,20 @@ describe('Usuarios internos (e2e)', () => {
           contrasena: INACTIVO.password,
           rol_ids: [rolIds.inventario],
           estado: false,
+          area: undefined,
         }),
       )
       .expect(201);
     inactivoId = (response.body as UsuarioHttp).id;
     diasEsperados.push(new Date().toISOString().slice(0, 10));
     const body = response.body as UsuarioHttp;
-    expect(body).toMatchObject({ cargo: 'Vendedora', area: 'ventas' });
+    expect(body).toMatchObject({ cargo: 'Vendedora', area: null });
     expect(diasEsperados).toContain(body.fecha_ingreso?.slice(0, 10));
     const empleado = await prisma.empleado.findFirstOrThrow({
       where: { persona: { user: { id: inactivoId } } },
     });
     expect(empleado.fecha_ingreso?.toISOString()).toBe(body.fecha_ingreso);
+    expect(empleado.area).toBeNull();
 
     await login(INACTIVO.username, INACTIVO.password).expect(401);
   });

@@ -1,7 +1,7 @@
 import { EmpleadoEntity } from '../../entities/empleado.entity';
 import { PersonaEntity } from '../../entities/persona.entity';
 import { UserEntity } from '../../entities/user.entity';
-import { AreaEmpleado, TipoDocumento } from '../../enums/persons.enums';
+import { TipoDocumento } from '../../enums/persons.enums';
 import { PaginationParams } from './pagination.types';
 import { RolAsignado } from './usuario-rol-repository.types';
 
@@ -28,7 +28,7 @@ export interface CreateUsuarioInternoParams {
   };
   empleado: {
     cargo: string;
-    area: AreaEmpleado;
+    area: string | null;
     fecha_ingreso: Date;
   };
   user: {

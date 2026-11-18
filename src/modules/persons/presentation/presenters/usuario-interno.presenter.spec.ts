@@ -1,7 +1,7 @@
 import { PersonaEntity } from '../../domain/entities/persona.entity';
 import { EmpleadoEntity } from '../../domain/entities/empleado.entity';
 import { UserEntity } from '../../domain/entities/user.entity';
-import { AreaEmpleado, TipoDocumento } from '../../domain/enums/persons.enums';
+import { TipoDocumento } from '../../domain/enums/persons.enums';
 import { UsuarioInterno } from '../../domain/repositories/types/usuario-interno-repository.types';
 import { UsuarioInternoPresenter } from './usuario-interno.presenter';
 
@@ -42,7 +42,7 @@ describe('UsuarioInternoPresenter', () => {
       'empleado-1',
       'persona-1',
       'Vendedora',
-      AreaEmpleado.VENTAS,
+      'gerencia',
       fecha,
       null,
       true,
@@ -66,7 +66,7 @@ describe('UsuarioInternoPresenter', () => {
       numero_documento: '45678912',
       foto_url: null,
       cargo: 'Vendedora',
-      area: 'ventas',
+      area: 'gerencia',
       fecha_ingreso: fecha,
       email: 'lucia@francos.test',
       username: 'lquispe',
