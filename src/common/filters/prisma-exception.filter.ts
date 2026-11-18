@@ -22,7 +22,10 @@ const MENSAJES_POR_CODIGO: Record<string, string> = {
 export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost): void {
+  catch(
+    exception: Prisma.PrismaClientKnownRequestError,
+    host: ArgumentsHost,
+  ): void {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
