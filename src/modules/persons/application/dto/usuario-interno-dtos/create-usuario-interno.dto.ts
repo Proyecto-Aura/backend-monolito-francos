@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -10,7 +11,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { TipoDocumento } from '../../../domain/enums/persons.enums';
+import { AreaEmpleado, TipoDocumento } from '../../../domain/enums/persons.enums';
 import { IsNumeroDocumentoValido } from '../../../../../common/validators/numero-documento.validator';
 import { SetRolesUsuarioInternoDto } from './set-roles-usuario-interno.dto';
 
@@ -70,4 +71,23 @@ export class CreateUsuarioInternoDto extends SetRolesUsuarioInternoDto {
   @IsOptional()
   @IsBoolean()
   estado?: boolean;
+
+  // Todo usuario interno es también un empleado (ver registro de empleado).
+  @ApiProperty({ example: 'Vendedor', maxLength: 100 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  cargo!: string;
+
+  @ApiProperty({ enum: AreaEmpleado, example: AreaEmpleado.VENTAS })
+  @IsEnum(AreaEmpleado)
+  area!: AreaEmpleado;
+
+  @ApiPropertyOptional({
+    example: '2026-08-19',
+    description: 'Si no se envía, se usa la fecha actual',
+  })
+  @IsOptional()
+  @IsDateString()
+  fecha_ingreso?: string;
 }

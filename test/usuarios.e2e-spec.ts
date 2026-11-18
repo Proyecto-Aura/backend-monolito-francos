@@ -61,6 +61,9 @@ interface UsuarioHttp {
   debe_cambiar_contrasena: boolean;
   roles: { id: number; nombre: string }[];
   foto_url: string | null;
+  cargo: string | null;
+  area: string | null;
+  fecha_ingreso: string | null;
 }
 interface ListadoHttp {
   data: UsuarioHttp[];
@@ -103,6 +106,8 @@ describe('Usuarios internos (e2e)', () => {
     username: LUCIA.username,
     contrasena: LUCIA.password,
     rol_ids: [rolIds.ventas],
+    cargo: 'Vendedora',
+    area: 'ventas',
     ...overrides,
   });
 
@@ -117,6 +122,9 @@ describe('Usuarios internos (e2e)', () => {
       prisma.usuarioRol.deleteMany({ where: { user_id: { in: userIds } } }),
       prisma.user.deleteMany({ where: { id: { in: userIds } } }),
       prisma.cliente.deleteMany({
+        where: { persona: { numero_documento: { in: DNIS } } },
+      }),
+      prisma.empleado.deleteMany({
         where: { persona: { numero_documento: { in: DNIS } } },
       }),
       prisma.persona.deleteMany({ where: { numero_documento: { in: DNIS } } }),
@@ -223,11 +231,11 @@ describe('Usuarios internos (e2e)', () => {
       .expect(403);
   });
 
-  it('POST crea el usuario con persona, roles y contraseña hasheada', async () => {
+  it('POST crea persona, empleado y usuario y GET conserva los datos laborales', async () => {
     const response = await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
-      .send(nuevoUsuario())
+      .send(nuevoUsuario({ fecha_ingreso: '2026-11-01' }))
       .expect(201);
 
     const body = response.body as UsuarioHttp;
@@ -239,6 +247,9 @@ describe('Usuarios internos (e2e)', () => {
       estado: true,
       debe_cambiar_contrasena: true,
       roles: [{ id: rolIds.ventas, nombre: 'ventas' }],
+      cargo: 'Vendedora',
+      area: 'ventas',
+      fecha_ingreso: '2026-11-01T00:00:00.000Z',
     });
     expect(body).not.toHaveProperty('contrasena');
     expect(Object.keys(body).filter((key) => key.startsWith('token_'))).toEqual(
@@ -250,6 +261,45 @@ describe('Usuarios internos (e2e)', () => {
       select: { contrasena: true },
     });
     expect(user.contrasena).not.toBe(LUCIA.password);
+
+    const persona = await prisma.persona.findUniqueOrThrow({
+      where: { numero_documento: LUCIA.dni },
+      include: { empleado: true, user: true },
+    });
+    expect(persona.user?.id).toBe(luciaId);
+    expect(persona.empleado).toMatchObject({
+      persona_id: persona.id,
+      cargo: 'Vendedora',
+      area: 'ventas',
+      fecha_ingreso: new Date('2026-11-01'),
+    });
+    expect(
+      await prisma.empleado.count({ where: { persona_id: persona.id } }),
+    ).toBe(1);
+    const detalle = await http()
+      .get(`/api/v1/usuarios/${luciaId}`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(detalle.body).toMatchObject({
+      cargo: body.cargo,
+      area: body.area,
+      fecha_ingreso: body.fecha_ingreso,
+    });
+  });
+
+  it('GET de un usuario antiguo sin empleado devuelve campos laborales null', async () => {
+    const antiguo = await prisma.user.findUniqueOrThrow({
+      where: { username: VENTAS.username },
+    });
+    const response = await http()
+      .get(`/api/v1/usuarios/${antiguo.id}`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(response.body).toMatchObject({
+      cargo: null,
+      area: null,
+      fecha_ingreso: null,
+    });
   });
 
   it('el usuario creado inicia sesión con el username y la contraseña elegidos', async () => {
@@ -298,15 +348,25 @@ describe('Usuarios internos (e2e)', () => {
     ['contraseña corta', { contrasena: 'corta' }],
     ['DNI mal formado', { numero_documento: '123' }],
     ['campo no permitido', { persona_id: 'x' }],
+    ['sin cargo', { cargo: undefined }],
+    ['sin area', { area: undefined }],
+    ['cargo vacio', { cargo: '' }],
+    ['cargo demasiado largo', { cargo: 'x'.repeat(101) }],
+    ['area invalida', { area: 'despacho' }],
+    ['fecha de ingreso invalida', { fecha_ingreso: 'ayer' }],
   ])('POST con %s devuelve 400', async (_caso, overrides) => {
     await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
       .send(nuevoUsuario({ numero_documento: DNI_LIBRE, ...overrides }))
       .expect(400);
+    expect(
+      await prisma.persona.count({ where: { numero_documento: DNI_LIBRE } }),
+    ).toBe(0);
   });
 
   it('POST con estado=false crea un usuario que no puede iniciar sesión', async () => {
+    const diasEsperados = [new Date().toISOString().slice(0, 10)];
     const response = await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
@@ -322,6 +382,14 @@ describe('Usuarios internos (e2e)', () => {
       )
       .expect(201);
     inactivoId = (response.body as UsuarioHttp).id;
+    diasEsperados.push(new Date().toISOString().slice(0, 10));
+    const body = response.body as UsuarioHttp;
+    expect(body).toMatchObject({ cargo: 'Vendedora', area: 'ventas' });
+    expect(diasEsperados).toContain(body.fecha_ingreso?.slice(0, 10));
+    const empleado = await prisma.empleado.findFirstOrThrow({
+      where: { persona: { user: { id: inactivoId } } },
+    });
+    expect(empleado.fecha_ingreso?.toISOString()).toBe(body.fecha_ingreso);
 
     await login(INACTIVO.username, INACTIVO.password).expect(401);
   });

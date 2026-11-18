@@ -47,6 +47,7 @@ describe('UpdateUsuarioInternoUseCase', () => {
       fecha,
       fecha,
     ),
+    empleado: null,
     roles: [{ rol_id: 2, nombre: 'ventas' }],
   };
 
