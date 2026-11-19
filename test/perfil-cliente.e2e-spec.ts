@@ -16,7 +16,7 @@ const OTRO = { username: `${PREFIJO}otro`, documento: '99999972' };
 const VENDEDOR = { username: `${PREFIJO}ventas`, documento: '99999973' };
 const DOCUMENTOS = [CLIENTE.documento, OTRO.documento, VENDEDOR.documento];
 
-describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
+describe('Editar datos personales del cliente (e2e, HU-B-015 y HU-B-018)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
 
@@ -138,6 +138,8 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
       apellido_materno: 'Huamán',
       email: `${CLIENTE.username}@francos.test`,
       telefono: '987654321',
+      direccion: null,
+      ubicacion: null,
       tipo_documento: 'dni',
       numero_documento: CLIENTE.documento,
       tipo_cliente: 'persona_natural',
@@ -184,6 +186,12 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
     [{ nombres: '   ' }, 'Ingresa tus nombres'],
     [{ email: 'no-es-correo' }, 'Ingresa un correo electrónico válido'],
     [{ telefono: '98765' }, 'El teléfono debe tener 9 dígitos'],
+    [{ direccion: '   ' }, 'Ingresa tu dirección de entrega'],
+    [
+      { direccion: 'a'.repeat(256) },
+      'La dirección no puede pasar de 255 caracteres',
+    ],
+    [{ distrito_id: '15013' }, 'El distrito no es válido'],
     [{ username: 'otro' }, 'property username should not exist'],
   ])('validates %o (400)', async (body, mensaje) => {
     const response = await editar(await token(CLIENTE.username), body).expect(
@@ -191,6 +199,44 @@ describe('Editar datos personales del cliente (e2e, HU-B-015)', () => {
     );
 
     expect(mensajes(response.body)).toContain(mensaje);
+  });
+
+  it('updates the default delivery address and shows its location (RF-B46)', async () => {
+    const jwt = await token(CLIENTE.username);
+
+    const response = await editar(jwt, {
+      direccion: '  Av. Los Girasoles 123, Mz B Lt 4 ',
+      distrito_id: '150131',
+    }).expect(200);
+
+    expect(response.body).toMatchObject({
+      direccion: 'Av. Los Girasoles 123, Mz B Lt 4',
+      ubicacion: {
+        departamento: { id: '15', nombre: 'Lima' },
+        provincia: { id: '1501', nombre: 'Lima' },
+        distrito: { id: '150131', nombre: 'San Isidro' },
+      },
+    });
+    // Queda guardada: el siguiente GET la devuelve.
+    const guardado = await perfil(jwt).expect(200);
+    expect(guardado.body).toMatchObject({
+      direccion: 'Av. Los Girasoles 123, Mz B Lt 4',
+    });
+  });
+
+  it('rejects a district that does not exist (400) and keeps the saved address', async () => {
+    const jwt = await token(CLIENTE.username);
+
+    const response = await editar(jwt, {
+      direccion: 'Jr. Inexistente 999',
+      distrito_id: '999999',
+    }).expect(400);
+
+    expect(mensajes(response.body)).toEqual(['El distrito no existe']);
+    const intacto = await perfil(jwt).expect(200);
+    expect(intacto.body).toMatchObject({
+      direccion: 'Av. Los Girasoles 123, Mz B Lt 4',
+    });
   });
 
   it('is only for clients: staff get 403 and no session gets 401', async () => {

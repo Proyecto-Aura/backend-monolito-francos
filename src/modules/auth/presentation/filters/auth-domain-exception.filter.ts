@@ -1,6 +1,9 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { AuthDomainError } from '../../domain/errors/auth-domain.errors';
+import {
+  AccountLockedError,
+  AuthDomainError,
+} from '../../domain/errors/auth-domain.errors';
 
 @Catch(AuthDomainError)
 export class AuthDomainExceptionFilter implements ExceptionFilter {
@@ -8,6 +11,10 @@ export class AuthDomainExceptionFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
+
+    if (exception instanceof AccountLockedError) {
+      response.setHeader('Retry-After', String(exception.retryAfterSeconds));
+    }
 
     response.status(exception.statusCode).json({
       statusCode: exception.statusCode,

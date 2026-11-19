@@ -6,6 +6,9 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
+import { S3Service } from '../src/infrastructure/storage/s3.service';
+import { FakeS3Service } from './fake-s3.service';
+import { envs } from '../src/config/envs';
 
 // Datos exclusivos de esta suite (prefijo e2e-485, DNI 9999485x).
 const ADMIN = { identificador: 'admin', password: 'admin123' };
@@ -57,6 +60,10 @@ interface UsuarioHttp {
   estado: boolean;
   debe_cambiar_contrasena: boolean;
   roles: { id: number; nombre: string }[];
+  foto_url: string | null;
+  cargo: string | null;
+  area: string | null;
+  fecha_ingreso: string | null;
 }
 interface ListadoHttp {
   data: UsuarioHttp[];
@@ -64,6 +71,9 @@ interface ListadoHttp {
 }
 
 describe('Usuarios internos (e2e)', () => {
+  const s3 = new FakeS3Service();
+  const subirArchivo = jest.spyOn(s3, 'upload');
+  const borrarArchivo = jest.spyOn(s3, 'delete');
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
@@ -96,6 +106,8 @@ describe('Usuarios internos (e2e)', () => {
     username: LUCIA.username,
     contrasena: LUCIA.password,
     rol_ids: [rolIds.ventas],
+    cargo: 'Vendedora',
+    area: 'ventas',
     ...overrides,
   });
 
@@ -110,6 +122,9 @@ describe('Usuarios internos (e2e)', () => {
       prisma.usuarioRol.deleteMany({ where: { user_id: { in: userIds } } }),
       prisma.user.deleteMany({ where: { id: { in: userIds } } }),
       prisma.cliente.deleteMany({
+        where: { persona: { numero_documento: { in: DNIS } } },
+      }),
+      prisma.empleado.deleteMany({
         where: { persona: { numero_documento: { in: DNIS } } },
       }),
       prisma.persona.deleteMany({ where: { numero_documento: { in: DNIS } } }),
@@ -149,7 +164,10 @@ describe('Usuarios internos (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(S3Service)
+      .useValue(s3)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     configureApp(app);
@@ -213,11 +231,11 @@ describe('Usuarios internos (e2e)', () => {
       .expect(403);
   });
 
-  it('POST crea el usuario con persona, roles y contraseña hasheada', async () => {
+  it('POST crea persona, empleado y usuario y GET conserva los datos laborales', async () => {
     const response = await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
-      .send(nuevoUsuario())
+      .send(nuevoUsuario({ fecha_ingreso: '2026-11-01', area: 'gerencia' }))
       .expect(201);
 
     const body = response.body as UsuarioHttp;
@@ -229,6 +247,9 @@ describe('Usuarios internos (e2e)', () => {
       estado: true,
       debe_cambiar_contrasena: true,
       roles: [{ id: rolIds.ventas, nombre: 'ventas' }],
+      cargo: 'Vendedora',
+      area: 'gerencia',
+      fecha_ingreso: '2026-11-01T00:00:00.000Z',
     });
     expect(body).not.toHaveProperty('contrasena');
     expect(Object.keys(body).filter((key) => key.startsWith('token_'))).toEqual(
@@ -240,6 +261,45 @@ describe('Usuarios internos (e2e)', () => {
       select: { contrasena: true },
     });
     expect(user.contrasena).not.toBe(LUCIA.password);
+
+    const persona = await prisma.persona.findUniqueOrThrow({
+      where: { numero_documento: LUCIA.dni },
+      include: { empleado: true, user: true },
+    });
+    expect(persona.user?.id).toBe(luciaId);
+    expect(persona.empleado).toMatchObject({
+      persona_id: persona.id,
+      cargo: 'Vendedora',
+      area: 'gerencia',
+      fecha_ingreso: new Date('2026-11-01'),
+    });
+    expect(
+      await prisma.empleado.count({ where: { persona_id: persona.id } }),
+    ).toBe(1);
+    const detalle = await http()
+      .get(`/api/v1/usuarios/${luciaId}`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(detalle.body).toMatchObject({
+      cargo: body.cargo,
+      area: body.area,
+      fecha_ingreso: body.fecha_ingreso,
+    });
+  });
+
+  it('GET de un usuario antiguo sin empleado devuelve campos laborales null', async () => {
+    const antiguo = await prisma.user.findUniqueOrThrow({
+      where: { username: VENTAS.username },
+    });
+    const response = await http()
+      .get(`/api/v1/usuarios/${antiguo.id}`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(response.body).toMatchObject({
+      cargo: null,
+      area: null,
+      fecha_ingreso: null,
+    });
   });
 
   it('el usuario creado inicia sesión con el username y la contraseña elegidos', async () => {
@@ -288,15 +348,25 @@ describe('Usuarios internos (e2e)', () => {
     ['contraseña corta', { contrasena: 'corta' }],
     ['DNI mal formado', { numero_documento: '123' }],
     ['campo no permitido', { persona_id: 'x' }],
+    ['sin cargo', { cargo: undefined }],
+    ['cargo vacio', { cargo: '' }],
+    ['cargo demasiado largo', { cargo: 'x'.repeat(101) }],
+    ['area numerica', { area: 123 }],
+    ['area demasiado larga', { area: 'x'.repeat(101) }],
+    ['fecha de ingreso invalida', { fecha_ingreso: 'ayer' }],
   ])('POST con %s devuelve 400', async (_caso, overrides) => {
     await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
       .send(nuevoUsuario({ numero_documento: DNI_LIBRE, ...overrides }))
       .expect(400);
+    expect(
+      await prisma.persona.count({ where: { numero_documento: DNI_LIBRE } }),
+    ).toBe(0);
   });
 
   it('POST con estado=false crea un usuario que no puede iniciar sesión', async () => {
+    const diasEsperados = [new Date().toISOString().slice(0, 10)];
     const response = await http()
       .post('/api/v1/usuarios')
       .set(auth(adminToken))
@@ -308,10 +378,20 @@ describe('Usuarios internos (e2e)', () => {
           contrasena: INACTIVO.password,
           rol_ids: [rolIds.inventario],
           estado: false,
+          area: undefined,
         }),
       )
       .expect(201);
     inactivoId = (response.body as UsuarioHttp).id;
+    diasEsperados.push(new Date().toISOString().slice(0, 10));
+    const body = response.body as UsuarioHttp;
+    expect(body).toMatchObject({ cargo: 'Vendedora', area: null });
+    expect(diasEsperados).toContain(body.fecha_ingreso?.slice(0, 10));
+    const empleado = await prisma.empleado.findFirstOrThrow({
+      where: { persona: { user: { id: inactivoId } } },
+    });
+    expect(empleado.fecha_ingreso?.toISOString()).toBe(body.fecha_ingreso);
+    expect(empleado.area).toBeNull();
 
     await login(INACTIVO.username, INACTIVO.password).expect(401);
   });
@@ -559,6 +639,216 @@ describe('Usuarios internos (e2e)', () => {
     });
     expect(admin.estado).toBe(true);
     expect(admin.usuario_roles.map(({ rol }) => rol.nombre)).toContain('admin');
+  });
+
+  describe('foto del usuario interno', () => {
+    // PNG valido de un pixel, enviado como multipart a traves del controller.
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF9sAAAAASUVORK5CYII=',
+      'base64',
+    );
+    const urlAnterior = 'https://media.test/usuarios/anterior.png';
+    let usuarioId: string;
+    let personaId: string;
+    const urlFoto = (id = usuarioId) => `/api/v1/usuarios/${id}/foto`;
+    const fotoGuardada = async () =>
+      (await prisma.persona.findUniqueOrThrow({ where: { id: personaId } }))
+        .foto_url;
+    const subir = (buffer = png, id = usuarioId, contentType = 'image/png') =>
+      http().post(urlFoto(id)).set(auth(adminToken)).attach('foto', buffer, {
+        filename: 'foto.png',
+        contentType,
+      });
+
+    beforeAll(async () => {
+      const usuario = await prisma.user.findUniqueOrThrow({
+        where: { username: VENTAS.username },
+      });
+      usuarioId = usuario.id;
+      personaId = usuario.persona_id;
+    });
+
+    beforeEach(async () => {
+      subirArchivo.mockClear();
+      borrarArchivo.mockClear();
+      await prisma.persona.update({
+        where: { id: personaId },
+        data: { foto_url: urlAnterior },
+      });
+    });
+
+    it.each(['post', 'delete'] as const)(
+      '%s sin token devuelve 401',
+      async (metodo) => {
+        const req = http()[metodo](urlFoto());
+        await (
+          metodo === 'post' ? req.attach('foto', png, 'foto.png') : req
+        ).expect(401);
+        await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+        expect(subirArchivo).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['post', 'delete'] as const)(
+      '%s con rol ventas devuelve 403',
+      async (metodo) => {
+        const req = http()[metodo](urlFoto()).set(auth(ventasToken));
+        await (
+          metodo === 'post' ? req.attach('foto', png, 'foto.png') : req
+        ).expect(403);
+        await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+        expect(subirArchivo).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      { metodo: 'post' as const, caso: 'inexistente' },
+      { metodo: 'delete' as const, caso: 'inexistente' },
+      { metodo: 'post' as const, caso: 'cliente' },
+      { metodo: 'delete' as const, caso: 'cliente' },
+    ])('$metodo devuelve 404 para usuario $caso', async ({ metodo, caso }) => {
+      const id =
+        caso === 'cliente'
+          ? clienteUserId
+          : '1b4e28ba-2fa1-4d3b-a3f5-ef19b5a7633b';
+      const req = http()[metodo](urlFoto(id)).set(auth(adminToken));
+      await (
+        metodo === 'post' ? req.attach('foto', png, 'foto.png') : req
+      ).expect(404);
+      expect(subirArchivo).not.toHaveBeenCalled();
+      await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+    });
+
+    it.each(['post', 'delete'] as const)(
+      '%s valida el UUID: 400',
+      async (metodo) => {
+        const req = http()[metodo](urlFoto('no-es-uuid')).set(auth(adminToken));
+        await (
+          metodo === 'post' ? req.attach('foto', png, 'foto.png') : req
+        ).expect(400);
+        expect(subirArchivo).not.toHaveBeenCalled();
+      },
+    );
+
+    it('requiere el campo multipart foto: 400', async () => {
+      await http().post(urlFoto()).set(auth(adminToken)).expect(400);
+      expect(subirArchivo).not.toHaveBeenCalled();
+      await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+    });
+
+    it.each([
+      {
+        nombre: 'texto disfrazado de PNG',
+        buffer: Buffer.from('no es una imagen'),
+      },
+      { nombre: 'firma PNG truncada', buffer: png.subarray(0, 7) },
+      { nombre: 'WebP', buffer: Buffer.from('RIFF0000WEBPVP8 ') },
+    ])('rechaza $nombre aunque declare image/png: 400', async ({ buffer }) => {
+      await subir(buffer).expect(400);
+      expect(subirArchivo).not.toHaveBeenCalled();
+      await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+    });
+
+    it('rechaza mas de 1 MB con 400 y conserva la foto anterior', async () => {
+      await subir(Buffer.concat([png, Buffer.alloc(1024 * 1024)])).expect(400);
+      expect(subirArchivo).not.toHaveBeenCalled();
+      await expect(fotoGuardada()).resolves.toBe(urlAnterior);
+    });
+
+    it('sube PNG real con 201 y expone la URL en usuario, listado y auth/me', async () => {
+      const response = await subir().expect(201);
+      const { foto_url } = response.body as UsuarioHttp;
+      expect(foto_url).toMatch(/\/usuarios\/[0-9a-f-]{36}\.png$/);
+      const key = foto_url!.slice(foto_url!.lastIndexOf('/usuarios/') + 1);
+      expect(foto_url).toBe(`${envs.mediaBaseUrl}/${key}`);
+      expect(s3.objeto('media', key)).toEqual({
+        body: png,
+        contentType: 'image/png',
+        cacheControl: 'public, max-age=31536000, immutable',
+      });
+      await expect(fotoGuardada()).resolves.toBe(foto_url);
+      const detalle = await http()
+        .get(`/api/v1/usuarios/${usuarioId}`)
+        .set(auth(adminToken))
+        .expect(200);
+      expect((detalle.body as UsuarioHttp).foto_url).toBe(foto_url);
+      const listado = await http()
+        .get('/api/v1/usuarios')
+        .query({ search: VENTAS.username })
+        .set(auth(adminToken))
+        .expect(200);
+      expect((listado.body as ListadoHttp).data).toContainEqual(
+        expect.objectContaining({ id: usuarioId, foto_url }),
+      );
+      const me = await http()
+        .get('/api/v1/auth/me')
+        .set(auth(ventasToken))
+        .expect(200);
+      expect(me.body).toHaveProperty('foto_url', foto_url);
+    });
+
+    it('acepta exactamente 1 MB', async () => {
+      const buffer = Buffer.alloc(1024 * 1024);
+      png.copy(buffer);
+      await subir(buffer).expect(201);
+      expect(subirArchivo).toHaveBeenCalledTimes(1);
+    });
+
+    it('reemplaza la foto con key nueva y conserva el objeto anterior', async () => {
+      const primera = (await subir().expect(201)).body as UsuarioHttp;
+      const segunda = (
+        await subir(png, usuarioId, 'application/octet-stream').expect(201)
+      ).body as UsuarioHttp;
+      expect(segunda.foto_url).not.toBe(primera.foto_url);
+      for (const foto_url of [primera.foto_url!, segunda.foto_url!]) {
+        expect(
+          s3.existe(
+            'media',
+            foto_url.slice(foto_url.lastIndexOf('/usuarios/') + 1),
+          ),
+        ).toBe(true);
+      }
+      expect(borrarArchivo).not.toHaveBeenCalled();
+      await expect(fotoGuardada()).resolves.toBe(segunda.foto_url);
+    });
+
+    it('DELETE devuelve 200, limpia la URL y conserva el archivo en media', async () => {
+      const subida = (await subir().expect(201)).body as UsuarioHttp;
+      const response = await http()
+        .delete(urlFoto())
+        .set(auth(adminToken))
+        .expect(200);
+      expect((response.body as UsuarioHttp).foto_url).toBeNull();
+      await expect(fotoGuardada()).resolves.toBeNull();
+      const me = await http()
+        .get('/api/v1/auth/me')
+        .set(auth(ventasToken))
+        .expect(200);
+      expect(me.body).toHaveProperty('foto_url', null);
+      expect(
+        s3.existe(
+          'media',
+          subida.foto_url!.slice(
+            subida.foto_url!.lastIndexOf('/usuarios/') + 1,
+          ),
+        ),
+      ).toBe(true);
+      expect(borrarArchivo).not.toHaveBeenCalled();
+    });
+
+    it('permite quitar la foto cuando ya esta vacia', async () => {
+      await prisma.persona.update({
+        where: { id: personaId },
+        data: { foto_url: null },
+      });
+      const response = await http()
+        .delete(urlFoto())
+        .set(auth(adminToken))
+        .expect(200);
+      expect((response.body as UsuarioHttp).foto_url).toBeNull();
+      expect(subirArchivo).not.toHaveBeenCalled();
+      expect(borrarArchivo).not.toHaveBeenCalled();
+    });
   });
 
   it('404 para un id inexistente y 400 para un id que no es uuid', async () => {

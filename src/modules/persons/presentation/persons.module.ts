@@ -90,6 +90,8 @@ import { GetUsuarioInternoByIdUseCase } from '../application/use-cases/usuarios-
 import { UpdateUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/update-usuario-interno.use-case';
 import { ChangeUsuarioInternoStatusUseCase } from '../application/use-cases/usuarios-internos/change-usuario-interno-status.use-case';
 import { SetUsuarioInternoRolesUseCase } from '../application/use-cases/usuarios-internos/set-usuario-interno-roles.use-case';
+import { SubirFotoUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/subir-foto-usuario-interno.use-case';
+import { QuitarFotoUsuarioInternoUseCase } from '../application/use-cases/usuarios-internos/quitar-foto-usuario-interno.use-case';
 import { UsuarioInternoRepository } from '../domain/repositories/usuario-interno.repository';
 import { PrismaUsuarioInternoRepository } from '../infrastructure/repositories/prisma-usuario-interno.repository';
 import { UsuariosInternosController } from './controllers/usuarios-internos.controller';
@@ -100,6 +102,16 @@ import { MarcarNotificacionLeidaUseCase } from '../application/use-cases/notific
 import { ObtenerPreferenciasNotificacionUseCase } from '../application/use-cases/notificaciones/obtener-preferencias-notificacion.use-case';
 import { NotificacionRepository } from '../domain/repositories/notificacion.repository';
 import { PrismaNotificacionRepository } from '../infrastructure/repositories/prisma-notificacion.repository';
+import { ParametrosNotificacionesController } from './controllers/parametros-notificaciones.controller';
+import { ListCanalesNotificacionUseCase } from '../application/use-cases/parametros-notificaciones/list-canales-notificacion.use-case';
+import { UpdateCanalNotificacionUseCase } from '../application/use-cases/parametros-notificaciones/update-canal-notificacion.use-case';
+import { ListPlantillasNotificacionUseCase } from '../application/use-cases/parametros-notificaciones/list-plantillas-notificacion.use-case';
+import { GetPlantillaNotificacionByClaveUseCase } from '../application/use-cases/parametros-notificaciones/get-plantilla-notificacion-by-clave.use-case';
+import { UpdatePlantillaNotificacionUseCase } from '../application/use-cases/parametros-notificaciones/update-plantilla-notificacion.use-case';
+import { CanalNotificacionRepository } from '../domain/repositories/canal-notificacion.repository';
+import { PrismaCanalNotificacionRepository } from '../infrastructure/repositories/prisma-canal-notificacion.repository';
+import { PlantillaNotificacionRepository } from '../domain/repositories/plantilla-notificacion.repository';
+import { PrismaPlantillaNotificacionRepository } from '../infrastructure/repositories/prisma-plantilla-notificacion.repository';
 
 @Module({
   imports: [EmailModule],
@@ -116,6 +128,7 @@ import { PrismaNotificacionRepository } from '../infrastructure/repositories/pri
     UsuariosInternosController,
     PerfilController,
     PortalNotificacionesController,
+    ParametrosNotificacionesController,
   ],
   providers: [
     CreateRolUseCase,
@@ -199,11 +212,26 @@ import { PrismaNotificacionRepository } from '../infrastructure/repositories/pri
     UpdateUsuarioInternoUseCase,
     ChangeUsuarioInternoStatusUseCase,
     SetUsuarioInternoRolesUseCase,
+    SubirFotoUsuarioInternoUseCase,
+    QuitarFotoUsuarioInternoUseCase,
     ListNotificacionesUseCase,
     MarcarNotificacionLeidaUseCase,
     ObtenerPreferenciasNotificacionUseCase,
     ActualizarPreferenciasNotificacionUseCase,
     { provide: NotificacionRepository, useClass: PrismaNotificacionRepository },
+    ListCanalesNotificacionUseCase,
+    UpdateCanalNotificacionUseCase,
+    ListPlantillasNotificacionUseCase,
+    GetPlantillaNotificacionByClaveUseCase,
+    UpdatePlantillaNotificacionUseCase,
+    {
+      provide: CanalNotificacionRepository,
+      useClass: PrismaCanalNotificacionRepository,
+    },
+    {
+      provide: PlantillaNotificacionRepository,
+      useClass: PrismaPlantillaNotificacionRepository,
+    },
     {
       provide: UsuarioInternoRepository,
       useClass: PrismaUsuarioInternoRepository,

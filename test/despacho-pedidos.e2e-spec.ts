@@ -845,6 +845,70 @@ describe('Despacho de pedidos (e2e)', () => {
       ).resolves.toBe(0);
     });
 
+    it('el canal portal apagado omite el aviso y al reactivarlo vuelven las notificaciones', async () => {
+      const canal = await prisma.canalNotificacion.findUniqueOrThrow({
+        where: { tipo: 'portal' },
+      });
+      const original = await prisma.pedido.findUniqueOrThrow({
+        where: { id: pedidoPendienteId },
+      });
+      const sinAviso = await sembrarPedido(
+        original.cliente_id,
+        'pendiente_entrega',
+        presentacionConStockId,
+        1,
+      );
+      const conAviso = await sembrarPedido(
+        original.cliente_id,
+        'pendiente_entrega',
+        presentacionConStockId,
+        1,
+      );
+      const activar = (activo: boolean) =>
+        request(app.getHttpServer())
+          .patch('/api/v1/parametros-notificaciones/canales/portal')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ activo })
+          .expect(200);
+
+      try {
+        await activar(false);
+        await patch(sinAviso, 'en-camino').expect(200);
+        await expect(estadoDe(sinAviso)).resolves.toBe('en_camino');
+        await expect(
+          prisma.notificacion.count({
+            where: {
+              referencia_tipo: 'pedido',
+              referencia_id: String(sinAviso),
+            },
+          }),
+        ).resolves.toBe(0);
+        await expect(
+          prisma.notificacionUser.count({
+            where: {
+              notificacion: {
+                referencia_tipo: 'pedido',
+                referencia_id: String(sinAviso),
+              },
+            },
+          }),
+        ).resolves.toBe(0);
+
+        await activar(true);
+        await patch(conAviso, 'en-camino').expect(200);
+        const avisos = await prisma.notificacion.findMany({
+          where: { referencia_tipo: 'pedido', referencia_id: String(conAviso) },
+          include: { notificacion_users: true },
+        });
+        expect(avisos).toHaveLength(1);
+        expect(avisos[0].notificacion_users).toEqual([
+          expect.objectContaining({ user_id: clienteUserId }),
+        ]);
+      } finally {
+        await activar(canal.activo);
+      }
+    });
+
     it('no lo vuelve a sacar si ya está en camino: 409 y sin otra notificación', async () => {
       await patch(pedidoPendienteId, 'en-camino').expect(409);
 

@@ -1,13 +1,11 @@
 import {
   IsBoolean,
   IsDateString,
-  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { AreaEmpleado } from '@prisma/client';
 
 export class CreateEmpleadoDto {
   @IsUUID('4')
@@ -18,8 +16,12 @@ export class CreateEmpleadoDto {
   @MaxLength(100)
   cargo?: string;
 
-  @IsEnum(AreaEmpleado)
-  area!: AreaEmpleado;
+  // Texto libre: no necesariamente corresponde a un rol predefinido
+  // (ej. "gerencia" para la cuenta de un gerente).
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  area?: string;
 
   @IsOptional()
   @IsDateString()

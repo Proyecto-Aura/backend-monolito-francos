@@ -58,6 +58,17 @@ const contiene = (q: string) => ({
 export class PrismaReembolsoRepository implements ReembolsoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // FNC-43 (RF-A186): si el admin desactivó el canal "portal", no se crea
+  // la fila en notificacion_user.
+  private async canalPortalActivo(
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<boolean> {
+    const canal = await tx.canalNotificacion.findUnique({
+      where: { tipo: 'portal' },
+    });
+    return canal?.activo ?? true;
+  }
+
   async findMany(
     params: ListReembolsosParams,
   ): Promise<PaginatedResult<ReembolsoConPedido>> {
@@ -162,7 +173,7 @@ export class PrismaReembolsoRepository implements ReembolsoRepository {
       });
       const userId = pago.pedido.cliente.persona.user?.id;
 
-      if (userId) {
+      if (userId && (await this.canalPortalActivo(tx))) {
         await tx.notificacion.create({
           data: {
             ...notificacion,

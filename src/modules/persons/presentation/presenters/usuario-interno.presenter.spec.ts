@@ -1,4 +1,5 @@
 import { PersonaEntity } from '../../domain/entities/persona.entity';
+import { EmpleadoEntity } from '../../domain/entities/empleado.entity';
 import { UserEntity } from '../../domain/entities/user.entity';
 import { TipoDocumento } from '../../domain/enums/persons.enums';
 import { UsuarioInterno } from '../../domain/repositories/types/usuario-interno-repository.types';
@@ -37,6 +38,17 @@ describe('UsuarioInternoPresenter', () => {
       fecha,
       fecha,
     ),
+    empleado: new EmpleadoEntity(
+      'empleado-1',
+      'persona-1',
+      'Vendedora',
+      'gerencia',
+      fecha,
+      null,
+      true,
+      fecha,
+      fecha,
+    ),
     roles: [
       { rol_id: 1, nombre: 'admin' },
       { rol_id: 2, nombre: 'ventas' },
@@ -52,6 +64,10 @@ describe('UsuarioInternoPresenter', () => {
       apellido_materno: 'Huaman',
       tipo_documento: 'dni',
       numero_documento: '45678912',
+      foto_url: null,
+      cargo: 'Vendedora',
+      area: 'gerencia',
+      fecha_ingreso: fecha,
       email: 'lucia@francos.test',
       username: 'lquispe',
       estado: true,
@@ -63,6 +79,17 @@ describe('UsuarioInternoPresenter', () => {
       ],
       created_at: fecha,
       updated_at: fecha,
+    });
+  });
+
+  it('expone campos laborales null para usuarios antiguos sin empleado', () => {
+    expect(
+      UsuarioInternoPresenter.toHttp({ ...usuario, empleado: null }),
+    ).toMatchObject({
+      id: 'user-1',
+      cargo: null,
+      area: null,
+      fecha_ingreso: null,
     });
   });
 

@@ -1,6 +1,5 @@
 import { Empleado as PrismaEmpleado } from '@prisma/client';
 import { EmpleadoEntity } from '../../domain/entities/empleado.entity';
-import { AreaEmpleado } from '../../domain/enums/persons.enums';
 
 export class EmpleadoMapper {
   static toDomain(empleado: PrismaEmpleado): EmpleadoEntity {
@@ -8,7 +7,7 @@ export class EmpleadoMapper {
       empleado.id,
       empleado.persona_id,
       empleado.cargo,
-      empleado.area as AreaEmpleado | null,
+      empleado.area,
       empleado.fecha_ingreso,
       empleado.fecha_des_lab,
       empleado.estado,
