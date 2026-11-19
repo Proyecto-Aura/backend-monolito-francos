@@ -1,4 +1,4 @@
-import { AreaEmpleado, TipoDocumento } from '@prisma/client';
+import { TipoDocumento } from '@prisma/client';
 import { PersonaRepository } from '../../../persons/domain/repositories/persona.repository';
 import { RolRepository } from '../../../persons/domain/repositories/rol.repository';
 import { UserRepository } from '../../../persons/domain/repositories/user.repository';
@@ -36,13 +36,13 @@ describe('RegisterEmpleadoUseCase', () => {
     tipo_documento: TipoDocumento.dni,
     numero_documento: '12345678',
     cargo: 'Ventas',
-    area: AreaEmpleado.ventas,
+    area: 'ventas',
     email: 'ana@francos.test',
     rol_id: 2,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     existsByDocument.mockResolvedValue(false);
     existsByEmail.mockResolvedValue(false);
     existsByUsername.mockResolvedValue(false);
@@ -74,4 +74,18 @@ describe('RegisterEmpleadoUseCase', () => {
 
     await expect(useCase.execute(dto)).resolves.toBeDefined();
   });
+
+  it.each(['gerencia', 'Investigación y desarrollo', undefined])(
+    'registra el area libre %s, o null cuando se omite',
+    async (area) => {
+      await useCase.execute({ ...dto, area });
+      const [params] = registerEmpleado.mock.calls[0] as [
+        { empleado: { cargo: string; area: string | null } },
+      ];
+      expect(params.empleado).toMatchObject({
+        cargo: dto.cargo,
+        area: area ?? null,
+      });
+    },
+  );
 });

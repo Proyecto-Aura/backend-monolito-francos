@@ -9,7 +9,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { TipoDocumento, AreaEmpleado } from '@prisma/client';
+import { TipoDocumento } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumeroDocumentoValido } from '../../../../common/validators/numero-documento.validator';
 
@@ -60,16 +60,19 @@ export class RegisterEmpleadoDto {
   @IsString()
   direccion?: string;
 
-  // --- datos de Empleado (obligatorios: todo empleado debe tener cargo y área) ---
+  // --- datos de Empleado (cargo obligatorio; área es texto libre y opcional,
+  // ya que no necesariamente corresponde a un rol predefinido, ej. "gerencia") ---
   @ApiProperty({ example: 'Vendedor', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   cargo!: string;
 
-  @ApiProperty({ enum: AreaEmpleado, example: AreaEmpleado.ventas })
-  @IsEnum(AreaEmpleado)
-  area!: AreaEmpleado;
+  @ApiPropertyOptional({ example: 'ventas', maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  area?: string;
 
   @ApiPropertyOptional({
     example: '2026-08-19',

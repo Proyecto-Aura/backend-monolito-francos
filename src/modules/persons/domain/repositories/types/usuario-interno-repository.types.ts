@@ -1,3 +1,4 @@
+import { EmpleadoEntity } from '../../entities/empleado.entity';
 import { PersonaEntity } from '../../entities/persona.entity';
 import { UserEntity } from '../../entities/user.entity';
 import { TipoDocumento } from '../../enums/persons.enums';
@@ -9,10 +10,11 @@ export const ROL_ADMIN = 'admin';
 export const ROL_CLIENTE = 'cliente';
 
 // Modelo de lectura: un User con al menos un rol activo distinto de `cliente`,
-// junto con su persona y sus roles activos. No es una entidad de dominio.
+// junto con su persona, su empleado y sus roles activos. No es una entidad de dominio.
 export interface UsuarioInterno {
   user: UserEntity;
   persona: PersonaEntity;
+  empleado: EmpleadoEntity | null;
   roles: RolAsignado[];
 }
 
@@ -23,6 +25,11 @@ export interface CreateUsuarioInternoParams {
     apellido_materno: string;
     tipo_documento: TipoDocumento;
     numero_documento: string;
+  };
+  empleado: {
+    cargo: string;
+    area: string | null;
+    fecha_ingreso: Date;
   };
   user: {
     email: string;

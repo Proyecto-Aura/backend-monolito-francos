@@ -46,6 +46,7 @@ const usuarioInterno = (
     fecha,
     fecha,
   ),
+  empleado: null,
   roles,
 });
 
