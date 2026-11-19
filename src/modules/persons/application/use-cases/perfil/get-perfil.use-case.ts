@@ -7,12 +7,15 @@ import {
 import { ResourceNotFoundError } from '../../../domain/errors/persons-domain.errors';
 import { ClienteRepository } from '../../../domain/repositories/cliente.repository';
 import { PersonaRepository } from '../../../domain/repositories/persona.repository';
+import { UbicacionCliente } from '../../../domain/repositories/types/cliente-repository.types';
 import { UserRepository } from '../../../domain/repositories/user.repository';
 
 export interface PerfilCliente {
   user: UserEntity;
   persona: PersonaEntity;
   cliente: ClienteEntity | null;
+  // HU-B-018: departamento, provincia y distrito de su dirección (null si no la registró).
+  ubicacion: UbicacionCliente | null;
 }
 
 // HU-B-015: datos del perfil del cliente que inició sesión.
@@ -34,6 +37,9 @@ export class GetPerfilUseCase {
       throw new ResourceNotFoundError('Persona no encontrada');
     }
     const cliente = await this.clienteRepository.findByPersonaId(persona.id);
-    return { user, persona, cliente };
+    const conPersona = cliente
+      ? await this.clienteRepository.findByIdConPersona(cliente.id)
+      : null;
+    return { user, persona, cliente, ubicacion: conPersona?.ubicacion ?? null };
   }
 }

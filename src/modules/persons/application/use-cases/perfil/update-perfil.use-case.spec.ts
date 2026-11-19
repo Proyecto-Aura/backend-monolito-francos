@@ -1,8 +1,12 @@
 import { hashToken } from '../../../../auth/application/utils/token.util';
 import { EmailService } from '../../../../auth/domain/services/email.service';
-import { ResourceConflictError } from '../../../domain/errors/persons-domain.errors';
+import {
+  InvalidRequestError,
+  ResourceConflictError,
+} from '../../../domain/errors/persons-domain.errors';
 import { SolicitudCambioEmailEntity } from '../../../domain/entities/solicitud-cambio-email.entity';
 import { SolicitudCambioEmailRepository } from '../../../domain/repositories/solicitud-cambio-email.repository';
+import { UbigeoRepository } from '../../../domain/repositories/ubigeo.repository';
 import { UserRepository } from '../../../domain/repositories/user.repository';
 import { GetPerfilUseCase, PerfilCliente } from './get-perfil.use-case';
 import { UpdatePerfilUseCase } from './update-perfil.use-case';
@@ -24,6 +28,7 @@ describe('UpdatePerfilUseCase (HU-B-015 / HU-B-016)', () => {
   const deleteByUserId = jest.fn();
   const sendEmailChangeVerificationEmail = jest.fn();
   const getPerfil = { execute: jest.fn() };
+  const existsDistrito = jest.fn();
 
   const useCase = new UpdatePerfilUseCase(
     {
@@ -39,6 +44,7 @@ describe('UpdatePerfilUseCase (HU-B-015 / HU-B-016)', () => {
       sendEmailChangeVerificationEmail,
     } as unknown as jest.Mocked<EmailService>,
     getPerfil as unknown as GetPerfilUseCase,
+    { existsDistrito } as unknown as jest.Mocked<UbigeoRepository>,
   );
 
   const solicitud = (
@@ -58,6 +64,7 @@ describe('UpdatePerfilUseCase (HU-B-015 / HU-B-016)', () => {
     jest.clearAllMocks();
     getPerfil.execute.mockResolvedValue(perfil);
     existsByEmail.mockResolvedValue(false);
+    existsDistrito.mockResolvedValue(true);
     findByUserId.mockResolvedValue(null);
     sendEmailChangeVerificationEmail.mockResolvedValue(undefined);
   });
@@ -170,5 +177,42 @@ describe('UpdatePerfilUseCase (HU-B-015 / HU-B-016)', () => {
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(resultado.cambioEmailPendiente).toBe(true);
+  });
+
+  describe('dirección de entrega (HU-B-018 / RF-B46)', () => {
+    it('guarda la dirección y el distrito en la persona', async () => {
+      await useCase.execute('user-1', {
+        direccion: 'Av. Los Girasoles 123',
+        distrito_id: '150131',
+      });
+
+      expect(existsDistrito).toHaveBeenCalledWith('150131');
+      expect(updateWithPersona).toHaveBeenCalledWith(
+        'user-1',
+        {},
+        {
+          nombres: undefined,
+          telefono: undefined,
+          direccion: 'Av. Los Girasoles 123',
+          distrito_id: '150131',
+        },
+      );
+    });
+
+    it('solo la dirección, sin distrito, no consulta el catálogo', async () => {
+      await useCase.execute('user-1', { direccion: 'Jr. Lima 45' });
+
+      expect(existsDistrito).not.toHaveBeenCalled();
+      expect(updateWithPersona).toHaveBeenCalledTimes(1);
+    });
+
+    it('rechaza un distrito que no existe y no guarda nada', async () => {
+      existsDistrito.mockResolvedValue(false);
+
+      await expect(
+        useCase.execute('user-1', { distrito_id: '999999' }),
+      ).rejects.toBeInstanceOf(InvalidRequestError);
+      expect(updateWithPersona).not.toHaveBeenCalled();
+    });
   });
 });

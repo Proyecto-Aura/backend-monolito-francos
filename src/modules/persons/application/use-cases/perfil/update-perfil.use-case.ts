@@ -4,8 +4,12 @@ import {
   generateRandomToken,
   hashToken,
 } from '../../../../auth/application/utils/token.util';
-import { ResourceConflictError } from '../../../domain/errors/persons-domain.errors';
+import {
+  InvalidRequestError,
+  ResourceConflictError,
+} from '../../../domain/errors/persons-domain.errors';
 import { SolicitudCambioEmailRepository } from '../../../domain/repositories/solicitud-cambio-email.repository';
+import { UbigeoRepository } from '../../../domain/repositories/ubigeo.repository';
 import { UserRepository } from '../../../domain/repositories/user.repository';
 import { UpdatePerfilDto } from '../../dto/perfil-dtos/update-perfil.dto';
 import { GetPerfilUseCase, PerfilCliente } from './get-perfil.use-case';
@@ -22,6 +26,8 @@ export interface UpdatePerfilResult {
 // HU-B-015 (RF-B43): el cliente edita su nombre, email y teléfono.
 // HU-B-016 (RF-B44): si el email cambia, no se aplica: se envía un enlace de
 // verificación a la dirección nueva y el cambio se confirma en otro endpoint.
+// HU-B-018 (RF-B46): también edita su dirección de entrega predeterminada, que el
+// checkout propone en sus próximos pedidos.
 @Injectable()
 export class UpdatePerfilUseCase {
   private readonly logger = new Logger(UpdatePerfilUseCase.name);
@@ -31,6 +37,7 @@ export class UpdatePerfilUseCase {
     private readonly solicitudCambioEmailRepository: SolicitudCambioEmailRepository,
     private readonly emailService: EmailService,
     private readonly getPerfil: GetPerfilUseCase,
+    private readonly ubigeoRepository: UbigeoRepository,
   ) {}
 
   async execute(
@@ -38,6 +45,13 @@ export class UpdatePerfilUseCase {
     dto: UpdatePerfilDto,
   ): Promise<UpdatePerfilResult> {
     const { user, persona } = await this.getPerfil.execute(userId);
+
+    if (
+      dto.distrito_id !== undefined &&
+      !(await this.ubigeoRepository.existsDistrito(dto.distrito_id))
+    ) {
+      throw new InvalidRequestError('El distrito no existe');
+    }
 
     let pendiente = await this.solicitudCambioEmailRepository.findByUserId(
       user.id,
@@ -87,11 +101,21 @@ export class UpdatePerfilUseCase {
       }
     }
 
-    if (dto.nombres !== undefined || dto.telefono !== undefined) {
+    if (
+      dto.nombres !== undefined ||
+      dto.telefono !== undefined ||
+      dto.direccion !== undefined ||
+      dto.distrito_id !== undefined
+    ) {
       await this.userRepository.updateWithPersona(
         user.id,
         {},
-        { nombres: dto.nombres, telefono: dto.telefono },
+        {
+          nombres: dto.nombres,
+          telefono: dto.telefono,
+          direccion: dto.direccion,
+          distrito_id: dto.distrito_id,
+        },
       );
     }
 
