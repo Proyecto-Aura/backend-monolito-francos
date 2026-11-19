@@ -17,6 +17,8 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RegisterClienteDto } from '../../application/dto/register-cliente.dto';
 import { RegisterClienteByStaffDto } from '../../application/dto/register-cliente-by-staff.dto';
@@ -134,6 +136,11 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'Login exitoso' })
   @ApiForbiddenResponse({
     description: 'El correo del cliente aún no fue verificado',
+  })
+  @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
+  @ApiTooManyRequestsResponse({
+    description:
+      'Cuenta bloqueada temporalmente tras varios intentos fallidos (cabecera Retry-After en segundos)',
   })
   async iniciarSesion(
     @Body() dto: LoginDto,

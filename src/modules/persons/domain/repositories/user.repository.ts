@@ -19,6 +19,15 @@ export abstract class UserRepository {
   ): Promise<boolean>;
   abstract update(id: string, params: UpdateUserParams): Promise<UserEntity>;
   abstract setStatus(id: string, estado: boolean): Promise<UserEntity>;
+  // Suma un login fallido de forma atómica. Al llegar a `maxIntentos` bloquea la
+  // cuenta hasta `bloqueadoHasta` y reinicia el contador. Devuelve si quedó bloqueada.
+  abstract registrarLoginFallido(
+    id: string,
+    maxIntentos: number,
+    bloqueadoHasta: Date,
+  ): Promise<boolean>;
+  // Tras un login correcto: contador a cero y sin bloqueo.
+  abstract reiniciarLoginFallido(id: string): Promise<void>;
   // Actualiza el usuario y su persona en una sola transacción.
   abstract updateWithPersona(
     id: string,
