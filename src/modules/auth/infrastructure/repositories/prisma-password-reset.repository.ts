@@ -41,6 +41,9 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
           token_recuperacion: null,
           token_expiracion: null,
           debe_cambiar_contrasena: false,
+          // Demostró ser dueño del correo: se levanta el bloqueo por fuerza bruta.
+          intentos_fallidos: 0,
+          bloqueado_hasta: null,
         },
       });
 

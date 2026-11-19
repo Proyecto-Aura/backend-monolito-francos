@@ -14,5 +14,8 @@ export class UserEntity {
     public token_expiracion: Date | null,
     public readonly created_at: Date,
     public updated_at: Date,
+    // Al final y con valor por defecto para no romper a quien ya construye la entidad.
+    public intentos_fallidos: number = 0,
+    public bloqueado_hasta: Date | null = null,
   ) {}
 }

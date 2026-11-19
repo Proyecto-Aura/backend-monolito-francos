@@ -373,6 +373,9 @@ model User {
   notificar_pedido_en_camino          Boolean               @default(true)
   token_verificacion_email            String?               @db.VarChar(255)
   token_verificacion_email_expiracion DateTime?             @db.Timestamptz(6)
+  // Bloqueo temporal tras varios logins fallidos seguidos (protección contra fuerza bruta).
+  intentos_fallidos                   Int                   @default(0)
+  bloqueado_hasta                     DateTime?             @db.Timestamptz(6)
   created_at                          DateTime              @default(now()) @db.Timestamptz(6)
   updated_at                          DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
   persona                             Persona               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_persona")

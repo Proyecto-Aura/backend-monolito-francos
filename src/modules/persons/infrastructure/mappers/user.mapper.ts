@@ -18,6 +18,8 @@ export class UserMapper {
       user.token_expiracion,
       user.created_at,
       user.updated_at,
+      user.intentos_fallidos,
+      user.bloqueado_hasta,
     );
   }
 }
