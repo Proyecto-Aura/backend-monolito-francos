@@ -65,6 +65,19 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # Captura los correos que manda la API (SMTP en :1025, ver env SMTP_*) y
+      # los expone por HTTP en :8025 para qa/e2e/verificacion-correo.spec.ts.
+      # Ningún correo sale del runner. v1.33.0, fijada por digest.
+      mailpit:
+        image: axllent/mailpit@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+        env:
+          # La API se autentica con SMTP_USER/SMTP_PASS sin TLS: Mailpit acepta
+          # cualquier credencial porque es un buzón de pruebas.
+          MP_SMTP_AUTH_ACCEPT_ANY: 1
+          MP_SMTP_AUTH_ALLOW_INSECURE: 1
+        ports:
+          - 1025:1025
+          - 8025:8025
 
     steps:
       - name: Descargar backend
