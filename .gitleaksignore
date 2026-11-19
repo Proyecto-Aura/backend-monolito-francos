@@ -106,3 +106,8 @@ c2f5fc2c62c71e51b275a02dfb3801e0d6b28eec:test/iniciativa-ti.e2e-spec.ts:generic-
 # desechable que el propio test crea y borra; no es un secreto real. Mismo
 # caso que el de objetivo_estrategico de arriba.
 c70691437d44f6a6a9a94beec494386e1159d4ed:test/insumos-lotes-insumo.e2e-spec.ts:generic-api-key:64
+
+# Falso positivo: contrasena ficticia del cliente que crea la prueba de QA
+# de verificacion de correo (OFT0-588). El cliente vive en una base efimera
+# del runner; no es un secreto real. Solo esta huella, no el archivo entero.
+50855458336794364b7d865f500ede201711586b:qa/e2e/verificacion-correo.spec.ts:generic-api-key:25
