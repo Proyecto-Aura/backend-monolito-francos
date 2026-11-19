@@ -284,6 +284,13 @@ const RUTAS_BASE: RutaSeed[] = [
     icono: 'boxes',
     parent: 'configuracion',
   },
+  {
+    nombre: 'notificaciones',
+    etiqueta: 'Notificaciones',
+    icono: 'bell',
+    descripcion: 'Canales y plantillas de notificaciones',
+    parent: 'configuracion',
+  },
 ];
 
 export async function seedRutas(prisma: PrismaClient) {

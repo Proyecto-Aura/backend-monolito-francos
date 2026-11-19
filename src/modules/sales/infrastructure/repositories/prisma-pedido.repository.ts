@@ -71,6 +71,17 @@ type PedidoConDetalle = Prisma.PedidoGetPayload<{
 export class PrismaPedidoRepository implements PedidoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // FNC-43 (RF-A186): si el admin desactivó el canal "portal", no se crea
+  // la fila en notificacion_user (no hay nada que mostrar en el portal).
+  private async canalPortalActivo(
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<boolean> {
+    const canal = await tx.canalNotificacion.findUnique({
+      where: { tipo: 'portal' },
+    });
+    return canal?.activo ?? true;
+  }
+
   async findClienteParaPedido(
     clienteId: string,
   ): Promise<ClienteParaPedido | null> {
@@ -187,7 +198,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: pedidoDetalleInclude,
       });
 
-      if (params.notificacion && params.user_id) {
+      if (
+        params.notificacion &&
+        params.user_id &&
+        (await this.canalPortalActivo(tx))
+      ) {
         await tx.notificacion.create({
           data: {
             tipo: 'pago_confirmado',
@@ -208,6 +223,9 @@ export class PrismaPedidoRepository implements PedidoRepository {
     userId: string,
     notificacion: NotificacionPedidoParams,
   ): Promise<void> {
+    if (!(await this.canalPortalActivo())) {
+      return;
+    }
     await this.prisma.notificacion.create({
       data: {
         tipo: 'pago_rechazado',
@@ -450,7 +468,10 @@ export class PrismaPedidoRepository implements PedidoRepository {
 
       // Pedidos manuales: el cliente puede no tener cuenta en el portal.
       // HU-B-019: el cliente puede haber desactivado este aviso.
-      if (user?.notificar_pedido_en_camino) {
+      if (
+        user?.notificar_pedido_en_camino &&
+        (await this.canalPortalActivo(tx))
+      ) {
         await tx.notificacion.create({
           data: {
             tipo: 'pedido_en_camino',

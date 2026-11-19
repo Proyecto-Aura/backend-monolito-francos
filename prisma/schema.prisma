@@ -65,6 +65,42 @@ enum TipoEventoNotificacion {
   @@schema("persons")
 }
 
+enum CanalNotificacionTipo {
+  email
+  portal
+
+  @@map("canal_notificacion_tipo_enum")
+  @@schema("persons")
+}
+
+// Clave fija por la que el código busca cada plantilla (FNC-43). No es un
+// campo editable por el admin, solo el asunto y el cuerpo lo son.
+enum PlantillaNotificacionClave {
+  verificacion_email
+  bienvenida_cliente
+  credenciales_usuario_interno
+  recuperar_contrasena
+  comprobante_emitido
+  pago_confirmado
+  pago_rechazado
+  pedido_en_camino
+  reembolso_aprobado
+  reembolso_rechazado
+  reembolso_procesado
+
+  @@map("plantilla_notificacion_clave_enum")
+  @@schema("persons")
+}
+
+enum PlantillaNotificacionDestinatario {
+  cliente
+  usuario_interno
+  ambos
+
+  @@map("plantilla_notificacion_destinatario_enum")
+  @@schema("persons")
+}
+
 enum UnidadMedidaPresentacion {
   kg
   gr
@@ -471,6 +507,40 @@ model NotificacionUser {
 
   @@id([notificacion_id, user_id], map: "pk_notificacion_user")
   @@map("notificacion_user")
+  @@schema("persons")
+}
+
+// FNC-43: activa/desactiva cada canal de envío. Email y portal son las
+// únicas dos filas que existen (se siembran en la migración, no se crean
+// ni se borran desde la app).
+// remitente/servidor_smtp/seguridad del canal email NO viven acá: son la
+// config real de SMTP_* (.env en local, SES en AWS) y se calculan en vivo en
+// el presenter, para que nunca queden desactualizados frente a la real.
+model CanalNotificacion {
+  id            String                @id(map: "pk_canal_notificacion") @default(uuid()) @db.Uuid
+  tipo          CanalNotificacionTipo @unique(map: "uq_canal_notificacion_tipo")
+  activo        Boolean               @default(true)
+  destinatarios String?               @db.VarChar(200)
+  updated_at    DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("canal_notificacion")
+  @@schema("persons")
+}
+
+// FNC-43: asunto y cuerpo editables de cada plantilla de correo. Las 11
+// filas (una por `clave`) se siembran en la migración; el admin solo
+// edita `asunto` y `cuerpo`, nunca crea ni borra plantillas.
+model PlantillaNotificacion {
+  id           String                             @id(map: "pk_plantilla_notificacion") @default(uuid()) @db.Uuid
+  clave        PlantillaNotificacionClave         @unique(map: "uq_plantilla_notificacion_clave")
+  nombre       String                              @db.VarChar(100)
+  destinatario PlantillaNotificacionDestinatario
+  variables    Json
+  asunto       String                              @db.VarChar(200)
+  cuerpo       String                              @db.Text
+  updated_at   DateTime                            @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("plantilla_notificacion")
   @@schema("persons")
 }
 
