@@ -4,6 +4,7 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import {
   calcularDisponibilidad,
   formatCodigoPedido,
+  umbralMayoristaEfectivo,
 } from '../../application/utils/pedido.utils';
 import { PedidoEntity } from '../../domain/entities';
 import { EstadoPedido, EstadoReembolso, MetodoPago } from '../../domain/enums';
@@ -50,6 +51,7 @@ const pedidoDetalleInclude = {
       producto_presentacion: {
         select: {
           sku: true,
+          imagen_key: true,
           producto: { select: { nombre: true } },
           presentacion: { select: { cantidad: true, unidad_medida: true } },
           producto_terminado: { select: { id: true, stock_actual: true } },
@@ -68,6 +70,17 @@ type PedidoConDetalle = Prisma.PedidoGetPayload<{
 @Injectable()
 export class PrismaPedidoRepository implements PedidoRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  // FNC-43 (RF-A186): si el admin desactivó el canal "portal", no se crea
+  // la fila en notificacion_user (no hay nada que mostrar en el portal).
+  private async canalPortalActivo(
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<boolean> {
+    const canal = await tx.canalNotificacion.findUnique({
+      where: { tipo: 'portal' },
+    });
+    return canal?.activo ?? true;
+  }
 
   async findClienteParaPedido(
     clienteId: string,
@@ -128,6 +141,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
   async findPresentacionesParaPedido(
     ids: number[],
   ): Promise<PresentacionParaPedido[]> {
+    // HU-A-045: el umbral que rige (propio o global) se resuelve aquí, para que
+    // el cálculo de RN17 (`precioAplicado`) siga igual para todos los flujos.
+    const parametros = await this.prisma.parametroVenta.findUnique({
+      where: { id: 1 },
+    });
     const presentaciones = await this.prisma.productoPresentacion.findMany({
       where: { id: { in: ids } },
       select: {
@@ -147,7 +165,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
       producto_estado: presentacion.producto.estado,
       precio_unitario: presentacion.precio_unitario.toNumber(),
       precio_mayorista: presentacion.precio_mayorista?.toNumber() ?? null,
-      umbral_mayorista: presentacion.umbral_mayorista,
+      umbral_mayorista: umbralMayoristaEfectivo(
+        presentacion.precio_mayorista?.toNumber() ?? null,
+        presentacion.umbral_mayorista,
+        parametros,
+      ),
       visible_portal_b: presentacion.visible_portal_b,
     }));
   }
@@ -176,7 +198,11 @@ export class PrismaPedidoRepository implements PedidoRepository {
         include: pedidoDetalleInclude,
       });
 
-      if (params.notificacion && params.user_id) {
+      if (
+        params.notificacion &&
+        params.user_id &&
+        (await this.canalPortalActivo(tx))
+      ) {
         await tx.notificacion.create({
           data: {
             tipo: 'pago_confirmado',
@@ -197,6 +223,9 @@ export class PrismaPedidoRepository implements PedidoRepository {
     userId: string,
     notificacion: NotificacionPedidoParams,
   ): Promise<void> {
+    if (!(await this.canalPortalActivo())) {
+      return;
+    }
     await this.prisma.notificacion.create({
       data: {
         tipo: 'pago_rechazado',
@@ -292,15 +321,12 @@ export class PrismaPedidoRepository implements PedidoRepository {
         },
         skip: (params.page - 1) * params.limit,
         take: params.limit,
-        // Orden de llegada (RF-A030), salvo en la vista de inventario
-        // (conDisponibilidad=true): ahí primero por estado -- Postgres
-        // ordena un enum por el orden en que se declaró el tipo, así que
-        // `estado: 'asc'` ya deja en_espera_inventario, luego
-        // en_preparacion, luego pendiente_entrega (ver EstadoPedido en
+        // Primero por estado (RF-A030): Postgres ordena un enum por el orden
+        // en que se declaró el tipo, así que `estado: 'asc'` ya deja
+        // confirmado, en_espera_inventario, en_preparacion, pendiente_entrega,
+        // en_camino, entregado y cancelado al final (ver EstadoPedido en
         // schema.prisma) -- y dentro de cada estado, por orden de llegada.
-        orderBy: params.conDisponibilidad
-          ? [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }]
-          : [{ created_at: 'asc' }, { id: 'asc' }],
+        orderBy: [{ estado: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       }),
       this.prisma.pedido.count({ where }),
     ]);
@@ -442,7 +468,10 @@ export class PrismaPedidoRepository implements PedidoRepository {
 
       // Pedidos manuales: el cliente puede no tener cuenta en el portal.
       // HU-B-019: el cliente puede haber desactivado este aviso.
-      if (user?.notificar_pedido_en_camino) {
+      if (
+        user?.notificar_pedido_en_camino &&
+        (await this.canalPortalActivo(tx))
+      ) {
         await tx.notificacion.create({
           data: {
             tipo: 'pedido_en_camino',
@@ -529,6 +558,7 @@ export class PrismaPedidoRepository implements PedidoRepository {
       detalles: pedido.detalles.map((detalle) => ({
         detalle: PedidoMapper.detalleToDomain(detalle),
         sku: detalle.producto_presentacion.sku,
+        imagen_key: detalle.producto_presentacion.imagen_key,
         producto_nombre: detalle.producto_presentacion.producto.nombre,
         presentacion: `${detalle.producto_presentacion.presentacion.cantidad} ${detalle.producto_presentacion.presentacion.unidad_medida}`,
         stock_disponible:

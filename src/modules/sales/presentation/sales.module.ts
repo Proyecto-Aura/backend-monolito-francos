@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { InventoryModule } from '../../inventory/presentation/inventory.module';
 import { ActualizarEstadoPedidoUseCase } from '../application/use-cases/pedido/actualizar-estado-pedido.use-case';
+import { CancelarPedidoPortalUseCase } from '../application/use-cases/pedido/cancelar-pedido-portal.use-case';
 import { CompletarPedidoUseCase } from '../application/use-cases/pedido/completar-pedido.use-case';
 import { CreatePedidoUseCase } from '../application/use-cases/pedido/create-pedido.use-case';
 import { DespacharPedidoUseCase } from '../application/use-cases/pedido/despachar-pedido.use-case';
@@ -35,6 +36,11 @@ import { ListAlertasSeriesComprobanteUseCase } from '../application/use-cases/se
 import { ListSeriesComprobanteUseCase } from '../application/use-cases/series-comprobante/list-series-comprobante.use-case';
 import { ReservarCorrelativoUseCase } from '../application/use-cases/series-comprobante/reservar-correlativo.use-case';
 import { UpdateSerieComprobanteUseCase } from '../application/use-cases/series-comprobante/update-serie-comprobante.use-case';
+import { GetParametroVentaUseCase } from '../application/use-cases/parametro-venta/get-parametro-venta.use-case';
+import { UpdateParametroVentaUseCase } from '../application/use-cases/parametro-venta/update-parametro-venta.use-case';
+import { ParametroVentaRepository } from '../domain/repositories/parametro-venta.repository';
+import { PrismaParametroVentaRepository } from '../infrastructure/repositories/prisma-parametro-venta.repository';
+import { ParametrosVentaController } from './controllers/parametros-venta.controller';
 import { PedidoRepository } from '../domain/repositories/pedido.repository';
 import { ReembolsoRepository } from '../domain/repositories/reembolso.repository';
 import { SerieComprobanteRepository } from '../domain/repositories/serie-comprobante.repository';
@@ -65,6 +71,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
   controllers: [
     PedidosController,
     SeriesComprobanteController,
+    ParametrosVentaController,
     DespachoPedidosController,
     InventarioPedidosController,
     ReembolsosController,
@@ -81,6 +88,7 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     ResumirPedidoPortalUseCase,
     CrearPedidoPortalUseCase,
     GetPedidoPortalUseCase,
+    CancelarPedidoPortalUseCase,
     ListPedidosDespachoUseCase,
     GetPedidoDespachoUseCase,
     GetIndicadoresPedidosDespachoUseCase,
@@ -98,6 +106,12 @@ import { SalesDomainExceptionFilter } from './filters/sales-domain-exception.fil
     SolicitarReembolsoUseCase,
     ListMisReembolsosUseCase,
     GetMiReembolsoUseCase,
+    GetParametroVentaUseCase,
+    UpdateParametroVentaUseCase,
+    {
+      provide: ParametroVentaRepository,
+      useClass: PrismaParametroVentaRepository,
+    },
     { provide: PedidoRepository, useClass: PrismaPedidoRepository },
     { provide: ReembolsoRepository, useClass: PrismaReembolsoRepository },
     {

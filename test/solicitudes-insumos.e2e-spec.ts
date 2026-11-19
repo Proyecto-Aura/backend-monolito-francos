@@ -11,6 +11,8 @@ const MARCA = 'E2E264SIN';
 const URL = '/api/v1/produccion/solicitudes-insumos';
 const ROLES = [
   'admin',
+  'insumos',
+  // Solo productos terminados desde la separación de roles: sin acceso aquí.
   'inventario',
   'produccion',
   'ventas',
@@ -102,7 +104,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
   const cambiar = (
     id: number,
     estado: Estado,
-    rol: Rol = 'inventario',
+    rol: Rol = 'insumos',
     items?: { insumo_id: number; cantidad_entregada: number }[],
   ) =>
     http()
@@ -146,7 +148,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
   ) => {
     const res = await http()
       .post('/api/v1/lotes-insumo')
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .send({
         insumo_id,
         codigo_lote: codigo(),
@@ -290,7 +292,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       await http()[metodo](`${URL}${ruta}`).send(body).expect(401);
     },
   );
-  it.each(['ventas', 'cliente'] as const)(
+  it.each(['inventario', 'ventas', 'cliente'] as const)(
     '%s no accede a ninguna operación',
     async (rol) => {
       for (const { metodo, ruta, body } of endpoints)
@@ -302,7 +304,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     },
   );
 
-  it.each(['admin', 'inventario', 'produccion'] as const)(
+  it.each(['admin', 'insumos', 'produccion'] as const)(
     '%s consulta indicadores vacíos y la ruta no se confunde con :id',
     async (rol) => {
       const res = await http()
@@ -345,7 +347,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
         solicitado_por_nombre: `${MARCA} ${rol} Prueba`,
         fecha_limite: '2026-12-15T00:00:00.000Z',
       });
-      for (const lector of ['admin', 'inventario', 'produccion'] as const) {
+      for (const lector of ['admin', 'insumos', 'produccion'] as const) {
         const leida = await obtener(creada.id, lector);
         expect(leida.detalle).toHaveLength(2);
         expect(leida.detalle[0]).toMatchObject({
@@ -437,33 +439,33 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     expect((await obtener(creada.id)).detalle).toEqual(antes);
   });
 
-  it('inventario consulta pero no puede crear ni editar cabecera o líneas', async () => {
+  it('insumos consulta pero no puede crear ni editar cabecera o líneas', async () => {
     const solicitud = await crear();
-    const antes = await obtener(solicitud.id, 'inventario');
-    await listar({ search: solicitud.codigo_solicitud }, 'inventario');
+    const antes = await obtener(solicitud.id, 'insumos');
+    await listar({ search: solicitud.codigo_solicitud }, 'insumos');
     await http()
       .post(URL)
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .send({ codigo_solicitud: codigo(), detalle: [linea()] })
       .expect(403);
     await http()
       .patch(`${URL}/${solicitud.id}`)
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .send({ fecha_limite: '2026-12-01' })
       .expect(403);
     await http()
       .post(`${URL}/${solicitud.id}/detalle`)
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .send(linea(1))
       .expect(403);
     await http()
       .patch(`${URL}/detalle/${antes.detalle[0].id}`)
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .send({ cantidad_solicitada: 1 })
       .expect(403);
     await http()
       .delete(`${URL}/detalle/${antes.detalle[0].id}`)
-      .set(auth('inventario'))
+      .set(auth('insumos'))
       .expect(403);
     expect(await obtener(solicitud.id)).toEqual(antes);
   });
@@ -665,12 +667,8 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       });
     }
     expect(
-      (
-        await http()
-          .get(`${URL}/indicadores`)
-          .set(auth('inventario'))
-          .expect(200)
-      ).body,
+      (await http().get(`${URL}/indicadores`).set(auth('insumos')).expect(200))
+        .body,
     ).toEqual({
       pendiente: antes.pendiente + 1,
       en_proceso: antes.en_proceso + 1,
@@ -698,7 +696,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
   ];
   it.each(
     estados.flatMap((desde) => estados.map((hasta) => ({ desde, hasta }))),
-  )('inventario: $desde -> $hasta', async ({ desde, hasta }) => {
+  )('insumos: $desde -> $hasta', async ({ desde, hasta }) => {
     const solicitud = await fijarEstado(desde);
     const permitida =
       (desde === 'pendiente' && ['en_proceso', 'rechazado'].includes(hasta)) ||
@@ -713,7 +711,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       expect(await snapshot()).toEqual(antes);
   });
 
-  it.each(['admin', 'inventario', 'produccion'] as const)(
+  it.each(['admin', 'insumos', 'produccion'] as const)(
     '%s puede rechazar solo desde pendiente sin consumir stock',
     async (rol) => {
       const solicitud = await crear();
@@ -732,13 +730,13 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     ]);
     const antes = await snapshot([id]);
     await cambiar(solicitud.id, 'en_proceso', 'produccion').expect(409);
-    await cambiar(solicitud.id, 'en_proceso', 'inventario').expect(200);
+    await cambiar(solicitud.id, 'en_proceso', 'insumos').expect(200);
     await cambiar(solicitud.id, 'entregado', 'produccion').expect(409);
     expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
     expect(await snapshot([id])).toEqual(antes);
   });
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'insumos'] as const)(
     '%s entrega usando FEFO, descuenta cada insumo y conserva la trazabilidad al leer movimientos',
     async (rol) => {
       const a = await nuevoInsumo(`FEFO-A-${rol}`);
@@ -802,7 +800,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       ).toBe(5.75);
       const listado = await http()
         .get('/api/v1/movimientos-insumo')
-        .set(auth('inventario'))
+        .set(auth('insumos'))
         .query({ insumo_id: a, limit: 100 })
         .expect(200);
       const salidas = (
@@ -820,7 +818,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     },
   );
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'insumos'] as const)(
     '%s entrega cantidades explícitas distintas a las solicitadas aunque items venga en otro orden',
     async (rol) => {
       const a = await nuevoInsumo(`Explicito-A-${rol}`);
@@ -904,7 +902,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       const res = await cambiar(
         solicitud.id,
         'entregado',
-        'inventario',
+        'insumos',
         items,
       ).expect(400);
       expect(res.body).toMatchObject({
@@ -936,7 +934,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     ];
     await cambiar(solicitud.id, 'en_proceso').expect(200);
     const antes = await snapshot([a, b]);
-    await cambiar(solicitud.id, 'entregado', 'inventario', items).expect(409);
+    await cambiar(solicitud.id, 'entregado', 'insumos', items).expect(409);
     expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
     expect(await snapshot([a, b])).toEqual(antes);
     expect(
@@ -945,7 +943,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       }),
     ).toBe(0);
     await lote(b, 4);
-    await cambiar(solicitud.id, 'entregado', 'inventario', items).expect(200);
+    await cambiar(solicitud.id, 'entregado', 'insumos', items).expect(200);
     expect(
       (await snapshot([a, b])).insumos.map((i) => i.stock_actual.toNumber()),
     ).toEqual([8, 0]);
@@ -984,7 +982,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       const antes = await snapshot([insumos[0]]);
       await http()
         .patch(`${URL}/${solicitud.id}/estado`)
-        .set(auth('inventario'))
+        .set(auth('insumos'))
         .send({ estado: 'entregado', items })
         .expect(400);
       expect((await obtener(solicitud.id)).estado).toBe('en_proceso');
@@ -992,7 +990,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
     },
   );
 
-  it.each(['admin', 'inventario'] as const)(
+  it.each(['admin', 'insumos'] as const)(
     '%s recibe 409 por la segunda línea sin stock: ninguna salida ni estado parcial',
     async (rol) => {
       const a = await nuevoInsumo(`Atomico-A-${rol}`);
@@ -1114,7 +1112,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       const solicitud = await crear();
       await http()
         .patch(`${URL}/${solicitud.id}/estado`)
-        .set(auth('inventario'))
+        .set(auth('insumos'))
         .send(body)
         .expect(400);
       expect((await obtener(solicitud.id)).estado).toBe('pendiente');
@@ -1174,7 +1172,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
         }));
         const solicitud = await crear('produccion', detalle);
 
-        const respuesta = await obtener(solicitud.id, 'inventario');
+        const respuesta = await obtener(solicitud.id, 'insumos');
 
         expect(respuesta.disponibilidad).toBe(esperado);
         expect(respuesta.detalle).toHaveLength(2);
@@ -1190,7 +1188,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
         const query = { search: solicitud.codigo_solicitud };
         const conDisponibilidad = await listar(
           { ...query, conDisponibilidad: 'true' },
-          'inventario',
+          'insumos',
         );
         expect(conDisponibilidad.meta.total).toBe(1);
         expect(conDisponibilidad.data).toHaveLength(1);
@@ -1206,7 +1204,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
           query,
           { ...query, conDisponibilidad: 'false' },
         ]) {
-          const sinDisponibilidad = await listar(filtro, 'inventario');
+          const sinDisponibilidad = await listar(filtro, 'insumos');
           expect(sinDisponibilidad.meta).toEqual(conDisponibilidad.meta);
           expect(sinDisponibilidad.data).toHaveLength(1);
           expect(sinDisponibilidad.data[0]).toEqual(
@@ -1224,7 +1222,7 @@ describe('Solicitudes de insumos OFT0-264 (e2e)', () => {
       async (conDisponibilidad) => {
         await http()
           .get(URL)
-          .set(auth('inventario'))
+          .set(auth('insumos'))
           .query({ conDisponibilidad })
           .expect(400);
       },

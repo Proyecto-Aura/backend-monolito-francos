@@ -23,8 +23,7 @@ import { PasswordResetRepository } from '../domain/repositories/password-reset.r
 import { PrismaPasswordResetRepository } from '../infrastructure/repositories/prisma-password-reset.repository';
 import { EmailVerificationRepository } from '../domain/repositories/email-verification.repository';
 import { PrismaEmailVerificationRepository } from '../infrastructure/repositories/prisma-email-verification.repository';
-import { EmailService } from '../domain/services/email.service';
-import { NodemailerEmailService } from '../infrastructure/services/nodemailer-email.service';
+import { EmailModule } from './email.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -37,6 +36,7 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
 @Module({
   imports: [
     PersonsModule,
+    EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: envs.jwtSecret,
@@ -84,7 +84,6 @@ import { AuthDomainExceptionFilter } from './filters/auth-domain-exception.filte
       provide: EmailVerificationRepository,
       useClass: PrismaEmailVerificationRepository,
     },
-    { provide: EmailService, useClass: NodemailerEmailService },
     {
       provide: APP_FILTER,
       useClass: AuthDomainExceptionFilter,

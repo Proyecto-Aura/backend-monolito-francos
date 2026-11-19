@@ -8,6 +8,7 @@ import {
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 import { PedidoDetalle } from '../../../domain/repositories/types/pedido-repository.types';
 import { PasarelaPagoService } from '../../../domain/services/pasarela-pago.service';
+import { ParametroVentaRepository } from '../../../domain/repositories/parametro-venta.repository';
 import { CrearPedidoPortalDto } from '../../dto/pedido-dtos/crear-pedido-portal.dto';
 import { GenerarComprobanteUseCase } from '../comprobante/generar-comprobante.use-case';
 import { ResumirPedidoPortalUseCase } from './resumir-pedido-portal.use-case';
@@ -23,6 +24,7 @@ export class CrearPedidoPortalUseCase {
     private readonly pasarelaPago: PasarelaPagoService,
     private readonly resumirPedidoPortal: ResumirPedidoPortalUseCase,
     private readonly generarComprobante: GenerarComprobanteUseCase,
+    private readonly parametroVentaRepository: ParametroVentaRepository,
   ) {}
 
   // HU-B-008 (RF-B24 a RF-B28). El total se recalcula en el servidor con el mismo
@@ -34,6 +36,15 @@ export class CrearPedidoPortalUseCase {
     dto: CrearPedidoPortalDto,
     userId: string,
   ): Promise<PedidoDetalle> {
+    // HU-A-045 (RF-A195): si el admin apagó el pago con tarjeta no se cobra nada.
+    const parametros = await this.parametroVentaRepository.get();
+
+    if (!parametros.culqi_activo) {
+      throw new ResourceConflictError(
+        'El pago con tarjeta no está disponible por el momento',
+      );
+    }
+
     const resumen = await this.resumirPedidoPortal.execute(dto, userId);
     const cliente =
       await this.pedidoRepository.findClienteParaResumenPorUser(userId);

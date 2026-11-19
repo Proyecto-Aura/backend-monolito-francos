@@ -73,6 +73,42 @@ export class PrismaUserRepository implements UserRepository {
     });
     return UserMapper.toDomain(user);
   }
+  async registrarLoginFallido(
+    id: string,
+    maxIntentos: number,
+    bloqueadoHasta: Date,
+  ): Promise<boolean> {
+    // `increment` lo resuelve la base en un solo UPDATE: logins fallidos en
+    // paralelo (p. ej. desde muchas IPs) no pueden pisarse el conteo.
+    return this.prisma.$transaction(async (tx) => {
+      const { intentos_fallidos } = await tx.user.update({
+        where: { id },
+        data: { intentos_fallidos: { increment: 1 } },
+        select: { intentos_fallidos: true },
+      });
+      if (intentos_fallidos < maxIntentos) {
+        return false;
+      }
+      await tx.user.update({
+        where: { id },
+        data: { intentos_fallidos: 0, bloqueado_hasta: bloqueadoHasta },
+      });
+      return true;
+    });
+  }
+  async reiniciarLoginFallido(id: string): Promise<void> {
+    // Solo escribe si hay algo que limpiar: un login normal no toca la fila.
+    await this.prisma.user.updateMany({
+      where: {
+        id,
+        OR: [
+          { intentos_fallidos: { gt: 0 } },
+          { bloqueado_hasta: { not: null } },
+        ],
+      },
+      data: { intentos_fallidos: 0, bloqueado_hasta: null },
+    });
+  }
   async updateWithPersona(
     id: string,
     user: UpdateUserParams,

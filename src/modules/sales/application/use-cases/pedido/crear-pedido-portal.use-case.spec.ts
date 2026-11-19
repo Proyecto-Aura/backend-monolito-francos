@@ -9,6 +9,7 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from '../../../domain/errors/sales-domain.errors';
+import { ParametroVentaRepository } from '../../../domain/repositories/parametro-venta.repository';
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 import { ClienteParaResumen } from '../../../domain/repositories/types/pedido-repository.types';
 import { CrearPedidoPortalDto } from '../../dto/pedido-dtos/crear-pedido-portal.dto';
@@ -26,6 +27,7 @@ describe('CrearPedidoPortalUseCase', () => {
   const cobrar = jest.fn();
   const resumir = jest.fn();
   const generarComprobante = jest.fn();
+  const getParametros = jest.fn();
 
   const useCase = new CrearPedidoPortalUseCase(
     {
@@ -36,6 +38,7 @@ describe('CrearPedidoPortalUseCase', () => {
     { cobrar },
     { execute: resumir } as unknown as ResumirPedidoPortalUseCase,
     { execute: generarComprobante } as unknown as GenerarComprobanteUseCase,
+    { get: getParametros } as unknown as ParametroVentaRepository,
   );
 
   const USER_ID = 'b6a1f1d2-1111-4c1a-9a0e-3b5b2f6f0001';
@@ -112,6 +115,7 @@ describe('CrearPedidoPortalUseCase', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    getParametros.mockResolvedValue({ culqi_activo: true });
     resumir.mockResolvedValue(resumen());
     findClienteParaResumenPorUser.mockResolvedValue(cliente());
     cobrar.mockResolvedValue({
@@ -121,6 +125,18 @@ describe('CrearPedidoPortalUseCase', () => {
     });
     create.mockResolvedValue({ pedido: { id: 1, codigo: 'PED-000001' } });
     generarComprobante.mockResolvedValue(comprobanteEmitido);
+  });
+
+  it('lanza 409 sin cobrar si el administrador apagó el pago con tarjeta (RF-A195)', async () => {
+    getParametros.mockResolvedValue({ culqi_activo: false });
+
+    await expect(useCase.execute(dto(), USER_ID)).rejects.toThrow(
+      new ResourceConflictError(
+        'El pago con tarjeta no está disponible por el momento',
+      ),
+    );
+    expect(cobrar).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('cobra el total que calcula el servidor con el correo del cliente', async () => {

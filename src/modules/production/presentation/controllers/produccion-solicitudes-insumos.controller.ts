@@ -40,7 +40,7 @@ import { SolicitudInsumosPresenter } from '../presenters/solicitud-insumos.prese
 
 // Solicitud de insumos (OFT0-264): espejo de solicitud de producción con los
 // roles invertidos. Producción la crea y edita (puede rechazarla mientras
-// está pendiente); inventario la avanza a en_proceso/entregado, porque es
+// está pendiente); insumos la avanza a en_proceso/entregado, porque es
 // quien maneja insumos y lotes. Al entregar, se descuenta stock de verdad
 // (salida FEFO por cada línea, ver CambiarEstadoSolicitudInsumosUseCase).
 // Admin tiene acceso total: puede hacer también lo que hace cada rol.
@@ -75,7 +75,7 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get()
   @ApiOperation({
     summary: 'Consultar solicitudes de insumos',
@@ -89,7 +89,7 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get('indicadores')
   @ApiOperation({ summary: 'Conteo de solicitudes de insumos por estado' })
   @ApiOkResponse({
@@ -99,7 +99,7 @@ export class ProduccionSolicitudesInsumosController {
     return this.getIndicadoresSolicitudInsumos.execute();
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una solicitud de insumos con su detalle' })
   @ApiParam({ name: 'id', type: Number })
@@ -125,13 +125,13 @@ export class ProduccionSolicitudesInsumosController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Patch(':id/estado')
   @ApiOperation({
     summary: 'Iniciar, entregar o rechazar una solicitud de insumos',
     description:
       'pendiente → en_proceso → entregado. rechazado solo se alcanza desde pendiente. ' +
-      'producción solo puede rechazar; inventario (o admin) avanza. Al entregar se ' +
+      'producción solo puede rechazar; insumos (o admin) avanza. Al entregar se ' +
       'registra automáticamente la salida FEFO de cada insumo del detalle, usando ' +
       'cantidad_solicitada salvo que se envíe "items" con cantidad_entregada por línea ' +
       '(debe cubrir exactamente las líneas del detalle).',

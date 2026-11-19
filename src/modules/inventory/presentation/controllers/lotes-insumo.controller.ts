@@ -30,7 +30,7 @@ import { LoteInsumoPresenter } from '../presenters/lote-insumo.presenter';
 // de baja lógicamente (DELETE) o se reactiva (PATCH :id/activate).
 @ApiTags('Lotes de insumo')
 @ApiBearerAuth()
-@Roles('admin', 'inventario')
+@Roles('admin', 'insumos')
 @Controller('lotes-insumo')
 export class LotesInsumoController {
   constructor(
@@ -47,7 +47,7 @@ export class LotesInsumoController {
     return LoteInsumoPresenter.toHttp(await this.createLoteInsumo.execute(dto));
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get()
   @ApiOperation({ summary: 'Listar lotes de insumo' })
   @ApiOkResponse({ description: 'Lista paginada de lotes' })
@@ -57,7 +57,7 @@ export class LotesInsumoController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un lote de insumo por ID' })
   @ApiParam({ name: 'id', type: Number })

@@ -34,3 +34,16 @@ export class InvalidVerificationTokenError extends AuthDomainError {
 export class EmailNotVerifiedError extends AuthDomainError {
   readonly statusCode = 403;
 }
+
+// Cuenta bloqueada temporalmente tras varios logins fallidos seguidos.
+export class AccountLockedError extends AuthDomainError {
+  readonly statusCode = 429;
+
+  constructor(
+    message: string,
+    // Segundos hasta el desbloqueo; el filtro lo envía como cabecera Retry-After.
+    readonly retryAfterSeconds: number,
+  ) {
+    super(message);
+  }
+}

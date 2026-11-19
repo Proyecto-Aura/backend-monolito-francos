@@ -8,6 +8,8 @@ interface EnvVars {
   JWT_ACCESS_EXPIRES_IN: string;
   REFRESH_TOKEN_EXPIRES_IN_DAYS: number;
   REQUIRE_VERIFIED_EMAIL: boolean;
+  LOGIN_MAX_INTENTOS: number;
+  LOGIN_BLOQUEO_MINUTOS: number;
   FRONTEND_STORE_URL: string;
   FRONTEND_PORTAL_URL: string;
   SMTP_HOST: string;
@@ -39,6 +41,9 @@ const envSchema = joi
     JWT_ACCESS_EXPIRES_IN: joi.string().default('40m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: joi.number().default(7),
     REQUIRE_VERIFIED_EMAIL: joi.boolean().default(true),
+    // Bloqueo de cuenta contra fuerza bruta (OWASP/NIST: 5-10 intentos, 5-30 min).
+    LOGIN_MAX_INTENTOS: joi.number().integer().min(1).default(5),
+    LOGIN_BLOQUEO_MINUTOS: joi.number().integer().min(1).default(15),
     FRONTEND_STORE_URL: joi.string().required(),
     FRONTEND_PORTAL_URL: joi.string().required(),
     SMTP_HOST: joi.string().required(),
@@ -106,6 +111,8 @@ export const envs = {
   jwtAccessExpiresIn: envVars.JWT_ACCESS_EXPIRES_IN,
   refreshTokenExpiresInDays: envVars.REFRESH_TOKEN_EXPIRES_IN_DAYS,
   requireVerifiedEmail: envVars.REQUIRE_VERIFIED_EMAIL,
+  loginMaxIntentos: envVars.LOGIN_MAX_INTENTOS,
+  loginBloqueoMinutos: envVars.LOGIN_BLOQUEO_MINUTOS,
   frontendStoreUrl: envVars.FRONTEND_STORE_URL,
   frontendPortalUrl: envVars.FRONTEND_PORTAL_URL,
   smtpHost: envVars.SMTP_HOST,

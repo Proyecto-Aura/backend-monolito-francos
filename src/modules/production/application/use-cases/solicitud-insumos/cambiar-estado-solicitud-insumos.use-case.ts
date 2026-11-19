@@ -12,7 +12,7 @@ import { SolicitudInsumosRepository } from '../../../domain/repositories/solicit
 import { ItemCantidadEntregadaInsumoDto } from '../../dto/solicitud-insumos-dtos/cambiar-estado-solicitud-insumos.dto';
 
 // pendiente -> en_proceso -> entregado. rechazado solo se alcanza desde
-// pendiente (ni produccion ni inventario rechazan algo ya en marcha).
+// pendiente (ni produccion ni insumos rechazan algo ya en marcha).
 const TRANSICIONES_VALIDAS: Record<
   EstadoSolicitudInsumos,
   EstadoSolicitudInsumos[]
@@ -54,13 +54,12 @@ export class CambiarEstadoSolicitudInsumosUseCase {
 
     // Espejo de solicitud de producción con los roles invertidos: producción
     // solo puede "cancelar" (rechazar) mientras está pendiente; avanzar a
-    // en_proceso/entregado es cosa de inventario. Admin tiene acceso total,
-    // así que puede hacer lo mismo que inventario además de rechazar.
+    // en_proceso/entregado es cosa de insumos. Admin tiene acceso total,
+    // así que puede hacer lo mismo que insumos además de rechazar.
     const esAdmin = roles.includes('admin');
-    const esInventario = roles.includes('inventario');
-    const puedeAvanzar = esInventario || esAdmin;
-    const puedeRechazar =
-      esAdmin || roles.includes('produccion') || esInventario;
+    const esInsumos = roles.includes('insumos');
+    const puedeAvanzar = esInsumos || esAdmin;
+    const puedeRechazar = esAdmin || roles.includes('produccion') || esInsumos;
 
     if (nuevoEstado === EstadoSolicitudInsumos.RECHAZADO) {
       if (!puedeRechazar) {
@@ -70,7 +69,7 @@ export class CambiarEstadoSolicitudInsumosUseCase {
       }
     } else if (!puedeAvanzar) {
       throw new ResourceConflictError(
-        'Solo inventario (o un admin) puede mover la solicitud a este estado',
+        'Solo insumos (o un admin) puede mover la solicitud a este estado',
       );
     }
 

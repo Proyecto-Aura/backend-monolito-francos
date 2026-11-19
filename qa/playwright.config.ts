@@ -33,7 +33,7 @@ export default defineConfig({
   projects: [
     {
       name: 'tienda',
-      testMatch: 'humo.spec.ts',
+      testMatch: ['humo.spec.ts', 'verificacion-correo.spec.ts'],
       use: { ...devices['Desktop Chrome'], baseURL: TIENDA_URL },
     },
     {

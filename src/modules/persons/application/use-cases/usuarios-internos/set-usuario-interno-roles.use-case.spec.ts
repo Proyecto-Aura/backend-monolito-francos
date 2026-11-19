@@ -48,6 +48,7 @@ const usuarioInterno = (
     fecha,
     fecha,
   ),
+  empleado: null,
   roles,
 });
 
@@ -60,6 +61,7 @@ describe('SetUsuarioInternoRolesUseCase', () => {
     3: new RolEntity(3, 'cliente', null, true, fecha, fecha),
     4: new RolEntity(4, 'produccion', null, false, fecha, fecha),
     5: new RolEntity(5, 'inventario', null, true, fecha, fecha),
+    6: new RolEntity(6, 'insumos', null, true, fecha, fecha),
   };
   const repository = {
     findById: jest.fn(),
@@ -90,9 +92,9 @@ describe('SetUsuarioInternoRolesUseCase', () => {
   it('reemplaza los roles de otro usuario', async () => {
     repository.findById.mockResolvedValue(usuarioInterno('user-1', [VENTAS]));
 
-    await useCase.execute('user-1', { rol_ids: [5, 2] }, 'admin-1');
+    await useCase.execute('user-1', { rol_ids: [6, 5, 2] }, 'admin-1');
 
-    expect(repository.replaceRoles).toHaveBeenCalledWith('user-1', [5, 2]);
+    expect(repository.replaceRoles).toHaveBeenCalledWith('user-1', [6, 5, 2]);
   });
 
   it.each([

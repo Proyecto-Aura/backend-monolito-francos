@@ -13,6 +13,7 @@ import { seedProductoTerminado } from './seeds/producto-terminado.seed';
 import { seedInsumos } from './seeds/insumo.seed';
 import { seedRutas } from './seeds/rutas.seed';
 import { seedAccesos } from './seeds/accesos.seed';
+import { seedUsuarioPruebaInsumos } from './seeds/usuario-prueba-insumos.seed';
 import { seedUsuarioPruebaInventario } from './seeds/usuario-prueba-inventario.seed';
 import { seedUsuarioPruebaCliente } from './seeds/usuario-prueba-cliente.seed';
 import { seedUnidadMedidaKpi } from './seeds/unidad-medida-kpi.seed';
@@ -42,6 +43,7 @@ async function main() {
   await seedInsumos(prisma);
   await seedRutas(prisma);
   await seedAccesos(prisma);
+  await seedUsuarioPruebaInsumos(prisma);
   await seedUsuarioPruebaInventario(prisma);
   await seedUsuarioPruebaCliente(prisma);
   // Solo con SEED_DEMO=true (desarrollo).

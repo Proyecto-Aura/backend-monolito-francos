@@ -17,6 +17,8 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RegisterClienteDto } from '../../application/dto/register-cliente.dto';
 import { RegisterClienteByStaffDto } from '../../application/dto/register-cliente-by-staff.dto';
@@ -45,8 +47,17 @@ import { Public } from '../decorators/public.decorator';
 import { Authenticated } from '../decorators/authenticated.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../strategies/jwt.strategy';
+import { envs } from '../../../../config/envs';
 
-const REFRESH_TOKEN_COOKIE = 'refresh_token';
+// Portal cliente y portal empresa comparten este mismo backend: si usaran el
+// mismo nombre de cookie, loguearse en uno pisaría la sesión del otro en el
+// mismo navegador. Se elige el nombre según el Origin de la request (ya se
+// usa igual para CORS). `REFRESH_TOKEN_COOKIE_LEGACY` es el nombre de antes
+// de este cambio: ya no se escribe, pero se sigue leyendo para no cerrarle
+// la sesión a quien la tenía de un login previo al deploy.
+const REFRESH_TOKEN_COOKIE_CLIENTE = 'refresh_token_cliente';
+const REFRESH_TOKEN_COOKIE_EMPRESA = 'refresh_token_empresa';
+const REFRESH_TOKEN_COOKIE_LEGACY = 'refresh_token';
 const FORGOT_PASSWORD_MESSAGE =
   'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña';
 const RESET_PASSWORD_MESSAGE = 'Contraseña restablecida correctamente';
@@ -126,13 +137,20 @@ export class AuthController {
   @ApiForbiddenResponse({
     description: 'El correo del cliente aún no fue verificado',
   })
+  @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
+  @ApiTooManyRequestsResponse({
+    description:
+      'Cuenta bloqueada temporalmente tras varios intentos fallidos (cabecera Retry-After en segundos)',
+  })
   async iniciarSesion(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const resultado = await this.login.execute(dto);
     this.setRefreshTokenCookie(
       res,
+      this.cookieNameParaOrigen(req.headers.origin),
       resultado.refreshTokenPlano,
       resultado.refreshTokenExpiresAt,
     );
@@ -164,7 +182,16 @@ export class AuthController {
     if (refreshTokenPlano) {
       await this.logoutUseCase.execute(refreshTokenPlano);
     }
-    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/api/v1/auth' });
+    // Se limpian los 3 nombres posibles (no solo el que tocaría por Origin):
+    // es inofensivo borrar una cookie que no existe, y así no queda ninguna
+    // colgada si el cliente la trae de antes de este cambio.
+    for (const nombre of [
+      REFRESH_TOKEN_COOKIE_CLIENTE,
+      REFRESH_TOKEN_COOKIE_EMPRESA,
+      REFRESH_TOKEN_COOKIE_LEGACY,
+    ]) {
+      res.clearCookie(nombre, { path: '/api/v1/auth' });
+    }
     return { message: 'Sesión cerrada' };
   }
 
@@ -249,12 +276,27 @@ export class AuthController {
     return { message: RESEND_VERIFICATION_MESSAGE };
   }
 
+  // Portal B (tienda) y Portal A (empresa) son dos Origins distintos
+  // configurados en CORS (envs.frontendStoreUrl / envs.frontendPortalUrl).
+  // Un Origin que no coincide con ninguno (Swagger, Postman, apps aún sin
+  // actualizar) cae al nombre histórico.
+  private cookieNameParaOrigen(origin: string | undefined): string {
+    if (origin === envs.frontendStoreUrl) {
+      return REFRESH_TOKEN_COOKIE_CLIENTE;
+    }
+    if (origin === envs.frontendPortalUrl) {
+      return REFRESH_TOKEN_COOKIE_EMPRESA;
+    }
+    return REFRESH_TOKEN_COOKIE_LEGACY;
+  }
+
   private setRefreshTokenCookie(
     res: Response,
+    nombreCookie: string,
     refreshTokenPlano: string,
     expiresAt: Date,
   ) {
-    res.cookie(REFRESH_TOKEN_COOKIE, refreshTokenPlano, {
+    res.cookie(nombreCookie, refreshTokenPlano, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -269,9 +311,10 @@ export class AuthController {
       return undefined;
     }
 
-    const refreshToken = (cookies as Record<string, unknown>)[
-      REFRESH_TOKEN_COOKIE
-    ];
+    const cookieMap = cookies as Record<string, unknown>;
+    const nombrePorOrigen = this.cookieNameParaOrigen(req.headers.origin);
+    const refreshToken =
+      cookieMap[nombrePorOrigen] ?? cookieMap[REFRESH_TOKEN_COOKIE_LEGACY];
     return typeof refreshToken === 'string' ? refreshToken : undefined;
   }
 }

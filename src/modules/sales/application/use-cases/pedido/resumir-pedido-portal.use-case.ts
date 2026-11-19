@@ -8,6 +8,7 @@ import {
 } from '../../../domain/errors/sales-domain.errors';
 import { PedidoRepository } from '../../../domain/repositories/pedido.repository';
 import { ResumenPedidoPortalDto } from '../../dto/pedido-dtos/resumen-pedido-portal.dto';
+import { comprobanteDesdeDto } from '../../utils/comprobante.utils';
 import { calcularLinea, calcularTotal } from '../../utils/pedido.utils';
 
 export interface LineaResumenPedido {
@@ -77,7 +78,7 @@ export class ResumirPedidoPortalUseCase {
       tipo_entrega: dto.tipo_entrega,
       direccion_perfil: cliente.direccion,
       direccion_entrega: direccionEntrega,
-      comprobante: this.comprobante(dto),
+      comprobante: comprobanteDesdeDto(dto.comprobante),
       comprobante_sugerido: this.comprobanteSugerido(
         cliente.ruc,
         cliente.razon_social,
@@ -108,22 +109,6 @@ export class ResumirPedidoPortalUseCase {
     }
 
     return direccion;
-  }
-
-  // RF-B29: boleta por defecto. El DTO ya exige RUC y razón social con factura;
-  // con boleta se descartan aunque vengan.
-  private comprobante(dto: ResumenPedidoPortalDto): ComprobanteResumen {
-    const tipo = dto.comprobante?.tipo_comprobante ?? TipoComprobante.BOLETA;
-
-    if (tipo !== TipoComprobante.FACTURA) {
-      return { tipo_comprobante: tipo, ruc: null, razon_social: null };
-    }
-
-    return {
-      tipo_comprobante: tipo,
-      ruc: dto.comprobante?.ruc ?? null,
-      razon_social: dto.comprobante?.razon_social ?? null,
-    };
   }
 
   // Solo se propone si el perfil tiene un RUC que pasaría la validación del

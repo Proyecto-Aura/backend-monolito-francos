@@ -458,13 +458,16 @@ describe('Catálogo (e2e)', () => {
         where: { id },
       });
       // Nace desactivada: no se ve en el Portal B hasta que se active a mano.
-      expect(presentacion.estado).toBe(false);
+      expect(presentacion).toMatchObject({
+        estado: false,
+        visible_portal_b: false,
+      });
     });
 
     // OFT0-258: el rol inventario (pantalla de stock de producto terminado)
     // puede activar/desactivar una producto-presentación, mismo interruptor
     // que usa el catálogo.
-    it('DELETE y PATCH :id/activate con rol inventario desactivan y reactivan', async () => {
+    it('PATCH :id/activate y DELETE con rol inventario sincronizan estado y visibilidad en Portal B', async () => {
       const presentacionPropia = await prisma.presentacion.create({
         data: {
           cantidad: 7779,
@@ -484,17 +487,31 @@ describe('Catálogo (e2e)', () => {
           .expect(201)
       ).body as { id: number };
 
+      const estadoPersistido = () =>
+        prisma.productoPresentacion.findUniqueOrThrow({
+          where: { id: creada.id },
+          select: { estado: true, visible_portal_b: true },
+        });
+
+      const activada = await request(app.getHttpServer())
+        .patch(`/api/v1/producto-presentaciones/${creada.id}/activate`)
+        .set('Authorization', `Bearer ${inventarioToken}`)
+        .expect(200);
+      expect(activada.body).toMatchObject({ estado: true });
+      await expect(estadoPersistido()).resolves.toEqual({
+        estado: true,
+        visible_portal_b: true,
+      });
+
       const desactivada = await request(app.getHttpServer())
         .delete(`/api/v1/producto-presentaciones/${creada.id}`)
         .set('Authorization', `Bearer ${inventarioToken}`)
         .expect(200);
-      expect((desactivada.body as { estado: boolean }).estado).toBe(false);
-
-      const reactivada = await request(app.getHttpServer())
-        .patch(`/api/v1/producto-presentaciones/${creada.id}/activate`)
-        .set('Authorization', `Bearer ${inventarioToken}`)
-        .expect(200);
-      expect((reactivada.body as { estado: boolean }).estado).toBe(true);
+      expect(desactivada.body).toMatchObject({ estado: false });
+      await expect(estadoPersistido()).resolves.toEqual({
+        estado: false,
+        visible_portal_b: false,
+      });
     });
 
     it('POST /api/v1/producto-presentaciones con una presentación repetida devuelve 409 y no crea nada', async () => {
@@ -850,7 +867,7 @@ describe('Catálogo (e2e)', () => {
         precio_unitario: 10,
         precio_mayorista: 8,
         umbral_mayorista: 12,
-        visible_portal_b: false,
+        visible_portal_b: true,
         producto: {
           id: productoId,
           nombre: PRODUCTO_NOMBRE,

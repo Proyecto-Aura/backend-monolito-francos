@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MetodoPago, OrigenPedido, TipoEntrega } from '../../../domain/enums';
 import {
   PagoRechazadoError,
@@ -14,15 +14,20 @@ import {
 } from '../../../domain/repositories/types/pedido-repository.types';
 import { PasarelaPagoService } from '../../../domain/services/pasarela-pago.service';
 import { CreatePedidoDto } from '../../dto/pedido-dtos/create-pedido.dto';
+import { comprobanteDesdeDto } from '../../utils/comprobante.utils';
 import { calcularLinea, calcularTotal } from '../../utils/pedido.utils';
+import { GenerarComprobanteUseCase } from '../comprobante/generar-comprobante.use-case';
 
 const DESCRIPCION_COBRO = "Pedido Franco's";
 
 @Injectable()
 export class CreatePedidoUseCase {
+  private readonly logger = new Logger(CreatePedidoUseCase.name);
+
   constructor(
     private readonly pedidoRepository: PedidoRepository,
     private readonly pasarelaPago: PasarelaPagoService,
+    private readonly generarComprobante: GenerarComprobanteUseCase,
   ) {}
 
   // RF-A032: registro manual. El pedido nace confirmado, así que primero se cobra
@@ -46,7 +51,7 @@ export class CreatePedidoUseCase {
     const total = calcularTotal(detalles.map((detalle) => detalle.subtotal));
     const pago = await this.cobrar(dto, cliente, total);
 
-    return this.pedidoRepository.create({
+    const pedido = await this.pedidoRepository.create({
       cliente_id: cliente.id,
       user_id: userId,
       origen: OrigenPedido.MANUAL,
@@ -59,6 +64,27 @@ export class CreatePedidoUseCase {
       detalles,
       pago,
     });
+
+    // HU-B-010 también aplica al registro manual: con el pago ya confirmado
+    // se emite la boleta o factura. El cobro y el pedido ya están hechos, así
+    // que un fallo aquí (sin serie activa, sin empresa emisora, o el cliente
+    // sin correo registrado) no lo deshace: el pedido queda sin comprobante
+    // y el error se registra.
+    try {
+      const comprobante = await this.generarComprobante.execute({
+        pedido,
+        datos: comprobanteDesdeDto(dto.comprobante),
+        subtotal: total,
+        email: cliente.email,
+      });
+      return { ...pedido, comprobante };
+    } catch (error) {
+      this.logger.error(
+        `No se pudo emitir el comprobante del pedido ${pedido.pedido.codigo}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return pedido;
+    }
   }
 
   private async armarDetalles(

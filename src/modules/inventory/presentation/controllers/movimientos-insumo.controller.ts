@@ -58,7 +58,7 @@ function bodySchema(dto: new () => object) {
   CreateSalidaMovimientoDto,
   CreateAjusteMovimientoDto,
 )
-@Roles('admin', 'inventario')
+@Roles('admin', 'insumos')
 @Controller('movimientos-insumo')
 export class MovimientosInsumoController {
   constructor(
@@ -139,7 +139,7 @@ export class MovimientosInsumoController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get()
   @ApiOperation({ summary: 'Listar movimientos de insumo (kardex)' })
   @ApiOkResponse({ description: 'Lista paginada de movimientos' })
@@ -149,7 +149,7 @@ export class MovimientosInsumoController {
     );
   }
 
-  @Roles('admin', 'inventario', 'produccion')
+  @Roles('admin', 'insumos', 'produccion')
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un movimiento de insumo por ID' })
   @ApiParam({ name: 'id', type: Number })

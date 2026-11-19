@@ -33,15 +33,17 @@ interface LoteHttp {
   activo: boolean;
 }
 
-// Un usuario por rol relevante. `inventario` tiene acceso completo (lectura y
-// escritura), `produccion` solo lectura, `ventas` no tiene acceso alguno.
+// Un usuario por rol relevante. `insumos` tiene acceso completo (lectura y
+// escritura), `produccion` solo lectura, `ventas` no tiene acceso alguno, e
+// `inventario` tampoco: desde la separación de roles solo maneja productos
+// terminados.
 const TEST_USERS = {
-  inventario: {
-    identificador: 'e2e-inventario-oft255',
-    password: 'InventarioE2e123',
-    email: 'e2e-inventario-oft255@francos.test',
+  insumos: {
+    identificador: 'e2e-insumos-oft255',
+    password: 'InsumosE2e123',
+    email: 'e2e-insumos-oft255@francos.test',
     documento: '99999990',
-    rol: 'inventario',
+    rol: 'insumos',
   },
   produccion: {
     identificador: 'e2e-produccion-oft255',
@@ -57,15 +59,23 @@ const TEST_USERS = {
     documento: '99999992',
     rol: 'ventas',
   },
+  inventario: {
+    identificador: 'e2e-inventario-oft255',
+    password: 'InventarioE2e123',
+    email: 'e2e-inventario-oft255@francos.test',
+    documento: '99999970',
+    rol: 'inventario',
+  },
 } as const;
 
 describe('Insumos y lotes de insumo (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
-  let inventarioToken: string;
+  let insumosToken: string;
   let produccionToken: string;
   let ventasToken: string;
+  let inventarioToken: string;
 
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
@@ -168,9 +178,9 @@ describe('Insumos y lotes de insumo (e2e)', () => {
     }
 
     adminToken = await login('admin', 'admin123');
-    inventarioToken = await login(
-      TEST_USERS.inventario.identificador,
-      TEST_USERS.inventario.password,
+    insumosToken = await login(
+      TEST_USERS.insumos.identificador,
+      TEST_USERS.insumos.password,
     );
     produccionToken = await login(
       TEST_USERS.produccion.identificador,
@@ -180,7 +190,13 @@ describe('Insumos y lotes de insumo (e2e)', () => {
       TEST_USERS.ventas.identificador,
       TEST_USERS.ventas.password,
     );
-  });
+    inventarioToken = await login(
+      TEST_USERS.inventario.identificador,
+      TEST_USERS.inventario.password,
+    );
+    // 4 usuarios (bcrypt + login): bajo la suite completa en paralelo pasa
+    // de los 5 s por defecto.
+  }, 30000);
 
   afterAll(async () => {
     await limpiarDatos();
@@ -248,6 +264,22 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .expect(403);
     });
 
+    it('GET y POST con rol inventario (solo productos terminados) devuelven 403', async () => {
+      await request(app.getHttpServer())
+        .get(INSUMOS_URL)
+        .set(auth(inventarioToken))
+        .expect(403);
+      await request(app.getHttpServer())
+        .get(LOTES_URL)
+        .set(auth(inventarioToken))
+        .expect(403);
+      await request(app.getHttpServer())
+        .post(INSUMOS_URL)
+        .set(auth(inventarioToken))
+        .send({ nombre: `${MARCA} inventario sin acceso` })
+        .expect(403);
+    });
+
     it('GET con rol produccion (solo lectura) devuelve 200', async () => {
       await request(app.getHttpServer())
         .get(INSUMOS_URL)
@@ -270,10 +302,10 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .expect(403);
     });
 
-    it('POST con rol inventario devuelve 201', async () => {
+    it('POST con rol insumos devuelve 201', async () => {
       await request(app.getHttpServer())
         .post(INSUMOS_URL)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send({
           nombre: `${MARCA} Manteca`,
           unidad_medida: 'kg',
@@ -645,7 +677,7 @@ describe('Insumos y lotes de insumo (e2e)', () => {
         .expect(403);
     });
 
-    it('POST con rol produccion devuelve 403 y con rol inventario devuelve 201', async () => {
+    it('POST con rol produccion devuelve 403 y con rol insumos devuelve 201', async () => {
       await request(app.getHttpServer())
         .post(LOTES_URL)
         .set(auth(produccionToken))
@@ -659,10 +691,10 @@ describe('Insumos y lotes de insumo (e2e)', () => {
 
       await request(app.getHttpServer())
         .post(LOTES_URL)
-        .set(auth(inventarioToken))
+        .set(auth(insumosToken))
         .send({
           insumo_id: insumoId,
-          codigo_lote: `${MARCA}-007-inventario`,
+          codigo_lote: `${MARCA}-007-insumos`,
           fecha_ingreso: '2026-10-01',
           cantidad_inicial: 10,
         })

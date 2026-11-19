@@ -14,6 +14,7 @@ backend: no entra en el build, el lint, Jest ni la imagen Docker.
 | --- | --- | --- |
 | `e2e/humo.spec.ts` | `tienda` | Login del cliente de prueba y catálogo con productos. Si falla, el entorno no sirve. |
 | `e2e/portal-empresa.spec.ts` | `portal-empresa` | Login del admin y menú de módulos que devuelve la API. |
+| `e2e/verificacion-correo.spec.ts` | `tienda` | Flujo de negocio: un cliente se registra, no puede entrar sin verificar (403), abre el enlace del correo capturado por Mailpit y entonces inicia sesión. |
 | `contrato/` | job `qa-contrato` | Compara el contrato OpenAPI del PR con el de `develop` y falla si rompe a los frontends. |
 
 ## Contrato de la API (`qa-contrato`)
@@ -52,8 +53,19 @@ otro) y los datos inválidos (400) ya los cubren los e2e de Jest en `test/`.
 
 ## Correrlo en local
 
-Necesitas cuatro cosas arriba: PostgreSQL, la API en `:3000`, la tienda en
-`:4200` y el portal de la empresa en `:4201`.
+Necesitas cinco cosas arriba: PostgreSQL, Mailpit (SMTP en `:1025` y web en
+`:8025`), la API en `:3000`, la tienda en `:4200` y el portal de la empresa en
+`:4201`.
+
+0. **Mailpit**, para capturar el correo de verificación:
+
+   ```bash
+   docker run -d --name qa-mailpit -p 1025:1025 -p 8025:8025 \
+     -e MP_SMTP_AUTH_ACCEPT_ANY=1 -e MP_SMTP_AUTH_ALLOW_INSECURE=1 \
+     axllent/mailpit@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+   ```
+
+   La API debe enviar a ese SMTP: `SMTP_HOST=localhost SMTP_PORT=1025`.
 
 1. **API** (en la raíz del backend), con una base de pruebas y los datos demo:
 
@@ -86,8 +98,9 @@ Necesitas cuatro cosas arriba: PostgreSQL, la API en `:3000`, la tienda en
    npm run report      # abre el reporte HTML con trazas de los fallos
    ```
 
-`QA_TIENDA_URL` y `QA_PORTAL_URL` cambian las URL (por defecto
-`http://localhost:4200` y `http://localhost:4201`). Para correr solo un
+`QA_TIENDA_URL`, `QA_PORTAL_URL` y `QA_MAILPIT_URL` cambian las URL (por
+defecto `http://localhost:4200`, `http://localhost:4201` y
+`http://localhost:8025`). Para correr solo un
 frontend: `npx playwright test --project=tienda` o `--project=portal-empresa`.
 
 ## Usuarios de prueba

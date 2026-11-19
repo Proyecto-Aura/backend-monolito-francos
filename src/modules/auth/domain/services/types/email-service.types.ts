@@ -28,3 +28,11 @@ export interface SendPasswordResetEmailParams {
   resetToken: string;
   frontend: FrontendDestino;
 }
+
+// HU-B-016: enlace para confirmar el correo nuevo antes de aplicarlo.
+export interface SendEmailChangeVerificationEmailParams {
+  to: string;
+  nombre: string;
+  token: string;
+  frontend: FrontendDestino;
+}

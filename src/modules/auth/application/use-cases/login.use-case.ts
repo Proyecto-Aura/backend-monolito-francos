@@ -5,6 +5,7 @@ import { UserRepository } from '../../../persons/domain/repositories/user.reposi
 import { UsuarioRolRepository } from '../../../persons/domain/repositories/usuario-rol.repository';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
 import {
+  AccountLockedError,
   EmailNotVerifiedError,
   InvalidCredentialsError,
 } from '../../domain/errors/auth-domain.errors';
@@ -24,6 +25,7 @@ export interface LoginResult {
 }
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
+const MS_POR_MINUTO = 60 * 1000;
 // "Recordar sesión por 30 días" del portal del cliente (HU-B-001).
 export const DIAS_SESION_RECORDADA = 30;
 
@@ -43,12 +45,34 @@ export class LoginUseCase {
     if (!user || !user.estado) {
       throw new InvalidCredentialsError('Credenciales inválidas');
     }
+
+    // Mientras dura el bloqueo no se compara la contraseña: ni la correcta entra.
+    const ahora = new Date();
+    if (user.bloqueado_hasta && user.bloqueado_hasta > ahora) {
+      throw this.cuentaBloqueada(user.bloqueado_hasta, ahora);
+    }
+
     const contrasena_valida = await comparePassword(
       dto.password,
       user.contrasena,
     );
     if (!contrasena_valida) {
+      const bloqueadoHasta = new Date(
+        ahora.getTime() + envs.loginBloqueoMinutos * MS_POR_MINUTO,
+      );
+      const quedoBloqueada = await this.userRepository.registrarLoginFallido(
+        user.id,
+        envs.loginMaxIntentos,
+        bloqueadoHasta,
+      );
+      if (quedoBloqueada) {
+        throw this.cuentaBloqueada(bloqueadoHasta, ahora);
+      }
       throw new InvalidCredentialsError('Credenciales inválidas');
+    }
+
+    if (user.intentos_fallidos > 0 || user.bloqueado_hasta) {
+      await this.userRepository.reiniciarLoginFallido(user.id);
     }
 
     const roles_asignados = await this.usuarioRolRepository.findRolesByUserId(
@@ -98,5 +122,16 @@ export class LoginUseCase {
       debeCambiarContrasena: user.debe_cambiar_contrasena,
       refreshTokenExpiresAt: expiresAt,
     };
+  }
+
+  private cuentaBloqueada(hasta: Date, ahora: Date): AccountLockedError {
+    const segundos = Math.ceil((hasta.getTime() - ahora.getTime()) / 1000);
+    const minutos = Math.ceil(segundos / 60);
+    return new AccountLockedError(
+      `Demasiados intentos fallidos. Intenta de nuevo en ${minutos} ${
+        minutos === 1 ? 'minuto' : 'minutos'
+      } o restablece tu contraseña`,
+      segundos,
+    );
   }
 }

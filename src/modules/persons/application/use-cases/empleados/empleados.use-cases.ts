@@ -10,7 +10,6 @@ import {
 import { EmpleadoRepository } from '../../../domain/repositories/empleado.repository';
 import { PersonaRepository } from '../../../domain/repositories/persona.repository';
 import { PaginatedResult } from '../../../domain/repositories/types/pagination.types';
-import { AreaEmpleado } from '../../../domain/enums/persons.enums';
 
 @Injectable()
 export class CreateEmpleadoUseCase {
@@ -32,7 +31,7 @@ export class CreateEmpleadoUseCase {
     return this.empleadoRepository.create({
       persona_id: dto.persona_id,
       cargo: dto.cargo ?? null,
-      area: (dto.area as AreaEmpleado) ?? null,
+      area: dto.area ?? null,
       fecha_ingreso: dto.fecha_ingreso ? new Date(dto.fecha_ingreso) : null,
       fecha_des_lab: dto.fecha_des_lab ? new Date(dto.fecha_des_lab) : null,
       estado: dto.estado ?? true,
@@ -68,7 +67,7 @@ export class UpdateEmpleadoUseCase {
     if (!empleado) throw new ResourceNotFoundError('Empleado no encontrado');
     return this.empleadoRepository.update(id, {
       cargo: dto.cargo,
-      area: dto.area as AreaEmpleado,
+      area: dto.area,
       fecha_ingreso: dto.fecha_ingreso
         ? new Date(dto.fecha_ingreso)
         : undefined,

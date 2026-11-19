@@ -43,6 +43,13 @@ export class CreateUsuarioInternoUseCase {
         tipo_documento: dto.tipo_documento,
         numero_documento: dto.numero_documento,
       },
+      empleado: {
+        cargo: dto.cargo,
+        area: dto.area ?? null,
+        fecha_ingreso: dto.fecha_ingreso
+          ? new Date(dto.fecha_ingreso)
+          : new Date(),
+      },
       user: {
         email: dto.email,
         username: dto.username,

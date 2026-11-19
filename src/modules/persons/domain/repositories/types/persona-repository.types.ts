@@ -24,6 +24,7 @@ export interface UpdatePersonaParams {
   fecha_nacimiento?: Date;
   direccion?: string;
   distrito_id?: string;
+  foto_url?: string | null;
 }
 
 export interface ListPersonasParams extends PaginationParams {

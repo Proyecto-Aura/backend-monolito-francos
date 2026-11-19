@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { envs } from '../src/config/envs';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { hashPassword } from '../src/modules/auth/application/utils/password.util';
 import { fechaHoy } from '../src/modules/catalog/application/utils/promocion.utils';
@@ -86,6 +87,7 @@ interface PedidoDetalleBody extends Omit<PedidoResumenBody, 'metodo_pago'> {
   items: {
     producto_presentacion_id: number;
     sku: string;
+    imagen_url: string | null;
     producto: string;
     presentacion: string;
     cantidad: number;
@@ -331,6 +333,7 @@ describe('Pedidos (e2e)', () => {
         precio_mayorista?: number;
         umbral_mayorista?: number;
         estado?: boolean;
+        imagen_key?: string;
       },
     ) =>
       prisma.productoPresentacion.create({
@@ -347,6 +350,7 @@ describe('Pedidos (e2e)', () => {
         precio_unitario: 5.5,
         precio_mayorista: 4.2,
         umbral_mayorista: 24,
+        imagen_key: 'productos/e2e-pedidos-oft0-251.webp',
       })
     ).id;
     presentacionSimpleId = (
@@ -462,6 +466,7 @@ describe('Pedidos (e2e)', () => {
           precio_unitario: 5.5,
           precio_aplicado: 4.2,
           subtotal: 126,
+          imagen_url: `${envs.mediaBaseUrl}/productos/e2e-pedidos-oft0-251.webp`,
         }),
         expect.objectContaining({
           producto_presentacion_id: presentacionSimpleId,
@@ -469,6 +474,7 @@ describe('Pedidos (e2e)', () => {
           precio_unitario: 9.9,
           precio_aplicado: 9.9,
           subtotal: 39.6,
+          imagen_url: null,
         }),
       ]);
       expect(body.pago).toMatchObject({
